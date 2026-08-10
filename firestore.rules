@@ -1,0 +1,34 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------
+    // users/{uid}
+    //
+    // Ponte entre o Firebase Authentication (UID) e os dados de role
+    // usados pela aplicação. Nesta etapa (apenas autenticação) é a
+    // ÚNICA coleção que existe no banco.
+    //
+    // Regras desta etapa:
+    // - Qualquer usuário autenticado pode LER o PRÓPRIO documento
+    //   (necessário para o AuthContext descobrir a role no login).
+    // - Ninguém pode CRIAR, ATUALIZAR ou DELETAR pelo cliente.
+    //   A criação de usuários nesta etapa é manual, feita pelo
+    //   Firebase Console (ver seção "DADOS DO FIRESTORE" da explicação).
+    //   Isso é intencional: enquanto não existir um fluxo de
+    //   administração (Cloud Function ou tela de admin) que valide
+    //   quem pode virar "admin"/"teacher"/"student", não é seguro
+    //   deixar o próprio cliente escrever sua role.
+    // ---------------------------------------------------------------
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // Nenhuma outra coleção existe ainda. Por padrão, o Firestore nega
+    // tudo que não tem uma regra explícita — não é necessário (nem
+    // recomendado) adicionar um "match /{document=**}" de bloqueio,
+    // pois isso já é o comportamento padrão de segurança.
+  }
+}
