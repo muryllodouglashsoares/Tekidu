@@ -4,13 +4,37 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ---------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Lê o documento users/{uid} do próprio requisitante. Usado para
+    // decidir permissões com base na role (admin/teacher/student) e
+    // no status (active) armazenados em Firestore — nunca confiamos em
+    // nada que venha do cliente para essa decisão.
+    function callerProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isActiveStaff() {
+      let profile = callerProfile();
+      return isSignedIn() && profile.active == true &&
+        (profile.role == 'admin' || profile.role == 'teacher');
+    }
+
+    function isActiveAdmin() {
+      let profile = callerProfile();
+      return isSignedIn() && profile.active == true && profile.role == 'admin';
+    }
+
+    // ---------------------------------------------------------------
     // users/{uid}
     //
     // Ponte entre o Firebase Authentication (UID) e os dados de role
-    // usados pela aplicação. Nesta etapa (apenas autenticação) é a
-    // ÚNICA coleção que existe no banco.
+    // usados pela aplicação.
     //
-    // Regras desta etapa:
     // - Qualquer usuário autenticado pode LER o PRÓPRIO documento
     //   (necessário para o AuthContext descobrir a role no login).
     // - Ninguém pode CRIAR, ATUALIZAR ou DELETAR pelo cliente.
@@ -22,8 +46,27 @@ service cloud.firestore {
     //   deixar o próprio cliente escrever sua role.
     // ---------------------------------------------------------------
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read: if isSignedIn() && request.auth.uid == userId;
       allow write: if false;
+    }
+
+    // ---------------------------------------------------------------
+    // students/{studentId}
+    //
+    // Cadastro (roster) de alunos, gerenciado nesta fase por admins e
+    // professores. Ainda não existe uma ligação entre um documento em
+    // "students" e uma conta de aluno autenticada (isso é necessário
+    // para o Boletim, que é uma fase futura) — por isso a role
+    // "student" não tem acesso a esta coleção ainda.
+    //
+    // - LEITURA/ESCRITA: apenas admin/teacher com conta ativa
+    //   (checado via users/{uid}, nunca confiando em dados do cliente).
+    // - EXCLUSÃO: restrita a admin, para evitar que um professor
+    //   remova permanentemente o cadastro de um aluno por engano.
+    // ---------------------------------------------------------------
+    match /students/{studentId} {
+      allow read, create, update: if isActiveStaff();
+      allow delete: if isActiveAdmin();
     }
 
     // Nenhuma outra coleção existe ainda. Por padrão, o Firestore nega

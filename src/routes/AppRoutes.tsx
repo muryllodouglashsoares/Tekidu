@@ -1,8 +1,11 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import { AppShell } from "@/components/layout/AppShell";
+import { PlaceholderPage } from "@/components/layout/PlaceholderPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
+import { StudentsPage } from "@/pages/students/StudentsPage";
 import { StatusPage } from "@/pages/StatusPage";
 
 export function AppRoutes() {
@@ -43,10 +46,23 @@ export function AppRoutes() {
       />
 
       {/* Rotas protegidas: exigem sessão ativa + perfil válido.
-          Nesta etapa, todas as roles caem no mesmo dashboard placeholder;
-          dashboards específicos por role entram em uma etapa futura. */}
+          Todas compartilham o AppShell (sidebar + topo), preservando a
+          navegação do protótipo do Figma. */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<DashboardPage />} />
+        <Route element={<AppShell />}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/alunos" element={<StudentsPage />} />
+
+          {/* Seções ainda não implementadas nesta fase — mesmo texto
+              "em desenvolvimento" do protótipo do Figma. */}
+          <Route path="/turmas" element={<PlaceholderPage title="Turmas" />} />
+          <Route path="/disciplinas" element={<PlaceholderPage title="Disciplinas" />} />
+          <Route path="/notas" element={<PlaceholderPage title="Notas" />} />
+          <Route path="/frequencia" element={<PlaceholderPage title="Frequência" />} />
+          <Route path="/boletim" element={<PlaceholderPage title="Boletim" />} />
+          <Route path="/relatorios" element={<PlaceholderPage title="Relatórios" />} />
+          <Route path="/configuracoes" element={<PlaceholderPage title="Configurações" />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
