@@ -37,6 +37,16 @@ service cloud.firestore {
     //
     // - Qualquer usuário autenticado pode LER o PRÓPRIO documento
     //   (necessário para o AuthContext descobrir a role no login).
+    // - Admin/teacher com conta ativa também podem LER qualquer
+    //   documento de "users". Esta é uma extensão feita para a
+    //   funcionalidade de Disciplinas: o formulário precisa listar os
+    //   professores disponíveis (campo "Professor responsável"), o que
+    //   exige uma consulta (`where role == 'teacher'`) além do próprio
+    //   documento. Sem esta extensão, a consulta seria negada pelo
+    //   servidor mesmo com a UI funcionando. A extensão segue o mesmo
+    //   padrão de acesso já usado em `students`/`classes`: apenas
+    //   leitura por staff ativo — criar, atualizar e excluir usuários
+    //   continuam bloqueados pelo cliente (allow write: if false).
     // - Ninguém pode CRIAR, ATUALIZAR ou DELETAR pelo cliente.
     //   A criação de usuários nesta etapa é manual, feita pelo
     //   Firebase Console (ver seção "DADOS DO FIRESTORE" da explicação).
@@ -46,7 +56,7 @@ service cloud.firestore {
     //   deixar o próprio cliente escrever sua role.
     // ---------------------------------------------------------------
     match /users/{userId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isSignedIn() && (request.auth.uid == userId || isActiveStaff());
       allow write: if false;
     }
 
@@ -82,6 +92,24 @@ service cloud.firestore {
     // podem ler/criar/editar; apenas admin pode excluir.
     // ---------------------------------------------------------------
     match /classes/{classId} {
+      allow read, create, update: if isActiveStaff();
+      allow delete: if isActiveAdmin();
+    }
+
+    // ---------------------------------------------------------------
+    // disciplines/{disciplineId}
+    //
+    // Cadastro de disciplinas. A relação com turmas é feita por IDs
+    // (`classIds`, referenciando `classes/{classId}`) e a quantidade de
+    // alunos exibida na UI é derivada no cliente a partir de
+    // `students.turma`, assim como acontece em `classes` — por isso
+    // nenhuma regra adicional é necessária além da leitura de
+    // `students`/`classes`, já cobertas acima.
+    //
+    // Mesma política de acesso de `classes`: admin/teacher ativos podem
+    // ler/criar/editar; apenas admin pode excluir.
+    // ---------------------------------------------------------------
+    match /disciplines/{disciplineId} {
       allow read, create, update: if isActiveStaff();
       allow delete: if isActiveAdmin();
     }
