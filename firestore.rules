@@ -69,6 +69,23 @@ service cloud.firestore {
       allow delete: if isActiveAdmin();
     }
 
+    // ---------------------------------------------------------------
+    // classes/{classId}
+    //
+    // Cadastro de turmas (Fase 7). A quantidade de alunos exibida na
+    // listagem é calculada no cliente a partir de `students.turma`
+    // (texto livre) — não há um campo de contagem armazenado aqui, e
+    // por isso nenhuma regra adicional é necessária além da leitura
+    // de `students`, já coberta acima.
+    //
+    // Mesma política de acesso de `students`: admin/teacher ativos
+    // podem ler/criar/editar; apenas admin pode excluir.
+    // ---------------------------------------------------------------
+    match /classes/{classId} {
+      allow read, create, update: if isActiveStaff();
+      allow delete: if isActiveAdmin();
+    }
+
     // Nenhuma outra coleção existe ainda. Por padrão, o Firestore nega
     // tudo que não tem uma regra explícita — não é necessário (nem
     // recomendado) adicionar um "match /{document=**}" de bloqueio,

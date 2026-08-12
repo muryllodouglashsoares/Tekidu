@@ -26,7 +26,7 @@ interface NavItem {
 const principalNav: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/alunos", label: "Alunos", icon: Users },
-  { to: "/turmas", label: "Turmas", icon: School, soon: true },
+  { to: "/turmas", label: "Turmas", icon: School },
   { to: "/disciplinas", label: "Disciplinas", icon: BookOpen, soon: true },
 ];
 

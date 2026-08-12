@@ -6,6 +6,7 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
 import { StudentsPage } from "@/pages/students/StudentsPage";
+import { ClassesPage } from "@/pages/classes/ClassesPage";
 import { StatusPage } from "@/pages/StatusPage";
 
 export function AppRoutes() {
@@ -52,10 +53,10 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/alunos" element={<StudentsPage />} />
+          <Route path="/turmas" element={<ClassesPage />} />
 
           {/* Seções ainda não implementadas nesta fase — mesmo texto
               "em desenvolvimento" do protótipo do Figma. */}
-          <Route path="/turmas" element={<PlaceholderPage title="Turmas" />} />
           <Route path="/disciplinas" element={<PlaceholderPage title="Disciplinas" />} />
           <Route path="/notas" element={<PlaceholderPage title="Notas" />} />
           <Route path="/frequencia" element={<PlaceholderPage title="Frequência" />} />

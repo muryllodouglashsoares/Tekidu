@@ -3,16 +3,23 @@ import { type SelectHTMLAttributes, forwardRef, useId } from "react";
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
   error?: string;
+  /** Mantém o label acessível para leitores de tela, mas o esconde
+   * visualmente. Útil para filtros compactos (ex.: Turmas) onde o
+   * próprio texto da opção selecionada já comunica o propósito. */
+  hideLabel?: boolean;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, id, className = "", children, ...props }, ref) => {
+  ({ label, error, id, className = "", hideLabel, children, ...props }, ref) => {
     const generatedId = useId();
     const selectId = id ?? generatedId;
 
     return (
       <div className="flex flex-col gap-1.5">
-        <label htmlFor={selectId} className="text-sm font-medium text-ink-700">
+        <label
+          htmlFor={selectId}
+          className={hideLabel ? "sr-only" : "text-sm font-medium text-ink-700"}
+        >
           {label}
         </label>
         <select
