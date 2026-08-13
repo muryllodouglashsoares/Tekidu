@@ -66,27 +66,26 @@ export async function deleteClass(id: string): Promise<void> {
 }
 
 /**
- * Conta quantos alunos existem por turma, usando o campo `students.turma`
- * (texto livre) já existente — sem precisar de um campo de contagem
- * duplicado em `classes`. A chave do mapa é o nome da turma (trim exato).
+ * Conta quantos alunos existem por turma, usando o campo `students.classId`
+ * (referência a `classes/{classId}`) — sem precisar de um campo de
+ * contagem duplicado em `classes`. A chave do mapa é o ID da turma.
  *
  * Nota: para o volume esperado nesta fase (uma instituição), buscar todos
  * os alunos e agrupar em memória é mais simples e barato do que uma
  * consulta por turma para cada linha da tabela.
  */
-export async function getStudentCountsByClassName(): Promise<Record<string, number>> {
+export async function getStudentCountsByClassId(): Promise<Record<string, number>> {
   const students = await getStudents();
   const counts: Record<string, number> = {};
   for (const student of students) {
-    const key = student.turma.trim();
-    if (!key) continue;
-    counts[key] = (counts[key] ?? 0) + 1;
+    if (!student.classId) continue;
+    counts[student.classId] = (counts[student.classId] ?? 0) + 1;
   }
   return counts;
 }
 
-/** Lista os alunos vinculados a uma turma pelo nome (usado no detalhe da turma). */
-export async function getStudentsByClassName(className: string) {
+/** Lista os alunos vinculados a uma turma pelo ID (usado no detalhe da turma). */
+export async function getStudentsByClassId(classId: string) {
   const students = await getStudents();
-  return students.filter((s) => s.turma.trim() === className.trim());
+  return students.filter((s) => s.classId === classId);
 }

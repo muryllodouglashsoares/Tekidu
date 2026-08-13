@@ -13,13 +13,16 @@ import {
   getStudents,
   updateStudent,
 } from "@/services/students/studentService";
+import { getClasses } from "@/services/classes/classService";
 import type { Student, StudentInput } from "@/types/student";
+import type { SchoolClass } from "@/types/schoolClass";
 
 export function StudentsPage() {
   const { profile } = useAuth();
   const canManage = profile?.role === "admin" || profile?.role === "teacher";
 
   const [students, setStudents] = useState<Student[]>([]);
+  const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -28,12 +31,13 @@ export function StudentsPage() {
   const [showForm, setShowForm] = useState(false);
   const [deleting, setDeleting] = useState<Student | null>(null);
 
-  async function loadStudents() {
+  async function loadData() {
     setLoading(true);
     setError(null);
     try {
-      const data = await getStudents();
-      setStudents(data);
+      const [studentsData, classesData] = await Promise.all([getStudents(), getClasses()]);
+      setStudents(studentsData);
+      setClasses(classesData);
     } catch {
       setError("Não foi possível carregar os alunos.");
     } finally {
@@ -42,20 +46,28 @@ export function StudentsPage() {
   }
 
   useEffect(() => {
-    loadStudents();
+    loadData();
   }, []);
+
+  const classNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const schoolClass of classes) map[schoolClass.id] = schoolClass.name;
+    return map;
+  }, [classes]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return students;
-    return students.filter(
-      (s) =>
+    return students.filter((s) => {
+      const className = s.classId ? classNameById[s.classId] ?? "" : "";
+      return (
         s.name.toLowerCase().includes(term) ||
         s.email.toLowerCase().includes(term) ||
         s.registrationNumber.toLowerCase().includes(term) ||
-        s.turma.toLowerCase().includes(term)
-    );
-  }, [students, search]);
+        className.toLowerCase().includes(term)
+      );
+    });
+  }, [students, search, classNameById]);
 
   async function handleCreateOrUpdate(data: StudentInput) {
     if (editing) {
@@ -63,14 +75,14 @@ export function StudentsPage() {
     } else {
       await createStudent(data);
     }
-    await loadStudents();
+    await loadData();
   }
 
   async function handleDelete() {
     if (!deleting) return;
     await deleteStudent(deleting.id);
     setDeleting(null);
-    await loadStudents();
+    await loadData();
   }
 
   function initials(name: string) {
@@ -122,7 +134,7 @@ export function StudentsPage() {
         ) : error ? (
           <div className="p-8 text-center">
             <p className="mb-3 text-sm text-danger">{error}</p>
-            <Button variant="secondary" onClick={loadStudents}>
+            <Button variant="secondary" onClick={loadData}>
               Tentar novamente
             </Button>
           </div>
@@ -162,7 +174,9 @@ export function StudentsPage() {
                     <td className="px-4 py-3 tabular text-ink-600">
                       {student.registrationNumber}
                     </td>
-                    <td className="px-4 py-3 text-ink-600">{student.turma || "—"}</td>
+                    <td className="px-4 py-3 text-ink-600">
+                      {student.classId ? classNameById[student.classId] ?? "—" : "—"}
+                    </td>
                     <td className="px-4 py-3 tabular text-ink-600">
                       {student.average !== null ? student.average.toFixed(1) : "—"}
                     </td>
@@ -203,6 +217,7 @@ export function StudentsPage() {
       {showForm && (
         <StudentFormModal
           student={editing}
+          classes={classes}
           onClose={() => setShowForm(false)}
           onSubmit={handleCreateOrUpdate}
         />

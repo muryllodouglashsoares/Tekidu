@@ -6,9 +6,11 @@ import { Spinner } from "@/components/ui/Spinner";
 import { Button } from "@/components/ui/Button";
 import { StudentStatusBadge } from "@/components/students/StudentStatusBadge";
 import { getStudents } from "@/services/students/studentService";
+import { getClasses } from "@/services/classes/classService";
 import { formatRelativeTime } from "@/utils/formatRelativeTime";
 import type { Student, StudentStatus } from "@/types/student";
 import { STUDENT_STATUS_LABEL } from "@/types/student";
+import type { SchoolClass } from "@/types/schoolClass";
 
 const STATUS_ORDER: StudentStatus[] = ["active", "recovery", "failed", "inactive"];
 const STATUS_BAR_COLOR: Record<StudentStatus, string> = {
@@ -21,6 +23,7 @@ const STATUS_BAR_COLOR: Record<StudentStatus, string> = {
 export function DashboardPage() {
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
+  const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,8 +33,11 @@ export function DashboardPage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await getStudents();
-        if (!cancelled) setStudents(data);
+        const [studentsData, classesData] = await Promise.all([getStudents(), getClasses()]);
+        if (!cancelled) {
+          setStudents(studentsData);
+          setClasses(classesData);
+        }
       } catch {
         if (!cancelled) setError("Não foi possível carregar os dados do dashboard.");
       } finally {
@@ -42,6 +48,16 @@ export function DashboardPage() {
       cancelled = true;
     };
   }, []);
+
+  const classNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const schoolClass of classes) map[schoolClass.id] = schoolClass.name;
+    return map;
+  }, [classes]);
+
+  function classNameFor(student: Student): string | null {
+    return student.classId ? classNameById[student.classId] ?? null : null;
+  }
 
   const stats = useMemo(() => {
     const total = students.length;
@@ -158,7 +174,7 @@ export function DashboardPage() {
                         {student.name}
                       </p>
                       <p className="truncate text-xs text-ink-400">
-                        {student.turma || "Sem turma"} · {student.registrationNumber}
+                        {classNameFor(student) || "Sem turma"} · {student.registrationNumber}
                       </p>
                     </div>
                   </div>
@@ -249,7 +265,7 @@ export function DashboardPage() {
                   <div>
                     <p className="text-ink-700">
                       <span className="font-medium">{student.name}</span> matriculado em{" "}
-                      {student.turma || "turma não definida"}
+                      {classNameFor(student) || "turma não definida"}
                     </p>
                     {relative && <p className="text-xs text-ink-400">{relative}</p>}
                   </div>

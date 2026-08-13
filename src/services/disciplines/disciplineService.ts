@@ -11,7 +11,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { getClassById, getStudentCountsByClassName } from "@/services/classes/classService";
+import { getClassById, getStudentCountsByClassId } from "@/services/classes/classService";
 import type { Discipline, DisciplineInput } from "@/types/discipline";
 import type { SchoolClass } from "@/types/schoolClass";
 
@@ -84,15 +84,11 @@ export async function getClassesByIds(classIds: string[]): Promise<SchoolClass[]
 /**
  * Calcula a quantidade de alunos "envolvidos" em um conjunto de turmas,
  * sem duplicar essa contagem no documento da disciplina. Reaproveita
- * `getStudentCountsByClassName` (baseada em `students.turma`, texto
- * livre) já usada em Turmas, mapeando pelo nome de cada turma vinculada.
- *
- * LIMITAÇÃO HERDADA: como `students.turma` ainda é texto livre (não
- * `classId`), esta contagem depende do nome da turma bater exatamente
- * com o texto salvo no aluno — a mesma limitação que `classes` já tem
- * hoje. Ver nota em `types/discipline.ts`.
+ * `getStudentCountsByClassId` (baseada em `students.classId`, referência
+ * de verdade a `classes/{classId}`) já usada em Turmas, somando pelo ID
+ * de cada turma vinculada.
  */
 export async function getStudentCountForClasses(classes: SchoolClass[]): Promise<number> {
-  const counts = await getStudentCountsByClassName();
-  return classes.reduce((sum, schoolClass) => sum + (counts[schoolClass.name] ?? 0), 0);
+  const counts = await getStudentCountsByClassId();
+  return classes.reduce((sum, schoolClass) => sum + (counts[schoolClass.id] ?? 0), 0);
 }

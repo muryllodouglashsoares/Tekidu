@@ -4,6 +4,7 @@ import {
   Users,
   School,
   BookOpen,
+  GraduationCap,
   ClipboardList,
   CalendarCheck,
   FileText,
@@ -12,12 +13,15 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { RoleBadge } from "@/components/ui/RoleBadge";
+import type { UserRole } from "@/types/user";
 
 interface NavItem {
   to: string;
   label: string;
   icon: typeof LayoutDashboard;
   soon?: boolean;
+  /** Se informado, o item só aparece para as roles listadas. */
+  roles?: UserRole[];
 }
 
 // Mesma organização e rótulos do protótipo do Figma (grupos "Principal"
@@ -28,22 +32,45 @@ const principalNav: NavItem[] = [
   { to: "/alunos", label: "Alunos", icon: Users },
   { to: "/turmas", label: "Turmas", icon: School },
   { to: "/disciplinas", label: "Disciplinas", icon: BookOpen },
+  // Restrita a admin: mesma role autorizada pela rota (ver AppRoutes) e
+  // pelas Firestore Security Rules para criar/editar contas em "users".
+  { to: "/professores", label: "Professores", icon: GraduationCap, roles: ["admin"] },
 ];
 
 const academicoNav: NavItem[] = [
-  { to: "/notas", label: "Notas", icon: ClipboardList, soon: true },
-  { to: "/frequencia", label: "Frequência", icon: CalendarCheck, soon: true },
-  { to: "/boletim", label: "Boletim", icon: FileText, soon: true },
+  // Notas: sem "soon" (implementada) e restrita a admin/teacher — o
+  // mesmo perfil autorizado pela rota (ver AppRoutes) e pelas
+  // Firestore Security Rules. Alunos não devem ver este item, já que
+  // não têm acesso ao lançamento de notas.
+  { to: "/notas", label: "Notas", icon: ClipboardList, roles: ["admin", "teacher"] },
+  // Frequência: sem "soon" (implementada) e restrita a admin/teacher —
+  // mesma role autorizada pela rota (ver AppRoutes) e pelas Firestore
+  // Security Rules das coleções attendanceSessions/attendanceRecords.
+  { to: "/frequencia", label: "Frequência", icon: CalendarCheck, roles: ["admin", "teacher"] },
+  // Boletim: sem "soon" (implementada) e restrita a admin/teacher — mesma
+  // role autorizada pela rota (ver AppRoutes) e pelas Firestore Security
+  // Rules das coleções que ela consolida (grades/attendanceRecords).
+  { to: "/boletim", label: "Boletim", icon: FileText, roles: ["admin", "teacher"] },
   { to: "/relatorios", label: "Relatórios", icon: BarChart3, soon: true },
 ];
 
-function NavGroup({ title, items }: { title: string; items: NavItem[] }) {
+function NavGroup({
+  title,
+  items,
+  currentRole,
+}: {
+  title: string;
+  items: NavItem[];
+  currentRole?: UserRole;
+}) {
+  const visibleItems = items.filter((item) => !item.roles || (currentRole && item.roles.includes(currentRole)));
+  if (visibleItems.length === 0) return null;
   return (
     <div className="flex flex-col gap-1">
       <span className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-ink-400">
         {title}
       </span>
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
@@ -89,8 +116,8 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-6 overflow-y-auto">
-        <NavGroup title="Principal" items={principalNav} />
-        <NavGroup title="Acadêmico" items={academicoNav} />
+        <NavGroup title="Principal" items={principalNav} currentRole={profile?.role} />
+        <NavGroup title="Acadêmico" items={academicoNav} currentRole={profile?.role} />
       </nav>
 
       <div className="mt-4 flex flex-col gap-1 border-t border-ink-800 pt-4">

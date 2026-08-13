@@ -5,7 +5,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { ClassShiftBadge } from "@/components/classes/ClassShiftBadge";
 import { ClassStatusBadge } from "@/components/classes/ClassStatusBadge";
 import { StudentStatusBadge } from "@/components/students/StudentStatusBadge";
-import { getStudentsByClassName } from "@/services/classes/classService";
+import { getStudentsByClassId } from "@/services/classes/classService";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { Student } from "@/types/student";
 
@@ -16,7 +16,7 @@ interface ClassDetailModalProps {
 
 /**
  * Detalhe de uma turma: dados gerais + lista de alunos vinculados
- * (via `students.turma`). Serve também de base para as próximas
+ * (via `students.classId`). Serve também de base para as próximas
  * funcionalidades relacionadas a alunos dentro da turma (notas,
  * frequência), que ainda não fazem parte desta fase.
  */
@@ -31,7 +31,7 @@ export function ClassDetailModal({ schoolClass, onClose }: ClassDetailModalProps
       setLoading(true);
       setError(null);
       try {
-        const data = await getStudentsByClassName(schoolClass.name);
+        const data = await getStudentsByClassId(schoolClass.id);
         if (!cancelled) setStudents(data);
       } catch {
         if (!cancelled) setError("Não foi possível carregar os alunos desta turma.");
@@ -42,7 +42,7 @@ export function ClassDetailModal({ schoolClass, onClose }: ClassDetailModalProps
     return () => {
       cancelled = true;
     };
-  }, [schoolClass.name]);
+  }, [schoolClass.id]);
 
   return (
     <Modal title={schoolClass.name} onClose={onClose}>

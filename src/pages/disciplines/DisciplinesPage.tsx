@@ -15,7 +15,7 @@ import {
   getDisciplines,
   updateDiscipline,
 } from "@/services/disciplines/disciplineService";
-import { getClasses, getStudentCountsByClassName } from "@/services/classes/classService";
+import { getClasses, getStudentCountsByClassId } from "@/services/classes/classService";
 import { getTeachers } from "@/services/users/userService";
 import {
   DISCIPLINE_STATUS_LABEL,
@@ -57,7 +57,7 @@ export function DisciplinesPage() {
       const [disciplinesData, classesData, counts, teachersData] = await Promise.all([
         getDisciplines(),
         getClasses(),
-        getStudentCountsByClassName(),
+        getStudentCountsByClassId(),
         getTeachers(),
       ]);
       setDisciplines(disciplinesData);

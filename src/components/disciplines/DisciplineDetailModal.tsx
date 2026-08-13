@@ -9,7 +9,7 @@ import {
   getClassesByIds,
   getStudentCountForClasses,
 } from "@/services/disciplines/disciplineService";
-import { getStudentCountsByClassName } from "@/services/classes/classService";
+import { getStudentCountsByClassId } from "@/services/classes/classService";
 import type { Discipline } from "@/types/discipline";
 import type { SchoolClass } from "@/types/schoolClass";
 
@@ -49,7 +49,7 @@ export function DisciplineDetailModal({
       try {
         const resolvedClasses = await getClassesByIds(discipline.classIds);
         const [counts, total] = await Promise.all([
-          getStudentCountsByClassName(),
+          getStudentCountsByClassId(),
           getStudentCountForClasses(resolvedClasses),
         ]);
         if (!cancelled) {
@@ -123,7 +123,7 @@ export function DisciplineDetailModal({
       ) : (
         <ul className="flex max-h-64 flex-col gap-2 overflow-y-auto">
           {classes.map((schoolClass) => {
-            const count = studentCounts[schoolClass.name] ?? 0;
+            const count = studentCounts[schoolClass.id] ?? 0;
             return (
               <li
                 key={schoolClass.id}

@@ -21,7 +21,7 @@ function toStudent(id: string, data: Record<string, unknown>): Student {
     name: (data.name as string) ?? "",
     email: (data.email as string) ?? "",
     registrationNumber: (data.registrationNumber as string) ?? "",
-    turma: (data.turma as string) ?? "",
+    classId: (data.classId as string | null) ?? null,
     status: (data.status as Student["status"]) ?? "active",
     average: (data.average as number | null) ?? null,
     createdAt: data.createdAt,

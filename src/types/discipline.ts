@@ -15,23 +15,15 @@ export const DISCIPLINE_STATUS_LABEL: Record<DisciplineStatus, string> = {
  *
  * NOTA SOBRE A RELAÇÃO COM TURMAS:
  * `classIds` referencia diretamente os IDs de documentos de `classes`
- * (não os nomes), pois a coleção `classes` já possui IDs estáveis.
- * Isso evita o mesmo problema que `students.turma` (texto livre) tem
- * hoje com `classes` — se o nome de uma turma mudar, a relação com a
- * disciplina continua íntegra.
+ * (não os nomes), pois a coleção `classes` já possui IDs estáveis —
+ * o mesmo padrão usado por `students.classId`.
  *
  * NOTA SOBRE A RELAÇÃO COM ALUNOS:
  * Esta coleção NÃO guarda uma lista/contagem de alunos. A quantidade
  * de alunos de uma disciplina é DERIVADA em tempo de consulta a partir
  * das turmas vinculadas (`classIds`), reaproveitando a relação já
- * existente entre `students.turma` (texto livre) e `classes.name`
- * (ver `classService.getStudentCountsByClassName`). Isso significa que
- * a contagem herda a mesma limitação que `classes` já tem hoje: dois
- * alunos com o mesmo texto em `turma` em turmas com nomes diferentes
- * não é um cenário tratado nesta fase. Quando `students.turma` for
- * migrado para `classId` (fora do escopo desta tarefa), esta contagem
- * passa a ser exata automaticamente, sem precisar mudar o formato do
- * documento de disciplina.
+ * existente entre `students.classId` e `classes/{classId}` (ver
+ * `classService.getStudentCountsByClassId`).
  *
  * NOTA SOBRE O PROFESSOR:
  * `teacherId` é o UID do documento em `users` (role "teacher"), não uma

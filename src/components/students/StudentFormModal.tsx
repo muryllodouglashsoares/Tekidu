@@ -4,10 +4,13 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { STUDENT_STATUS_LABEL, type Student, type StudentInput } from "@/types/student";
+import { CLASS_SHIFT_LABEL, type SchoolClass } from "@/types/schoolClass";
 
 interface StudentFormModalProps {
   /** Quando informado, o formulário edita este aluno; caso contrário, cria um novo. */
   student?: Student | null;
+  /** Turmas cadastradas, para o seletor de turma (substitui o texto livre). */
+  classes: SchoolClass[];
   onClose: () => void;
   onSubmit: (data: StudentInput) => Promise<void>;
 }
@@ -16,19 +19,19 @@ const emptyForm: StudentInput = {
   name: "",
   email: "",
   registrationNumber: "",
-  turma: "",
+  classId: null,
   status: "active",
   average: null,
 };
 
-export function StudentFormModal({ student, onClose, onSubmit }: StudentFormModalProps) {
+export function StudentFormModal({ student, classes, onClose, onSubmit }: StudentFormModalProps) {
   const [form, setForm] = useState<StudentInput>(
     student
       ? {
           name: student.name,
           email: student.email,
           registrationNumber: student.registrationNumber,
-          turma: student.turma,
+          classId: student.classId,
           status: student.status,
           average: student.average,
         }
@@ -88,12 +91,21 @@ export function StudentFormModal({ student, onClose, onSubmit }: StudentFormModa
             value={form.registrationNumber}
             onChange={(e) => update("registrationNumber", e.target.value)}
           />
-          <Input
+          <Select
             label="Turma"
-            placeholder="Ex.: 9º Ano B"
-            value={form.turma}
-            onChange={(e) => update("turma", e.target.value)}
-          />
+            value={form.classId ?? ""}
+            onChange={(e) => update("classId", e.target.value === "" ? null : e.target.value)}
+            disabled={classes.length === 0}
+          >
+            <option value="">
+              {classes.length === 0 ? "Nenhuma turma cadastrada" : "Sem turma"}
+            </option>
+            {classes.map((schoolClass) => (
+              <option key={schoolClass.id} value={schoolClass.id}>
+                {schoolClass.name} · {CLASS_SHIFT_LABEL[schoolClass.shift]}
+              </option>
+            ))}
+          </Select>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <Select

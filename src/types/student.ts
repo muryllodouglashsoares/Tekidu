@@ -16,24 +16,25 @@ export const STUDENT_STATUS_LABEL: Record<StudentStatus, string> = {
 /**
  * Formato do documento em: students/{studentId}
  *
- * NOTA IMPORTANTE sobre `turma` e `average`:
- * - `turma` é um texto livre (ex.: "9º Ano B") em vez de uma referência
- *   a `classes/{classId}`. A coleção `classes` ainda não existe (Turmas
- *   está "em breve" no protótipo). Quando a Fase 7 (Turmas/Disciplinas)
- *   for implementada, este campo deve ser migrado para `classId` +
- *   busca em `classes`, sem quebrar os dados já cadastrados.
+ * NOTA IMPORTANTE sobre `classId` e `average`:
+ * - `classId` referencia diretamente o ID de um documento em `classes`
+ *   (mesmo padrão usado por `disciplines.classIds`), em vez do antigo
+ *   texto livre `turma`. A relação é estabelecida por SELEÇÃO de uma
+ *   turma já cadastrada, não por digitação — o que elimina o problema
+ *   de nomes de turma divergentes (ex.: "9º Ano B" vs "9 ano B") que o
+ *   texto livre tinha. `null` significa "sem turma vinculada".
  * - `average` é armazenado diretamente no aluno por enquanto porque o
- *   módulo de Notas (Fase 8) ainda não existe — não há de onde calcular
- *   uma média real. Quando as notas forem implementadas, este campo
- *   passará a ser CALCULADO a partir de `grades/*` em vez de digitado
- *   manualmente. Até lá, ele é opcional e apenas informativo.
+ *   módulo de Notas ainda não calcula uma média consolidada por aluno.
+ *   Quando isso existir, este campo passará a ser CALCULADO a partir
+ *   de `grades/*` em vez de digitado manualmente. Até lá, ele é
+ *   opcional e apenas informativo.
  */
 export interface Student {
   id: string;
   name: string;
   email: string;
   registrationNumber: string;
-  turma: string;
+  classId: string | null;
   status: StudentStatus;
   average: number | null;
   createdAt: unknown; // Firestore Timestamp
@@ -45,7 +46,7 @@ export interface StudentInput {
   name: string;
   email: string;
   registrationNumber: string;
-  turma: string;
+  classId: string | null;
   status: StudentStatus;
   average: number | null;
 }

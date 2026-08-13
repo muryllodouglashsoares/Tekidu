@@ -47,17 +47,26 @@ service cloud.firestore {
     //   padrão de acesso já usado em `students`/`classes`: apenas
     //   leitura por staff ativo — criar, atualizar e excluir usuários
     //   continuam bloqueados pelo cliente (allow write: if false).
-    // - Ninguém pode CRIAR, ATUALIZAR ou DELETAR pelo cliente.
-    //   A criação de usuários nesta etapa é manual, feita pelo
-    //   Firebase Console (ver seção "DADOS DO FIRESTORE" da explicação).
-    //   Isso é intencional: enquanto não existir um fluxo de
-    //   administração (Cloud Function ou tela de admin) que valide
-    //   quem pode virar "admin"/"teacher"/"student", não é seguro
-    //   deixar o próprio cliente escrever sua role.
+    // - CRIAR e ATUALIZAR: restrito a admins ativos, e somente para
+    //   documentos com role "teacher" — a tela de "Professores" cria a
+    //   conta de Authentication pelo cliente (via App secundário, ver
+    //   `lib/firebase.ts`) e precisa gravar o perfil correspondente
+    //   aqui. Isso substitui o cadastro manual via Firebase Console
+    //   que existia antes desta funcionalidade. Um admin não pode usar
+    //   esta regra para criar/promover a si mesmo ou outros como
+    //   "admin" pelo cliente — isso continua exigindo o Console.
+    // - DELETAR: nunca pelo cliente. Remover a CONTA de Authentication
+    //   exige Admin SDK (Cloud Function), fora do escopo desta fase;
+    //   por isso "excluir" um professor na UI é uma desativação lógica
+    //   (`active: false`), tratada como um `update`, não um `delete`.
     // ---------------------------------------------------------------
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isActiveStaff());
-      allow write: if false;
+      allow create: if isActiveAdmin() && request.resource.data.role == 'teacher';
+      allow update: if isActiveAdmin() &&
+        resource.data.role == 'teacher' &&
+        request.resource.data.role == 'teacher';
+      allow delete: if false;
     }
 
     // ---------------------------------------------------------------
@@ -112,6 +121,87 @@ service cloud.firestore {
     match /disciplines/{disciplineId} {
       allow read, create, update: if isActiveStaff();
       allow delete: if isActiveAdmin();
+    }
+
+    // ---------------------------------------------------------------
+    // assessments/{assessmentId}
+    //
+    // Avaliações (Prova 1, Trabalho, etc.) de um contexto disciplina +
+    // turma + bimestre — parte da funcionalidade de Notas.
+    //
+    // Mesma política de acesso de `disciplines`/`classes`: admin/teacher
+    // ativos podem ler/criar/editar; apenas admin pode excluir. Notas
+    // são dados acadêmicos sensíveis — assim como o restante do roster
+    // acadêmico, a role "student" não tem acesso direto a esta coleção
+    // nesta fase (o Boletim, fase futura, é quem vai expor uma visão
+    // filtrada e somente-leitura para o próprio aluno).
+    //
+    // Não há distinção de professor "dono" da disciplina: o projeto
+    // ainda não tem essa regra nem em `disciplines`, então `assessments`
+    // segue a mesma política de LEITURA/CRIAÇÃO/EDIÇÃO já em vigor
+    // (admin/teacher ativos), em vez de inventar uma restrição nova que
+    // não existe em nenhum outro lugar do sistema.
+    //
+    // EXCLUSÃO — desvio deliberado do padrão "delete: apenas admin" de
+    // `students`/`classes`/`disciplines`: cadastrar/remover avaliações
+    // (Prova 1, Trabalho, etc.) é uma ação rotineira de quem lança
+    // notas, não uma operação destrutiva sobre o roster acadêmico
+    // central. Por isso professores ativos também podem excluir aqui.
+    // ---------------------------------------------------------------
+    match /assessments/{assessmentId} {
+      allow read, create, update, delete: if isActiveStaff();
+    }
+
+    // ---------------------------------------------------------------
+    // grades/{gradeId}
+    //
+    // Notas individuais (aluno + avaliação). O documento carrega uma
+    // cópia (snapshot) de disciplineId/classId/schoolYear/term — ver
+    // nota em `src/types/grade.ts` — mas isso não muda a política de
+    // segurança: ela é sempre resolvida a partir do perfil do
+    // requisitante (`callerProfile()`), nunca a partir de campos do
+    // próprio documento de nota.
+    //
+    // Mesma política de `assessments`, incluindo a exclusão por
+    // professor ativo (necessário para o cascade delete disparado ao
+    // remover uma avaliação — ver `assessmentService.deleteAssessment`,
+    // que apaga as notas vinculadas antes do documento da avaliação).
+    // ---------------------------------------------------------------
+    match /grades/{gradeId} {
+      allow read, create, update, delete: if isActiveStaff();
+    }
+
+    // ---------------------------------------------------------------
+    // attendanceSessions/{sessionId}
+    //
+    // Uma aula (data letiva) de um contexto disciplina + turma +
+    // bimestre — parte da funcionalidade de Frequência. Mesmo papel de
+    // `assessments` em Notas, e mesma política de acesso: admin/teacher
+    // ativos podem ler/criar/editar/excluir. Cadastrar/remover uma aula
+    // é uma ação rotineira de quem lança presença, não uma operação
+    // destrutiva sobre o roster acadêmico central — por isso professores
+    // ativos também podem excluir aqui, assim como em `assessments`.
+    // ---------------------------------------------------------------
+    match /attendanceSessions/{sessionId} {
+      allow read, create, update, delete: if isActiveStaff();
+    }
+
+    // ---------------------------------------------------------------
+    // attendanceRecords/{recordId}
+    //
+    // Presença individual (aluno + aula: "present"/"absent"). O
+    // documento carrega uma cópia (snapshot) de
+    // disciplineId/classId/schoolYear/term — ver nota em
+    // `src/types/attendance.ts` — mas isso não muda a política de
+    // segurança: ela é sempre resolvida a partir do perfil do
+    // requisitante (`callerProfile()`), nunca a partir de campos do
+    // próprio documento. Mesma política de `attendanceSessions`,
+    // incluindo a exclusão por professor ativo (necessário para o
+    // cascade delete disparado ao remover uma aula — ver
+    // `attendanceSessionService.deleteSession`).
+    // ---------------------------------------------------------------
+    match /attendanceRecords/{recordId} {
+      allow read, create, update, delete: if isActiveStaff();
     }
 
     // Nenhuma outra coleção existe ainda. Por padrão, o Firestore nega

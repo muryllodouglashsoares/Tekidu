@@ -5,7 +5,7 @@ import type { SchoolClass } from "@/types/schoolClass";
 interface ClassMultiSelectProps {
   /** Turmas disponíveis para seleção. */
   classes: SchoolClass[];
-  /** Quantidade de alunos por nome de turma (mesma fonte usada em Turmas). */
+  /** Quantidade de alunos por ID de turma (mesma fonte usada em Turmas). */
   studentCounts: Record<string, number>;
   selectedIds: string[];
   onChange: (ids: string[]) => void;
@@ -48,7 +48,7 @@ export function ClassMultiSelect({
     >
       {classes.map((schoolClass) => {
         const checked = selectedIds.includes(schoolClass.id);
-        const count = studentCounts[schoolClass.name] ?? 0;
+        const count = studentCounts[schoolClass.id] ?? 0;
         return (
           <label
             key={schoolClass.id}

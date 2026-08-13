@@ -14,7 +14,7 @@ import {
   createClass,
   deleteClass,
   getClasses,
-  getStudentCountsByClassName,
+  getStudentCountsByClassId,
   updateClass,
 } from "@/services/classes/classService";
 import {
@@ -53,7 +53,7 @@ export function ClassesPage() {
     try {
       const [classesData, counts] = await Promise.all([
         getClasses(),
-        getStudentCountsByClassName(),
+        getStudentCountsByClassId(),
       ]);
       setClasses(classesData);
       setStudentCounts(counts);
@@ -235,8 +235,8 @@ export function ClassesPage() {
                     <td className="px-4 py-3 text-ink-600">
                       <span className="inline-flex items-center gap-1.5">
                         <Users className="h-3.5 w-3.5 text-ink-400" />
-                        {studentCounts[schoolClass.name] ?? 0} aluno
-                        {(studentCounts[schoolClass.name] ?? 0) === 1 ? "" : "s"}
+                        {studentCounts[schoolClass.id] ?? 0} aluno
+                        {(studentCounts[schoolClass.id] ?? 0) === 1 ? "" : "s"}
                       </span>
                     </td>
                     <td className="px-4 py-3">

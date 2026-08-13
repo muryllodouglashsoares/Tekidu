@@ -8,6 +8,10 @@ import { DashboardPage } from "@/pages/dashboard/DashboardPage";
 import { StudentsPage } from "@/pages/students/StudentsPage";
 import { ClassesPage } from "@/pages/classes/ClassesPage";
 import { DisciplinesPage } from "@/pages/disciplines/DisciplinesPage";
+import { TeachersPage } from "@/pages/teachers/TeachersPage";
+import { NotesPage } from "@/pages/notes/NotesPage";
+import { AttendancePage } from "@/pages/attendance/AttendancePage";
+import { BoletimPage } from "@/pages/boletim/BoletimPage";
 import { StatusPage } from "@/pages/StatusPage";
 
 export function AppRoutes() {
@@ -58,11 +62,30 @@ export function AppRoutes() {
 
           <Route path="/disciplinas" element={<DisciplinesPage />} />
 
-          {/* Seções ainda não implementadas nesta fase — mesmo texto
-              "em desenvolvimento" do protótipo do Figma. */}
-          <Route path="/notas" element={<PlaceholderPage title="Notas" />} />
-          <Route path="/frequencia" element={<PlaceholderPage title="Frequência" />} />
-          <Route path="/boletim" element={<PlaceholderPage title="Boletim" />} />
+          {/* Professores: cadastro de contas de login (Firebase Authentication),
+              restrito a admin — mesma sensibilidade de "quem pode criar acessos"
+              já documentada em firestore.rules para a coleção "users". */}
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+            <Route path="/professores" element={<TeachersPage />} />
+          </Route>
+
+          {/* Notas: restrita a admin/teacher (alunos não devem ter acesso
+              ao lançamento de notas — ver ProtectedRoute). As demais
+              seções abaixo ainda não implementadas nesta fase seguem o
+              mesmo texto "em desenvolvimento" do protótipo do Figma. */}
+          {/* Frequência: mesma restrição de acesso de Notas (admin/teacher) —
+              alunos ainda não têm uma visão própria da frequência nesta
+              fase (ver firestore.rules). */}
+          <Route element={<ProtectedRoute allowedRoles={["admin", "teacher"]} />}>
+            <Route path="/notas" element={<NotesPage />} />
+            <Route path="/frequencia" element={<AttendancePage />} />
+            {/* Boletim: consolida Notas + Frequência, então segue a mesma
+                restrição de acesso das duas (ver firestore.rules — a role
+                "student" ainda não tem leitura de students/grades/
+                attendanceRecords nesta fase; visão própria do aluno é
+                trabalho futuro). */}
+            <Route path="/boletim" element={<BoletimPage />} />
+          </Route>
           <Route path="/relatorios" element={<PlaceholderPage title="Relatórios" />} />
           <Route path="/configuracoes" element={<PlaceholderPage title="Configurações" />} />
         </Route>

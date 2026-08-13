@@ -47,13 +47,9 @@ export const CLASS_GRADE_OPTIONS = [
  * NOTA SOBRE A RELAÇÃO COM ALUNOS:
  * Esta coleção não guarda uma lista de IDs de alunos. A quantidade de
  * alunos exibida na listagem é DERIVADA em tempo de consulta, contando
- * os documentos de `students` cujo campo `turma` (texto livre) é igual
- * a `name` desta turma — reaproveitando a relação que já existe hoje em
+ * os documentos de `students` cujo campo `classId` referencia o `id`
+ * desta turma — reaproveitando a relação que já existe hoje em
  * `students`, em vez de duplicar essa informação em dois lugares.
- * Quando o relacionamento Turma↔Aluno precisar ficar mais robusto (ex.:
- * um aluno mudar de turma preservando histórico), o caminho recomendado
- * é migrar `students.turma` (string) para `students.classId` (referência
- * ao id de `classes`), sem quebrar os dados já cadastrados.
  */
 export interface SchoolClass {
   id: string;
