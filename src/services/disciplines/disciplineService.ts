@@ -71,6 +71,35 @@ export async function deleteDiscipline(id: string): Promise<void> {
 }
 
 /**
+ * Filtra as disciplinas vinculadas a uma turma, usando SOMENTE o
+ * relacionamento real (`discipline.classIds.includes(classId)`).
+ *
+ * NOTA SOBRE O BUG CORRIGIDO (Turma ↔ Disciplina em Notas/Frequência/
+ * Boletim):
+ * As telas dependentes (Notas, Frequência, Boletim) antes exigiam
+ * ADICIONALMENTE que `discipline.schoolYear` fosse igual ao ano letivo
+ * filtrado (o mesmo ano da turma selecionada). O problema é que
+ * `schoolYear` é um campo digitado de forma independente no cadastro
+ * de disciplina — não é derivado das turmas escolhidas em `classIds`.
+ * Bastava uma disciplina ser cadastrada/editada com o ano "errado"
+ * (ex.: criada em Jan/2026 mas ainda com `schoolYear: 2025` porque o
+ * campo não foi ajustado) para que ela continuasse aparecendo
+ * corretamente em Disciplinas (que já filtra só por `classIds`, sem
+ * essa checagem extra), mas sumisse dos seletores de Notas/Frequência/
+ * Boletim — exatamente o sintoma relatado ("existem disciplinas
+ * cadastradas e vinculadas, mas nenhuma aparece").
+ * Como cada turma já pertence a um único `schoolYear` (campo de
+ * `SchoolClass`), o relacionamento `classIds` já escopa a disciplina
+ * pelo ano correto automaticamente — repetir a comparação com
+ * `discipline.schoolYear` era redundante e frágil. Esta função passa a
+ * ser a ÚNICA fonte de verdade para "quais disciplinas pertencem a
+ * esta turma", reaproveitada por todas as telas que precisam disso.
+ */
+export function getDisciplinesForClass(disciplines: Discipline[], classId: string): Discipline[] {
+  return disciplines.filter((d) => d.classIds.includes(classId));
+}
+
+/**
  * Resolve os IDs de turma de uma disciplina para os documentos completos
  * de `classes`. IDs que não existem mais (turma excluída) são omitidos
  * silenciosamente da lista resolvida.

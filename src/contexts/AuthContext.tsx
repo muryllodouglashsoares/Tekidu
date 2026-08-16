@@ -26,6 +26,14 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  /**
+   * Rebusca users/{uid} e atualiza `profile` no contexto. Necessário
+   * porque o perfil é carregado com `getDoc` (uma leitura única, não
+   * um listener em tempo real) — sem isto, editar o nome em
+   * Configurações (item 23) não refletiria na Sidebar/topbar até um
+   * novo login.
+   */
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -81,9 +89,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await sendPasswordResetEmail(auth, email);
   }
 
+  async function refreshProfile() {
+    if (!auth.currentUser) return;
+    const snapshot = await getDoc(doc(db, "users", auth.currentUser.uid));
+    if (snapshot.exists()) setProfile(snapshot.data() as UserProfile);
+  }
+
   return (
     <AuthContext.Provider
-      value={{ firebaseUser, profile, loading, signIn, signOut, resetPassword }}
+      value={{ firebaseUser, profile, loading, signIn, signOut, resetPassword, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

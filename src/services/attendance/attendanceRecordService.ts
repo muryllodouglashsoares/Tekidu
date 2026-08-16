@@ -79,6 +79,19 @@ export async function getRecordsBySessionIds(sessionIds: string[]): Promise<Atte
 }
 
 /**
+ * Lista TODOS os registros de presença de um ano letivo, independente
+ * de turma/disciplina/bimestre — mesmo racional de `getGradesBySchoolYear`
+ * (Notas), usada pelos Relatórios de Desenvolvimento para calcular a
+ * frequência média em vários recortes com uma única leitura. Consulta
+ * de campo único — não exige índice composto.
+ */
+export async function getAttendanceRecordsBySchoolYear(schoolYear: number): Promise<AttendanceRecord[]> {
+  const q = query(recordsCollection, where("schoolYear", "==", schoolYear));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => toRecord(d.id, d.data()));
+}
+
+/**
  * Cria ou atualiza o registro de presença de um aluno em uma aula
  * específica. Assim como `saveGrade`, a existência prévia é resolvida
  * pelo chamador (não pelo formato do ID do documento) — aceitável pois

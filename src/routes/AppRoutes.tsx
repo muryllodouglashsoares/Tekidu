@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
-import { PlaceholderPage } from "@/components/layout/PlaceholderPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
@@ -12,6 +11,8 @@ import { TeachersPage } from "@/pages/teachers/TeachersPage";
 import { NotesPage } from "@/pages/notes/NotesPage";
 import { AttendancePage } from "@/pages/attendance/AttendancePage";
 import { BoletimPage } from "@/pages/boletim/BoletimPage";
+import { ReportsPage } from "@/pages/reports/ReportsPage";
+import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { StatusPage } from "@/pages/StatusPage";
 
 export function AppRoutes() {
@@ -85,9 +86,12 @@ export function AppRoutes() {
                 attendanceRecords nesta fase; visão própria do aluno é
                 trabalho futuro). */}
             <Route path="/boletim" element={<BoletimPage />} />
+            {/* Relatórios: consolida Notas + Frequência em visão analítica
+                (gráficos/indicadores), então segue a mesma restrição de
+                acesso do Boletim — ver firestore.rules. */}
+            <Route path="/relatorios" element={<ReportsPage />} />
           </Route>
-          <Route path="/relatorios" element={<PlaceholderPage title="Relatórios" />} />
-          <Route path="/configuracoes" element={<PlaceholderPage title="Configurações" />} />
+          <Route path="/configuracoes" element={<SettingsPage />} />
         </Route>
       </Route>
 

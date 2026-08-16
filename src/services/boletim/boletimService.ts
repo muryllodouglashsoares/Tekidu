@@ -1,4 +1,4 @@
-import { getDisciplines } from "@/services/disciplines/disciplineService";
+import { getDisciplines, getDisciplinesForClass } from "@/services/disciplines/disciplineService";
 import { getGradesByContext } from "@/services/grades/gradeService";
 import { getRecordsByContext } from "@/services/attendance/attendanceRecordService";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/types/attendance";
 import { ALL_ASSESSMENT_TERMS, type BoletimPeriod, type BoletimStatus } from "@/types/boletim";
 import type { Discipline } from "@/types/discipline";
+import type { AssessmentTerm } from "@/types/assessment";
 
 /** Desempenho consolidado de UMA disciplina no período consultado. */
 export interface DisciplineBoletimRow {
@@ -91,10 +92,11 @@ export async function getStudentBoletim(
 ): Promise<StudentBoletim> {
   const terms = period === "annual" ? ALL_ASSESSMENT_TERMS : [period];
 
+  // Ver nota em `getDisciplinesForClass` (disciplineService): o
+  // relacionamento correto é só `classIds`, sem exigir que
+  // `discipline.schoolYear` também bata com o ano da turma.
   const allDisciplines = await getDisciplines();
-  const disciplines = allDisciplines.filter(
-    (d) => d.schoolYear === schoolYear && d.classIds.includes(classId)
-  );
+  const disciplines = getDisciplinesForClass(allDisciplines, classId);
 
   const disciplineRows = await Promise.all(
     disciplines.map(async (discipline): Promise<DisciplineBoletimRow> => {
@@ -135,6 +137,36 @@ export async function getStudentBoletim(
     overallAttendanceRate,
     overallStatus: deriveOverallStatus(disciplineRows, overallAttendanceStatus),
   };
+}
+
+/** Um ponto da série de evolução de um aluno (item 18 do briefing). */
+export interface StudentDevelopmentPoint {
+  term: AssessmentTerm;
+  average: number | null;
+  attendanceRate: number | null;
+}
+
+/**
+ * Monta a série de evolução do aluno ao longo dos 4 bimestres do ano
+ * letivo — usada pelo gráfico individual do Relatório de Desenvolvimento
+ * (item 18) e pelo gráfico na página do aluno (item 19). Reaproveita
+ * `getStudentBoletim` uma vez por bimestre (mesma fonte de verdade do
+ * Boletim, sem duplicar o cálculo de média/frequência em outro lugar) —
+ * as 4 chamadas rodam em paralelo, então o custo é o mesmo de buscar um
+ * único bimestre "mais lento".
+ */
+export async function getStudentDevelopmentSeries(
+  studentId: string,
+  classId: string,
+  schoolYear: number
+): Promise<StudentDevelopmentPoint[]> {
+  const results = await Promise.all(
+    ALL_ASSESSMENT_TERMS.map(async (term) => {
+      const boletim = await getStudentBoletim(studentId, classId, schoolYear, term);
+      return { term, average: boletim.overallAverage, attendanceRate: boletim.overallAttendanceRate };
+    })
+  );
+  return results;
 }
 
 // Reexportado para telas que só precisam do rótulo (ex.: BoletimTable) sem

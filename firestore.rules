@@ -66,6 +66,17 @@ service cloud.firestore {
       allow update: if isActiveAdmin() &&
         resource.data.role == 'teacher' &&
         request.resource.data.role == 'teacher';
+      // EXTENSÃO (Configurações — item 23 do briefing "Perfil"): permite
+      // que QUALQUER usuário autenticado atualize o PRÓPRIO nome de
+      // exibição. Propositalmente estreita — `hasOnly(['name'])` garante
+      // que role/active/email/uid/createdAt não podem ser alterados por
+      // este caminho, então isto NÃO abre brecha para autopromoção nem
+      // para reativar/desativar a própria conta. Sem esta regra, o botão
+      // "Salvar" da aba Perfil falharia silenciosamente no servidor.
+      allow update: if isSignedIn() && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0;
       allow delete: if false;
     }
 

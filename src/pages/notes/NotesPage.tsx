@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/layout/EmptyState";
 import { GradesTable } from "@/components/notes/GradesTable";
 import { AssessmentManagerModal } from "@/components/notes/AssessmentManagerModal";
 import { getClasses } from "@/services/classes/classService";
-import { getDisciplines } from "@/services/disciplines/disciplineService";
+import { getDisciplines, getDisciplinesForClass } from "@/services/disciplines/disciplineService";
 import { getStudents } from "@/services/students/studentService";
 import {
   getAssessmentsByContext,
@@ -85,13 +85,13 @@ export function NotesPage() {
 
   // Só disciplinas vinculadas à turma selecionada (evita combinações
   // inválidas — ex.: aluno da Turma A aparecendo numa disciplina
-  // exclusiva da Turma B).
+  // exclusiva da Turma B). Ver nota em `getDisciplinesForClass`
+  // (disciplineService) sobre por que essa comparação não deve incluir
+  // `discipline.schoolYear`.
   const disciplineOptions = useMemo(() => {
     if (!classId) return [];
-    return disciplines.filter(
-      (d) => String(d.schoolYear) === yearFilter && d.classIds.includes(classId)
-    );
-  }, [disciplines, classId, yearFilter]);
+    return getDisciplinesForClass(disciplines, classId);
+  }, [disciplines, classId]);
 
   // Reseta seleções dependentes quando o pai muda, para nunca deixar
   // uma combinação inválida selecionada.
@@ -281,10 +281,14 @@ export function NotesPage() {
             hideLabel
             value={disciplineId}
             onChange={(e) => setDisciplineId(e.target.value)}
-            disabled={!classId}
+            disabled={!classId || disciplineOptions.length === 0}
           >
             <option value="">
-              {classId ? "Selecionar disciplina" : "Selecione uma turma primeiro"}
+              {!classId
+                ? "Selecione uma turma primeiro"
+                : disciplineOptions.length === 0
+                  ? "Nenhuma disciplina vinculada a esta turma"
+                  : "Selecionar disciplina"}
             </option>
             {disciplineOptions.map((d) => (
               <option key={d.id} value={d.id}>

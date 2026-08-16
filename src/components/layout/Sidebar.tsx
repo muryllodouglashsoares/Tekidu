@@ -51,7 +51,7 @@ const academicoNav: NavItem[] = [
   // role autorizada pela rota (ver AppRoutes) e pelas Firestore Security
   // Rules das coleções que ela consolida (grades/attendanceRecords).
   { to: "/boletim", label: "Boletim", icon: FileText, roles: ["admin", "teacher"] },
-  { to: "/relatorios", label: "Relatórios", icon: BarChart3, soon: true },
+  { to: "/relatorios", label: "Relatórios", icon: BarChart3, roles: ["admin", "teacher"] },
 ];
 
 function NavGroup({

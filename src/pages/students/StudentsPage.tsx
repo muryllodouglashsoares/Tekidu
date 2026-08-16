@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, Search, Pencil, Trash2, BarChart3 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +21,7 @@ import type { SchoolClass } from "@/types/schoolClass";
 export function StudentsPage() {
   const { profile } = useAuth();
   const canManage = profile?.role === "admin" || profile?.role === "teacher";
+  const navigate = useNavigate();
 
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -154,6 +156,7 @@ export function StudentsPage() {
                   <th className="px-4 py-3 font-medium">Turma</th>
                   <th className="px-4 py-3 font-medium">Média</th>
                   <th className="px-4 py-3 font-medium">Situação</th>
+                  <th className="px-4 py-3 font-medium" />
                   {canManage && <th className="px-4 py-3 font-medium" />}
                 </tr>
               </thead>
@@ -182,6 +185,22 @@ export function StudentsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <StudentStatusBadge status={student.status} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          aria-label={`Ver relatório de desenvolvimento de ${student.name}`}
+                          title={
+                            student.classId ? "Ver relatório de desenvolvimento" : "Aluno sem turma vinculada"
+                          }
+                          disabled={!student.classId}
+                          className="rounded-card p-1.5 text-ink-400 hover:bg-ink-50 hover:text-ink-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                          onClick={() => navigate(`/relatorios?studentId=${student.id}&view=${student.classId}`)}
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                     {canManage && (
                       <td className="px-4 py-3">
