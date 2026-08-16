@@ -58,6 +58,22 @@ export async function getGradesByContext(
 }
 
 /**
+ * Lista TODAS as notas lançadas em um ano letivo, independente de
+ * turma/disciplina/bimestre — usada pelos Relatórios de Desenvolvimento
+ * (item 7 do briefing), que precisam agregar médias em vários recortes
+ * (todas as turmas, uma turma, uma disciplina, um bimestre) sem repetir
+ * uma consulta por combinação. Consulta de campo único
+ * (`schoolYear`) — não exige índice composto, e evita buscar TODO o
+ * histórico de anos anteriores de uma vez (ver item 29 do briefing,
+ * performance).
+ */
+export async function getGradesBySchoolYear(schoolYear: number): Promise<Grade[]> {
+  const q = query(gradesCollection, where("schoolYear", "==", schoolYear));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => toGrade(d.id, d.data()));
+}
+
+/**
  * Cria ou atualiza a nota de um aluno em uma avaliação específica.
  * Como `grades` não usa `studentId_assessmentId` como ID do documento
  * (evita acoplar o formato do ID a dois campos que podem mudar de

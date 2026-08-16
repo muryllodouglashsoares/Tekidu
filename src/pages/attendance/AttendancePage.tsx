@@ -14,7 +14,7 @@ import { AttendanceRegisterList } from "@/components/attendance/AttendanceRegist
 import { AttendanceSessionModal } from "@/components/attendance/AttendanceSessionModal";
 import { AttendanceHistoryTable, type AttendanceHistoryRow } from "@/components/attendance/AttendanceHistoryTable";
 import { getClasses } from "@/services/classes/classService";
-import { getDisciplines } from "@/services/disciplines/disciplineService";
+import { getDisciplines, getDisciplinesForClass } from "@/services/disciplines/disciplineService";
 import { getStudents } from "@/services/students/studentService";
 import {
   getSessionsByContext,
@@ -115,10 +115,13 @@ export function AttendancePage() {
     [classes, yearFilter]
   );
 
+  // Ver nota em `getDisciplinesForClass` (disciplineService): o
+  // relacionamento correto é só `classIds`, sem exigir que
+  // `discipline.schoolYear` também bata com o ano da turma.
   const disciplineOptions = useMemo(() => {
     if (!classId) return [];
-    return disciplines.filter((d) => String(d.schoolYear) === yearFilter && d.classIds.includes(classId));
-  }, [disciplines, classId, yearFilter]);
+    return getDisciplinesForClass(disciplines, classId);
+  }, [disciplines, classId]);
 
   useEffect(() => {
     setDisciplineId("");

@@ -83,10 +83,14 @@ export function AttendanceFilters({
           hideLabel
           value={disciplineId}
           onChange={(e) => onDisciplineChange(e.target.value)}
-          disabled={!classId}
+          disabled={!classId || disciplineOptions.length === 0}
         >
           <option value="">
-            {classId ? "Selecionar disciplina" : "Selecione uma turma primeiro"}
+            {!classId
+              ? "Selecione uma turma primeiro"
+              : disciplineOptions.length === 0
+                ? "Nenhuma disciplina vinculada a esta turma"
+                : "Selecionar disciplina"}
           </option>
           {disciplineOptions.map((d) => (
             <option key={d.id} value={d.id}>

@@ -86,3 +86,16 @@ export async function updateTeacherProfile(
     active: data.active,
   });
 }
+
+/**
+ * Auto-atualização do nome de exibição, usada pela aba "Perfil" de
+ * Configurações (item 23 do briefing). Diferente de
+ * `updateTeacherProfile` (que só um admin pode chamar, e só para
+ * professores), esta função é para o PRÓPRIO usuário editar o
+ * PRÓPRIO nome — por isso grava apenas `name`, nunca `role`/`active`.
+ * Requer a extensão de `firestore.rules` documentada em
+ * `match /users/{userId}` (auto-edição restrita ao campo `name`).
+ */
+export async function updateOwnName(uid: string, name: string): Promise<void> {
+  await updateDoc(doc(db, "users", uid), { name });
+}
