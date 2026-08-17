@@ -24,6 +24,7 @@ import {
 } from "@/types/discipline";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { UserProfile } from "@/types/user";
+import { describeFirebaseError } from "@/utils/firebaseError";
 
 const ALL = "all";
 
@@ -64,8 +65,8 @@ export function DisciplinesPage() {
       setClasses(classesData);
       setStudentCounts(counts);
       setTeachers(teachersData);
-    } catch {
-      setError("Não foi possível carregar as disciplinas.");
+    } catch (error) {
+      setError(describeFirebaseError(error, "disciplinas:listar"));
     } finally {
       setLoading(false);
     }

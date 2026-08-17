@@ -37,6 +37,7 @@ import {
   type AttendanceRecordStatus,
   type AttendanceSession,
 } from "@/types/attendance";
+import { describeFirebaseError } from "@/utils/firebaseError";
 
 type Tab = "register" | "history";
 type ViewMode = "resumo" | "porData";
@@ -70,8 +71,8 @@ export function AttendancePage() {
       setClasses(classesData);
       setDisciplines(disciplinesData);
       setStudents(studentsData);
-    } catch {
-      setBaseError("Não foi possível carregar os dados acadêmicos.");
+    } catch (error) {
+      setBaseError(describeFirebaseError(error, "frequência:dados-base (turmas/disciplinas/alunos)"));
     } finally {
       setBaseLoading(false);
     }
@@ -174,8 +175,8 @@ export function AttendancePage() {
         if (sessionsData.length === 0) return "";
         return sessionsData.reduce((latest, s) => (s.order > latest.order ? s : latest)).id;
       });
-    } catch {
-      setContextError("Não foi possível carregar a frequência deste contexto.");
+    } catch (error) {
+      setContextError(describeFirebaseError(error, "frequência:aulas+registros-do-contexto"));
     } finally {
       setContextLoading(false);
     }
@@ -267,8 +268,8 @@ export function AttendancePage() {
           },
         ];
       });
-    } catch {
-      setSaveError("Não foi possível salvar a presença. Tente novamente.");
+    } catch (error) {
+      setSaveError(describeFirebaseError(error, "frequência:salvar-presença"));
       throw new Error("save-failed");
     }
   }
@@ -315,8 +316,8 @@ export function AttendancePage() {
       setHistorySessions(allSessions);
       setHistoryRecords(allRecords);
       setHistoryLoaded(true);
-    } catch {
-      setHistoryError("Não foi possível carregar o histórico de frequência.");
+    } catch (error) {
+      setHistoryError(describeFirebaseError(error, "frequência:histórico"));
     } finally {
       setHistoryLoading(false);
     }

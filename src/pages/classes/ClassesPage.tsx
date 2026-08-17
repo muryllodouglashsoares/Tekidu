@@ -23,6 +23,7 @@ import {
   type ClassInput,
   type SchoolClass,
 } from "@/types/schoolClass";
+import { describeFirebaseError } from "@/utils/firebaseError";
 
 const ALL = "all";
 
@@ -57,8 +58,8 @@ export function ClassesPage() {
       ]);
       setClasses(classesData);
       setStudentCounts(counts);
-    } catch {
-      setError("Não foi possível carregar as turmas.");
+    } catch (error) {
+      setError(describeFirebaseError(error, "turmas:listar"));
     } finally {
       setLoading(false);
     }

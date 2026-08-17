@@ -17,6 +17,7 @@ import { getStudentBoletim, type StudentBoletim } from "@/services/boletim/bolet
 import { BOLETIM_PERIOD_LABEL, type BoletimPeriod } from "@/types/boletim";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { Student } from "@/types/student";
+import { describeFirebaseError } from "@/utils/firebaseError";
 
 export function BoletimPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,8 +45,8 @@ export function BoletimPage() {
       setClasses(classesData);
       setStudents(studentsData);
       setStudentCounts(counts);
-    } catch {
-      setBaseError("Não foi possível carregar os dados acadêmicos.");
+    } catch (error) {
+      setBaseError(describeFirebaseError(error, "boletim:dados-base (turmas/alunos)"));
     } finally {
       setBaseLoading(false);
     }
@@ -131,8 +132,8 @@ export function BoletimPage() {
     try {
       const data = await getStudentBoletim(selectedStudent.id, selectedClass.id, Number(yearFilter), period);
       setBoletim(data);
-    } catch {
-      setBoletimError("Não foi possível carregar o boletim deste aluno.");
+    } catch (error) {
+      setBoletimError(describeFirebaseError(error, "boletim:boletim-do-aluno"));
     } finally {
       setBoletimLoading(false);
     }

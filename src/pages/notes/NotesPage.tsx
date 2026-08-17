@@ -23,6 +23,7 @@ import { calculateSituation } from "@/types/grade";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { Discipline } from "@/types/discipline";
 import type { Student } from "@/types/student";
+import { describeFirebaseError } from "@/utils/firebaseError";
 
 export function NotesPage() {
   const { profile } = useAuth();
@@ -51,8 +52,8 @@ export function NotesPage() {
       setClasses(classesData);
       setDisciplines(disciplinesData);
       setStudents(studentsData);
-    } catch {
-      setBaseError("Não foi possível carregar os dados acadêmicos.");
+    } catch (error) {
+      setBaseError(describeFirebaseError(error, "notas:dados-base (turmas/disciplinas/alunos)"));
     } finally {
       setBaseLoading(false);
     }
@@ -140,8 +141,8 @@ export function NotesPage() {
       ]);
       setAssessments(assessmentsData);
       setGrades(gradesData);
-    } catch {
-      setContextError("Não foi possível carregar as notas deste contexto.");
+    } catch (error) {
+      setContextError(describeFirebaseError(error, "notas:avaliações+notas-do-contexto"));
     } finally {
       setContextLoading(false);
     }
@@ -210,8 +211,8 @@ export function NotesPage() {
           },
         ];
       });
-    } catch {
-      setSaveError("Não foi possível salvar a nota. Tente novamente.");
+    } catch (error) {
+      setSaveError(describeFirebaseError(error, "notas:salvar-nota"));
       throw new Error("save-failed");
     }
   }

@@ -31,6 +31,7 @@ import type { Student } from "@/types/student";
 import type { Grade } from "@/types/grade";
 import type { AttendanceRecord } from "@/types/attendance";
 import type { StudentDevelopmentPoint } from "@/services/boletim/boletimService";
+import { describeFirebaseError } from "@/utils/firebaseError";
 
 export function ReportsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -71,8 +72,8 @@ export function ReportsPage() {
       setStudents(studentsData);
       setGrades(gradesData);
       setRecords(recordsData);
-    } catch {
-      setBaseError("Não foi possível carregar os dados dos relatórios.");
+    } catch (error) {
+      setBaseError(describeFirebaseError(error, "relatórios:dados-base"));
     } finally {
       setBaseLoading(false);
     }
@@ -208,8 +209,8 @@ export function ReportsPage() {
       ]);
       setBoletim(boletimData);
       setSeries(seriesData);
-    } catch {
-      setReportError("Não foi possível carregar o relatório deste aluno.");
+    } catch (error) {
+      setReportError(describeFirebaseError(error, "relatórios:relatório-do-aluno"));
     } finally {
       setReportLoading(false);
     }

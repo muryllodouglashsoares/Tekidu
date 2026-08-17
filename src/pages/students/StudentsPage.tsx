@@ -17,6 +17,7 @@ import {
 import { getClasses } from "@/services/classes/classService";
 import type { Student, StudentInput } from "@/types/student";
 import type { SchoolClass } from "@/types/schoolClass";
+import { describeFirebaseError } from "@/utils/firebaseError";
 
 export function StudentsPage() {
   const { profile } = useAuth();
@@ -40,8 +41,8 @@ export function StudentsPage() {
       const [studentsData, classesData] = await Promise.all([getStudents(), getClasses()]);
       setStudents(studentsData);
       setClasses(classesData);
-    } catch {
-      setError("Não foi possível carregar os alunos.");
+    } catch (error) {
+      setError(describeFirebaseError(error, "alunos:listar"));
     } finally {
       setLoading(false);
     }

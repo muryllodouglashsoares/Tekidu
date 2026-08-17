@@ -8,6 +8,7 @@ import { TeacherFormModal } from "@/components/teachers/TeacherFormModal";
 import { TeacherStatusBadge } from "@/components/teachers/TeacherStatusBadge";
 import { createTeacher, getAllTeachers, updateTeacherProfile } from "@/services/users/userService";
 import type { UserProfile } from "@/types/user";
+import { describeFirebaseError } from "@/utils/firebaseError";
 
 export function TeachersPage() {
   const [teachers, setTeachers] = useState<UserProfile[]>([]);
@@ -25,8 +26,8 @@ export function TeachersPage() {
     try {
       const data = await getAllTeachers();
       setTeachers(data);
-    } catch {
-      setError("Não foi possível carregar os professores.");
+    } catch (error) {
+      setError(describeFirebaseError(error, "professores:listar"));
     } finally {
       setLoading(false);
     }
