@@ -1,12 +1,13 @@
 import { getDisciplines, getDisciplinesForClass } from "@/services/disciplines/disciplineService";
 import { getGradesByContext } from "@/services/grades/gradeService";
 import { getRecordsByContext } from "@/services/attendance/attendanceRecordService";
+import { getAcademicSettings } from "@/services/academicSettings/academicSettingsService";
 import {
   ACADEMIC_SITUATION_LABEL,
-  PASSING_THRESHOLD,
-  RECOVERY_THRESHOLD,
   calculateAverage,
+  deriveSituationFromAverage,
   type AcademicSituation,
+  type AcademicThresholds,
 } from "@/types/grade";
 import {
   calculateAttendanceRate,
@@ -32,21 +33,6 @@ export interface StudentBoletim {
   overallAverage: number | null;
   overallAttendanceRate: number | null;
   overallStatus: BoletimStatus;
-}
-
-/**
- * Deriva a situação de UMA disciplina a partir da média das notas
- * lançadas. Reaproveita os mesmos limiares de `calculateSituation`
- * (types/grade.ts) — não duplica a regra de aprovação, só não usa a
- * variante "incomplete" (que depende da contagem de avaliações de UM
- * bimestre específico; no período "Anual" isso deixaria de fazer
- * sentido, já que consolidamos 4 bimestres).
- */
-function situationFromAverage(average: number | null): AcademicSituation {
-  if (average === null) return "no_grades";
-  if (average >= PASSING_THRESHOLD) return "approved";
-  if (average >= RECOVERY_THRESHOLD) return "recovery";
-  return "failed";
 }
 
 /**
@@ -92,11 +78,23 @@ export async function getStudentBoletim(
 ): Promise<StudentBoletim> {
   const terms = period === "annual" ? ALL_ASSESSMENT_TERMS : [period];
 
-  // Ver nota em `getDisciplinesForClass` (disciplineService): o
-  // relacionamento correto é só `classIds`, sem exigir que
-  // `discipline.schoolYear` também bata com o ano da turma.
-  const allDisciplines = await getDisciplines();
+  // Regras acadêmicas (média mínima, recuperação, frequência mínima) —
+  // busca a configuração do ano letivo (item 6/7 do plano V8) em vez
+  // de usar os limiares fixos diretamente; cai para o padrão do
+  // sistema quando o ano ainda não foi configurado (ver
+  // `academicSettingsService.getAcademicSettings`).
+  const [allDisciplines, settings] = await Promise.all([
+    // Ver nota em `getDisciplinesForClass` (disciplineService): o
+    // relacionamento correto é só `classIds`, sem exigir que
+    // `discipline.schoolYear` também bata com o ano da turma.
+    getDisciplines(),
+    getAcademicSettings(schoolYear),
+  ]);
   const disciplines = getDisciplinesForClass(allDisciplines, classId);
+  const thresholds: AcademicThresholds = {
+    passingAverage: settings.passingAverage,
+    recoveryThreshold: settings.recoveryThreshold,
+  };
 
   const disciplineRows = await Promise.all(
     disciplines.map(async (discipline): Promise<DisciplineBoletimRow> => {
@@ -116,9 +114,16 @@ export async function getStudentBoletim(
       return {
         discipline,
         average,
-        situation: situationFromAverage(average),
+        // Reaproveita a MESMA função central usada por Notas
+        // (`calculateSituation` → `deriveSituationFromAverage` em
+        // types/grade.ts) — o Boletim não tem sua própria fórmula de
+        // aprovação; só não usa a variante "incomplete" (que depende
+        // da contagem de avaliações de UM bimestre específico; no
+        // período "Anual" isso deixaria de fazer sentido, já que
+        // consolidamos 4 bimestres).
+        situation: deriveSituationFromAverage(average, thresholds),
         attendanceRate,
-        attendanceStatus: calculateAttendanceStatus(attendanceRate),
+        attendanceStatus: calculateAttendanceStatus(attendanceRate, settings.minAttendanceRate),
       };
     })
   );
@@ -129,7 +134,7 @@ export async function getStudentBoletim(
   const rates = disciplineRows.map((r) => r.attendanceRate).filter((v): v is number => v !== null);
   const overallAttendanceRate =
     rates.length === 0 ? null : Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 10) / 10;
-  const overallAttendanceStatus = calculateAttendanceStatus(overallAttendanceRate);
+  const overallAttendanceStatus = calculateAttendanceStatus(overallAttendanceRate, settings.minAttendanceRate);
 
   return {
     disciplines: disciplineRows,

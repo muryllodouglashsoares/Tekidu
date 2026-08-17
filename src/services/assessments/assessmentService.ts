@@ -11,7 +11,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Assessment, AssessmentInput, AssessmentTerm } from "@/types/assessment";
+import type { Assessment, AssessmentInput, AssessmentTerm, AssessmentType } from "@/types/assessment";
 
 const assessmentsCollection = collection(db, "assessments");
 
@@ -24,6 +24,11 @@ function toAssessment(id: string, data: Record<string, unknown>): Assessment {
     term: (data.term as AssessmentTerm) ?? "1",
     name: (data.name as string) ?? "",
     order: (data.order as number) ?? 0,
+    weight: data.weight as number | undefined,
+    maxScore: data.maxScore as number | undefined,
+    type: data.type as AssessmentType | undefined,
+    description: data.description as string | undefined,
+    date: data.date as string | undefined,
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   };
@@ -50,6 +55,21 @@ export async function getAssessmentsByContext(
     where("term", "==", term),
     orderBy("order", "asc")
   );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => toAssessment(d.id, d.data()));
+}
+
+/**
+ * Lista TODAS as avaliações de um ano letivo, independente de
+ * turma/disciplina/bimestre. Mesmo racional de
+ * `gradeService.getGradesBySchoolYear`: usada pelo Dashboard para
+ * calcular pendências ("avaliações incompletas", "notas ainda não
+ * lançadas" — item 12 do plano V8) sem repetir uma consulta por
+ * combinação de turma/disciplina/bimestre. Consulta de campo único
+ * (`schoolYear`) — não exige índice composto.
+ */
+export async function getAssessmentsBySchoolYear(schoolYear: number): Promise<Assessment[]> {
+  const q = query(assessmentsCollection, where("schoolYear", "==", schoolYear));
   const snapshot = await getDocs(q);
   return snapshot.docs.map((d) => toAssessment(d.id, d.data()));
 }

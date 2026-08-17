@@ -79,18 +79,39 @@ export const ACADEMIC_SITUATION_LABEL: Record<AcademicSituation, string> = {
 };
 
 /**
- * Limiar provisório de aprovação (escala 0–10). NÃO é uma regra
- * acadêmica oficial do Tekidu — é um placeholder isolado nesta
- * constante para que, quando a instituição definir a regra real
- * (ex.: média mínima diferente, faixa de recuperação, etc.), baste
- * ajustar este único valor.
+ * Limiar padrão de aprovação (escala 0–10). Este é apenas o valor
+ * usado quando a instituição ainda não configurou uma regra própria
+ * para o ano letivo (ver `types/academicSettings.ts` e
+ * `services/academicSettings/academicSettingsService.ts`, item 6 do
+ * plano de consolidação V8). TODAS as funções de cálculo abaixo
+ * aceitam thresholds explícitos como parâmetro opcional — nunca
+ * hardcode `PASSING_THRESHOLD`/`RECOVERY_THRESHOLD` diretamente em uma
+ * página/componente; sempre passe o valor vindo de `AcademicSettings`
+ * quando ele estiver disponível, para que a regra fique centralizada e
+ * configurável por ano letivo em vez de fixa no código.
  */
 export const PASSING_THRESHOLD = 6;
 export const RECOVERY_THRESHOLD = 4;
 
+/** Par de limiares de aprovação/recuperação usado pelas funções de cálculo. */
+export interface AcademicThresholds {
+  passingAverage: number;
+  recoveryThreshold: number;
+}
+
+export const DEFAULT_ACADEMIC_THRESHOLDS: AcademicThresholds = {
+  passingAverage: PASSING_THRESHOLD,
+  recoveryThreshold: RECOVERY_THRESHOLD,
+};
+
 /**
  * Calcula a média aritmética simples das notas lançadas (ignora `null`).
  * Retorna `null` se nenhuma nota foi lançada ainda.
+ *
+ * Usada quando todas as avaliações do contexto têm o mesmo peso (o
+ * caso mais comum). Para contextos com pesos diferentes por avaliação
+ * (item 4 do plano V8 — "Avaliações mais completas"), use
+ * `calculateWeightedAverage` abaixo.
  */
 export function calculateAverage(scores: (number | null)[]): number | null {
   const filled = scores.filter((s): s is number => s !== null);
@@ -100,12 +121,45 @@ export function calculateAverage(scores: (number | null)[]): number | null {
 }
 
 /**
+ * Uma nota lançada junto do peso da avaliação a que pertence — a
+ * mesma dupla (score, weight) usada por `Assessment.weight`
+ * (types/assessment.ts). `score: null` = nota ainda não lançada.
+ */
+export interface WeightedScore {
+  score: number | null;
+  weight: number;
+}
+
+/**
+ * Calcula a média ponderada das notas lançadas. Equivalente a
+ * `calculateAverage` quando todos os pesos são iguais a 1 (mesmo
+ * resultado, mesma escala) — não é uma fórmula paralela, apenas a
+ * generalização da média simples para o caso em que a arquitetura já
+ * suporta peso por avaliação (item 4 do plano V8). Avaliações sem nota
+ * lançada não entram nem no somatório nem no divisor (mesmo
+ * comportamento de `calculateAverage`, que ignora `null`).
+ */
+export function calculateWeightedAverage(entries: WeightedScore[]): number | null {
+  const filled = entries.filter((e): e is { score: number; weight: number } => e.score !== null);
+  if (filled.length === 0) return null;
+  const totalWeight = filled.reduce((acc, e) => acc + (e.weight > 0 ? e.weight : 0), 0);
+  if (totalWeight === 0) return calculateAverage(filled.map((e) => e.score));
+  const weightedSum = filled.reduce((acc, e) => acc + e.score * (e.weight > 0 ? e.weight : 0), 0);
+  return Math.round((weightedSum / totalWeight) * 100) / 100;
+}
+
+/**
  * Deriva a situação acadêmica a partir das notas lançadas em um
- * contexto. Ver nota sobre `PASSING_THRESHOLD` acima.
+ * contexto (disciplina + turma + bimestre) — inclui a variante
+ * "incomplete", que depende de quantas avaliações existem NAQUELE
+ * bimestre. `thresholds` é opcional e cai para o padrão do sistema
+ * quando a instituição ainda não configurou um valor próprio para o
+ * ano letivo.
  */
 export function calculateSituation(
   scores: (number | null)[],
-  totalAssessments: number
+  totalAssessments: number,
+  thresholds: AcademicThresholds = DEFAULT_ACADEMIC_THRESHOLDS
 ): AcademicSituation {
   const filledCount = scores.filter((s) => s !== null).length;
   if (filledCount === 0) return "no_grades";
@@ -113,7 +167,27 @@ export function calculateSituation(
 
   const average = calculateAverage(scores);
   if (average === null) return "no_grades";
-  if (average >= PASSING_THRESHOLD) return "approved";
-  if (average >= RECOVERY_THRESHOLD) return "recovery";
+  return deriveSituationFromAverage(average, thresholds);
+}
+
+/**
+ * Deriva a situação a partir de uma média JÁ CALCULADA, sem a noção de
+ * "incompleto" (que só faz sentido dentro de UM bimestre específico —
+ * ver `calculateSituation` acima). Usada em qualquer lugar que precise
+ * classificar uma média consolidada (várias avaliações, vários
+ * bimestres, ou a média anual de uma disciplina): Boletim
+ * (`boletimService.getStudentBoletim`), Dashboard (pendências e
+ * distribuição por situação) e, no futuro, Histórico do aluno. É a
+ * ÚNICA função que decide "aprovado vs recuperação vs reprovado" a
+ * partir de uma média — nenhum outro módulo deve reimplementar esta
+ * comparação.
+ */
+export function deriveSituationFromAverage(
+  average: number | null,
+  thresholds: AcademicThresholds = DEFAULT_ACADEMIC_THRESHOLDS
+): AcademicSituation {
+  if (average === null) return "no_grades";
+  if (average >= thresholds.passingAverage) return "approved";
+  if (average >= thresholds.recoveryThreshold) return "recovery";
   return "failed";
 }

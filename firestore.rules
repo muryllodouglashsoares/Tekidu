@@ -29,6 +29,27 @@ service cloud.firestore {
       return isSignedIn() && profile.active == true && profile.role == 'admin';
     }
 
+    // Item 13 do plano V8 ("Refinar permissões" — menor privilégio
+    // necessário): um professor só pode ESCREVER (criar/editar/excluir)
+    // avaliações/notas/aulas/presença de uma disciplina da qual ele é o
+    // `teacherId`. Um `get()` extra por escrita é aceitável aqui (não
+    // afeta leitura, que é o caminho de maior volume) e evita confiar em
+    // qualquer campo enviado pelo cliente — a checagem é sempre contra o
+    // documento `disciplines/{disciplineId}` já salvo no servidor.
+    // Admins continuam com acesso irrestrito (`isActiveStaff()` cobre
+    // admin OU teacher; esta função é usada em conjunto com ela, nunca
+    // sozinha, para não bloquear admins).
+    function isOwnDiscipline(disciplineId) {
+      let discipline = get(/databases/$(database)/documents/disciplines/$(disciplineId)).data;
+      return discipline.teacherId == request.auth.uid;
+    }
+
+    function canWriteAcademicRecord(disciplineId) {
+      let profile = callerProfile();
+      return isSignedIn() && profile.active == true &&
+        (profile.role == 'admin' || (profile.role == 'teacher' && isOwnDiscipline(disciplineId)));
+    }
+
     // ---------------------------------------------------------------
     // users/{uid}
     //
@@ -128,9 +149,20 @@ service cloud.firestore {
     //
     // Mesma política de acesso de `classes`: admin/teacher ativos podem
     // ler/criar/editar; apenas admin pode excluir.
+    //
+    // RESTRIÇÃO (item 13 do plano V8): um professor NÃO pode alterar o
+    // campo `teacherId` de uma disciplina. Sem isso, o escopo por
+    // disciplina introduzido em assessments/grades/attendanceSessions/
+    // attendanceRecords (`canWriteAcademicRecord`/`isOwnDiscipline`,
+    // acima) seria trivialmente contornável: bastaria um professor
+    // reatribuir `teacherId` para si mesmo em qualquer disciplina para
+    // ganhar acesso de escrita a ela. Admins continuam podendo
+    // reatribuir o professor responsável normalmente.
     // ---------------------------------------------------------------
     match /disciplines/{disciplineId} {
-      allow read, create, update: if isActiveStaff();
+      allow read, create: if isActiveStaff();
+      allow update: if isActiveAdmin() ||
+        (isActiveStaff() && request.resource.data.teacherId == resource.data.teacherId);
       allow delete: if isActiveAdmin();
     }
 
@@ -140,46 +172,55 @@ service cloud.firestore {
     // Avaliações (Prova 1, Trabalho, etc.) de um contexto disciplina +
     // turma + bimestre — parte da funcionalidade de Notas.
     //
-    // Mesma política de acesso de `disciplines`/`classes`: admin/teacher
-    // ativos podem ler/criar/editar; apenas admin pode excluir. Notas
-    // são dados acadêmicos sensíveis — assim como o restante do roster
-    // acadêmico, a role "student" não tem acesso direto a esta coleção
-    // nesta fase (o Boletim, fase futura, é quem vai expor uma visão
-    // filtrada e somente-leitura para o próprio aluno).
+    // LEITURA: ainda admin/teacher ativos em geral (sem escopo por
+    // disciplina) — a tela de Notas depende de listar
+    // turmas/disciplinas disponíveis nos filtros antes de saber qual
+    // professor está "dono" de qual; restringir a leitura exigiria
+    // primeiro adaptar a UI para filtrar os seletores por professor
+    // logado, o que não foi feito nesta etapa (ver relatório final,
+    // seção "Pendências").
     //
-    // Não há distinção de professor "dono" da disciplina: o projeto
-    // ainda não tem essa regra nem em `disciplines`, então `assessments`
-    // segue a mesma política de LEITURA/CRIAÇÃO/EDIÇÃO já em vigor
-    // (admin/teacher ativos), em vez de inventar uma restrição nova que
-    // não existe em nenhum outro lugar do sistema.
-    //
-    // EXCLUSÃO — desvio deliberado do padrão "delete: apenas admin" de
-    // `students`/`classes`/`disciplines`: cadastrar/remover avaliações
-    // (Prova 1, Trabalho, etc.) é uma ação rotineira de quem lança
-    // notas, não uma operação destrutiva sobre o roster acadêmico
-    // central. Por isso professores ativos também podem excluir aqui.
+    // ESCRITA (criar/editar/excluir avaliação — inclui a permissão de
+    // exclusão por professor, mantida do comportamento anterior):
+    // restrita a admin OU ao professor responsável pela disciplina
+    // (`canWriteAcademicRecord`, item 13 do plano V8 — menor privilégio
+    // necessário). Antes, qualquer professor ativo podia escrever em
+    // avaliações de QUALQUER disciplina, mesmo sem estar vinculado a
+    // ela.
     // ---------------------------------------------------------------
     match /assessments/{assessmentId} {
-      allow read, create, update, delete: if isActiveStaff();
+      allow read: if isActiveStaff();
+      allow create: if canWriteAcademicRecord(request.resource.data.disciplineId);
+      // UPDATE checa a disciplina ATUAL (resource) E a disciplina do
+      // payload enviado (request.resource) — evita que um professor
+      // "sequestre" uma avaliação de outra disciplina apenas
+      // reatribuindo o campo `disciplineId` para uma disciplina sua no
+      // payload de update.
+      allow update: if canWriteAcademicRecord(resource.data.disciplineId) &&
+        canWriteAcademicRecord(request.resource.data.disciplineId);
+      allow delete: if canWriteAcademicRecord(resource.data.disciplineId);
     }
 
     // ---------------------------------------------------------------
     // grades/{gradeId}
     //
-    // Notas individuais (aluno + avaliação). O documento carrega uma
-    // cópia (snapshot) de disciplineId/classId/schoolYear/term — ver
-    // nota em `src/types/grade.ts` — mas isso não muda a política de
-    // segurança: ela é sempre resolvida a partir do perfil do
-    // requisitante (`callerProfile()`), nunca a partir de campos do
-    // próprio documento de nota.
+    // Notas individuais (aluno + avaliação). O ID do documento passou a
+    // ser determinístico (`{studentId}_{assessmentId}` — ver
+    // `gradeService.buildGradeId`, item 3 do plano V8), o que não muda
+    // nada aqui: a política de segurança já era, e continua sendo,
+    // resolvida a partir do perfil do requisitante e da disciplina
+    // vinculada, nunca do ID do documento.
     //
-    // Mesma política de `assessments`, incluindo a exclusão por
-    // professor ativo (necessário para o cascade delete disparado ao
-    // remover uma avaliação — ver `assessmentService.deleteAssessment`,
-    // que apaga as notas vinculadas antes do documento da avaliação).
+    // LEITURA: ver nota em `assessments` acima (mesmo motivo).
+    // ESCRITA: restrita a admin OU ao professor responsável pela
+    // disciplina da nota (item 13).
     // ---------------------------------------------------------------
     match /grades/{gradeId} {
-      allow read, create, update, delete: if isActiveStaff();
+      allow read: if isActiveStaff();
+      allow create: if canWriteAcademicRecord(request.resource.data.disciplineId);
+      allow update: if canWriteAcademicRecord(resource.data.disciplineId) &&
+        canWriteAcademicRecord(request.resource.data.disciplineId);
+      allow delete: if canWriteAcademicRecord(resource.data.disciplineId);
     }
 
     // ---------------------------------------------------------------
@@ -187,32 +228,78 @@ service cloud.firestore {
     //
     // Uma aula (data letiva) de um contexto disciplina + turma +
     // bimestre — parte da funcionalidade de Frequência. Mesmo papel de
-    // `assessments` em Notas, e mesma política de acesso: admin/teacher
-    // ativos podem ler/criar/editar/excluir. Cadastrar/remover uma aula
-    // é uma ação rotineira de quem lança presença, não uma operação
-    // destrutiva sobre o roster acadêmico central — por isso professores
-    // ativos também podem excluir aqui, assim como em `assessments`.
+    // `assessments` em Notas, e mesma política de acesso (item 13):
+    // leitura por qualquer staff ativo; escrita restrita a admin OU ao
+    // professor responsável pela disciplina.
     // ---------------------------------------------------------------
     match /attendanceSessions/{sessionId} {
-      allow read, create, update, delete: if isActiveStaff();
+      allow read: if isActiveStaff();
+      allow create: if canWriteAcademicRecord(request.resource.data.disciplineId);
+      allow update: if canWriteAcademicRecord(resource.data.disciplineId) &&
+        canWriteAcademicRecord(request.resource.data.disciplineId);
+      allow delete: if canWriteAcademicRecord(resource.data.disciplineId);
     }
 
     // ---------------------------------------------------------------
     // attendanceRecords/{recordId}
     //
-    // Presença individual (aluno + aula: "present"/"absent"). O
-    // documento carrega uma cópia (snapshot) de
-    // disciplineId/classId/schoolYear/term — ver nota em
-    // `src/types/attendance.ts` — mas isso não muda a política de
-    // segurança: ela é sempre resolvida a partir do perfil do
-    // requisitante (`callerProfile()`), nunca a partir de campos do
-    // próprio documento. Mesma política de `attendanceSessions`,
-    // incluindo a exclusão por professor ativo (necessário para o
-    // cascade delete disparado ao remover uma aula — ver
-    // `attendanceSessionService.deleteSession`).
+    // Presença individual (aluno + aula: "present"/"absent"). ID do
+    // documento agora determinístico (`{studentId}_{sessionId}` — ver
+    // `attendanceRecordService.buildAttendanceRecordId`, item 3/8 do
+    // plano V8). Mesma política de `attendanceSessions` (item 13):
+    // leitura por qualquer staff ativo; escrita restrita a admin OU ao
+    // professor responsável pela disciplina.
     // ---------------------------------------------------------------
     match /attendanceRecords/{recordId} {
-      allow read, create, update, delete: if isActiveStaff();
+      allow read: if isActiveStaff();
+      allow create: if canWriteAcademicRecord(request.resource.data.disciplineId);
+      allow update: if canWriteAcademicRecord(resource.data.disciplineId) &&
+        canWriteAcademicRecord(request.resource.data.disciplineId);
+      allow delete: if canWriteAcademicRecord(resource.data.disciplineId);
+    }
+
+    // ---------------------------------------------------------------
+    // academicSettings/{schoolYear}
+    //
+    // Regras acadêmicas configuráveis por ano letivo (item 6/7 do
+    // plano V8 — média mínima, recuperação, frequência mínima,
+    // quantidade de bimestres). O ID do documento é o próprio ano
+    // letivo.
+    //
+    // LEITURA: qualquer staff ativo (admin/teacher) — Notas, Boletim e
+    // Dashboard precisam ler a configuração para calcular situação
+    // acadêmica corretamente.
+    // ESCRITA: restrita a admin. Definir a média mínima de aprovação
+    // ou a frequência mínima exigida é uma decisão institucional, não
+    // uma preferência de professor.
+    // ---------------------------------------------------------------
+    match /academicSettings/{schoolYear} {
+      allow read: if isActiveStaff();
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    // ---------------------------------------------------------------
+    // auditLogs/{logId}
+    //
+    // Trilha de auditoria (item 14 do plano V8) para alteração de
+    // nota, exclusão de avaliação e alteração de frequência — ver
+    // `services/audit/auditService.ts`.
+    //
+    // CRIAÇÃO: qualquer staff ativo pode registrar um evento (é o
+    // próprio ato de editar uma nota/frequência ou excluir uma
+    // avaliação que gera o log — sempre com `actorId` igual ao UID do
+    // requisitante, nunca em nome de outra pessoa).
+    // LEITURA: restrita a admin — auditoria é uma ferramenta de
+    // supervisão, não algo que cada professor deve enxergar sobre os
+    // demais.
+    // ATUALIZAÇÃO/EXCLUSÃO: nunca pelo cliente — um log de auditoria
+    // que pode ser editado ou apagado pelos próprios usuários deixa de
+    // ser confiável como trilha de auditoria.
+    // ---------------------------------------------------------------
+    match /auditLogs/{logId} {
+      allow create: if isActiveStaff() && request.resource.data.actorId == request.auth.uid;
+      allow read: if isActiveAdmin();
+      allow update, delete: if false;
     }
 
     // Nenhuma outra coleção existe ainda. Por padrão, o Firestore nega

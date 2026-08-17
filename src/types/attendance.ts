@@ -15,12 +15,13 @@ export const ATTENDANCE_RECORD_LABEL: Record<AttendanceRecordStatus, string> = {
 
 /**
  * Situação de frequência do aluno, derivada do percentual de presença.
- * Não existe uma regra de frequência mínima pré-existente no projeto —
- * assim como `PASSING_THRESHOLD` em `types/grade.ts`, os limiares abaixo
- * são um placeholder isolado e centralizado, fácil de ajustar quando a
- * instituição definir a regra oficial (a LDB nº 9.394/96 usa 75% como
- * referência geral; 90% aqui marca a faixa "Regular" mais estrita usada
- * no protótipo do Figma).
+ * Os limiares abaixo são o padrão do sistema (a LDB nº 9.394/96 usa
+ * 75% como frequência mínima oficial; 90% aqui marca a faixa
+ * "Regular" mais estrita usada no protótipo do Figma), usado somente
+ * quando a instituição ainda não configurou uma frequência mínima
+ * própria para o ano letivo — ver `types/academicSettings.ts` (item 6
+ * do plano de consolidação V8). `calculateAttendanceStatus` aceita um
+ * limiar explícito; não hardcode estes valores em páginas/componentes.
  */
 export type AttendanceStatus = "regular" | "attention" | "critical";
 
@@ -117,19 +118,34 @@ export function calculateAttendanceRate(present: number, total: number): number 
   return Math.round((present / total) * 1000) / 10;
 }
 
-/** Situação derivada do percentual — ver nota sobre os limiares acima. */
-export function calculateAttendanceStatus(rate: number | null): AttendanceStatus | null {
+/**
+ * Situação derivada do percentual — ver nota sobre os limiares acima.
+ * `minRate` é a frequência mínima configurada para o ano letivo (item
+ * 6 do plano V8); quando omitido, cai para `ATTENDANCE_ATTENTION_THRESHOLD`.
+ * O limiar "Regular" (faixa mais estrita, sem risco algum) continua
+ * fixo em `ATTENDANCE_REGULAR_THRESHOLD` — só o piso de reprovação por
+ * falta é configurável, pois é o único valor com significado
+ * regulatório (LDB) que a instituição pode precisar ajustar.
+ */
+export function calculateAttendanceStatus(
+  rate: number | null,
+  minRate: number = ATTENDANCE_ATTENTION_THRESHOLD
+): AttendanceStatus | null {
   if (rate === null) return null;
   if (rate >= ATTENDANCE_REGULAR_THRESHOLD) return "regular";
-  if (rate >= ATTENDANCE_ATTENTION_THRESHOLD) return "attention";
+  if (rate >= minRate) return "attention";
   return "critical";
 }
 
 /** Resume os registros de um aluno em um contexto (todas as aulas já lançadas). */
-export function summarizeAttendance(studentId: string, records: AttendanceRecord[]): AttendanceSummary {
+export function summarizeAttendance(
+  studentId: string,
+  records: AttendanceRecord[],
+  minRate?: number
+): AttendanceSummary {
   const present = records.filter((r) => r.status === "present").length;
   const absent = records.filter((r) => r.status === "absent").length;
   const total = present + absent;
   const rate = calculateAttendanceRate(present, total);
-  return { studentId, present, absent, total, rate, status: calculateAttendanceStatus(rate) };
+  return { studentId, present, absent, total, rate, status: calculateAttendanceStatus(rate, minRate) };
 }

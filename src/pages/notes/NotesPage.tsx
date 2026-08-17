@@ -14,12 +14,15 @@ import { getStudents } from "@/services/students/studentService";
 import {
   getAssessmentsByContext,
   createAssessment,
+  updateAssessment,
   deleteAssessment,
 } from "@/services/assessments/assessmentService";
 import { getGradesByContext, saveGrade } from "@/services/grades/gradeService";
+import { logAuditEvent } from "@/services/audit/auditService";
+import { getAcademicSettings } from "@/services/academicSettings/academicSettingsService";
 import { ASSESSMENT_TERM_LABEL, type Assessment, type AssessmentTerm } from "@/types/assessment";
 import type { Grade } from "@/types/grade";
-import { calculateSituation } from "@/types/grade";
+import { calculateSituation, DEFAULT_ACADEMIC_THRESHOLDS, type AcademicThresholds } from "@/types/grade";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { Discipline } from "@/types/discipline";
 import type { Student } from "@/types/student";
@@ -129,6 +132,26 @@ export function NotesPage() {
   const [contextError, setContextError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showAssessmentManager, setShowAssessmentManager] = useState(false);
+  const [thresholds, setThresholds] = useState<AcademicThresholds>(DEFAULT_ACADEMIC_THRESHOLDS);
+
+  // Regras acadêmicas configuráveis por ano letivo (item 6 do plano
+  // V8) — carregadas uma vez por ano selecionado, não hardcoded aqui.
+  useEffect(() => {
+    if (!yearFilter) return;
+    let cancelled = false;
+    getAcademicSettings(Number(yearFilter))
+      .then((settings) => {
+        if (!cancelled) {
+          setThresholds({ passingAverage: settings.passingAverage, recoveryThreshold: settings.recoveryThreshold });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setThresholds(DEFAULT_ACADEMIC_THRESHOLDS);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [yearFilter]);
 
   async function loadContextData() {
     if (!contextReady) return;
@@ -171,16 +194,22 @@ export function NotesPage() {
     if (assessments.length === 0) return 0;
     return linkedStudents.filter((student) => {
       const studentScores = assessments.map((a) => scores[student.id]?.[a.id] ?? null);
-      const situation = calculateSituation(studentScores, assessments.length);
+      const situation = calculateSituation(studentScores, assessments.length, thresholds);
       return situation === "no_grades" || situation === "incomplete";
     }).length;
   }, [linkedStudents, assessments, scores]);
 
   async function handleSaveGrade(studentId: string, assessmentId: string, score: number | null) {
     setSaveError(null);
+    // Usado apenas para a atualização otimista local e para o log de
+    // auditoria (antes/depois) — a decisão de criar ou atualizar em si
+    // agora é feita pelo `gradeService` via ID determinístico
+    // (`buildGradeId`), não por este lookup em memória. Ver nota em
+    // `gradeService.saveGrade` sobre por que isso elimina o risco de
+    // duplicação de notas.
     const existing = grades.find((g) => g.studentId === studentId && g.assessmentId === assessmentId);
     try {
-      await saveGrade(existing?.id ?? null, {
+      await saveGrade({
         studentId,
         assessmentId,
         disciplineId,
@@ -189,6 +218,25 @@ export function NotesPage() {
         term: term as AssessmentTerm,
         score,
       });
+
+      if (profile && existing && existing.score !== score) {
+        const student = linkedStudents.find((s) => s.id === studentId);
+        const assessment = assessments.find((a) => a.id === assessmentId);
+        logAuditEvent({
+          type: "grade_updated",
+          actorId: profile.uid,
+          actorName: profile.name,
+          studentId,
+          studentName: student?.name ?? null,
+          disciplineId,
+          disciplineName: selectedDiscipline?.name ?? null,
+          assessmentId,
+          assessmentName: assessment?.name ?? null,
+          before: existing.score === null ? null : String(existing.score),
+          after: score === null ? null : String(score),
+        });
+      }
+
       // Atualização otimista local — evita recarregar a tabela inteira
       // a cada nota editada.
       setGrades((prev) => {
@@ -217,20 +265,53 @@ export function NotesPage() {
     }
   }
 
-  async function handleCreateAssessment(name: string, order: number) {
+  async function handleCreateAssessment(values: { name: string; weight: number; maxScore: number }, order: number) {
     await createAssessment({
       disciplineId,
       classId,
       schoolYear: Number(yearFilter),
       term: term as AssessmentTerm,
-      name,
+      name: values.name,
       order,
+      weight: values.weight,
+      maxScore: values.maxScore,
+    });
+    await loadContextData();
+  }
+
+  async function handleUpdateAssessment(
+    assessmentId: string,
+    values: { name: string; weight: number; maxScore: number }
+  ) {
+    const assessment = assessments.find((a) => a.id === assessmentId);
+    if (!assessment) return;
+    await updateAssessment(assessmentId, {
+      disciplineId: assessment.disciplineId,
+      classId: assessment.classId,
+      schoolYear: assessment.schoolYear,
+      term: assessment.term,
+      name: values.name,
+      order: assessment.order,
+      weight: values.weight,
+      maxScore: values.maxScore,
     });
     await loadContextData();
   }
 
   async function handleDeleteAssessment(assessmentId: string) {
+    const assessment = assessments.find((a) => a.id === assessmentId);
     await deleteAssessment(assessmentId);
+    if (profile) {
+      logAuditEvent({
+        type: "assessment_deleted",
+        actorId: profile.uid,
+        actorName: profile.name,
+        disciplineId,
+        disciplineName: selectedDiscipline?.name ?? null,
+        assessmentId,
+        assessmentName: assessment?.name ?? null,
+      });
+    }
     await loadContextData();
   }
 
@@ -401,6 +482,7 @@ export function NotesPage() {
                 scores={scores}
                 canEdit={canEdit}
                 onSaveGrade={handleSaveGrade}
+                thresholds={thresholds}
               />
             )}
           </Card>
@@ -414,6 +496,7 @@ export function NotesPage() {
           assessments={assessments}
           onClose={() => setShowAssessmentManager(false)}
           onCreate={handleCreateAssessment}
+          onUpdate={handleUpdateAssessment}
           onDelete={handleDeleteAssessment}
         />
       )}

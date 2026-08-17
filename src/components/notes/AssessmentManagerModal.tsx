@@ -1,26 +1,39 @@
 import { useState, type FormEvent } from "react";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, GripVertical, Pencil, X } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import type { Assessment } from "@/types/assessment";
+import { effectiveMaxScore, effectiveWeight, type Assessment } from "@/types/assessment";
+
+/** Payload editável de uma avaliação nesta modal (item 4 do plano V8 — "Avaliações mais completas"). */
+export interface AssessmentFormValues {
+  name: string;
+  weight: number;
+  maxScore: number;
+}
 
 interface AssessmentManagerModalProps {
   disciplineName: string;
   className: string;
   assessments: Assessment[];
   onClose: () => void;
-  onCreate: (name: string, order: number) => Promise<void>;
+  onCreate: (values: AssessmentFormValues, order: number) => Promise<void>;
+  onUpdate: (assessmentId: string, values: AssessmentFormValues) => Promise<void>;
   onDelete: (assessmentId: string) => Promise<void>;
 }
 
+const emptyForm: AssessmentFormValues = { name: "", weight: 1, maxScore: 10 };
+
 /**
- * Permite cadastrar/remover avaliações (Prova 1, Trabalho, etc.) do
- * contexto atualmente selecionado na tela de Notas. Não reaproveita
- * `Select`/`ConfirmDialog` para exclusão de forma redundante — usa o
- * `ConfirmDialog` já existente no design system em vez de criar um novo
- * padrão de confirmação.
+ * Permite cadastrar/editar/remover avaliações (Prova 1, Trabalho, etc.)
+ * do contexto atualmente selecionado na tela de Notas — inclui peso e
+ * valor máximo (item 4 do plano V8), preparando a base para média
+ * ponderada (`calculateWeightedAverage`, types/grade.ts) sem obrigar o
+ * usuário a preencher nada além do nome quando peso/valor padrão (1 e
+ * 10) já servem. Não reaproveita `Select`/`ConfirmDialog` para exclusão
+ * de forma redundante — usa o `ConfirmDialog` já existente no design
+ * system em vez de criar um novo padrão de confirmação.
  */
 export function AssessmentManagerModal({
   disciplineName,
@@ -28,33 +41,65 @@ export function AssessmentManagerModal({
   assessments,
   onClose,
   onCreate,
+  onUpdate,
   onDelete,
 }: AssessmentManagerModalProps) {
-  const [name, setName] = useState("");
+  const [form, setForm] = useState<AssessmentFormValues>(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<Assessment | null>(null);
+
+  function startEdit(assessment: Assessment) {
+    setEditingId(assessment.id);
+    setForm({ name: assessment.name, weight: effectiveWeight(assessment), maxScore: effectiveMaxScore(assessment) });
+    setError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setError(null);
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!name.trim()) {
+    const trimmedName = form.name.trim();
+    if (!trimmedName) {
       setError("Informe o nome da avaliação.");
       return;
     }
-    if (assessments.some((a) => a.name.trim().toLowerCase() === name.trim().toLowerCase())) {
+    if (
+      assessments.some(
+        (a) => a.id !== editingId && a.name.trim().toLowerCase() === trimmedName.toLowerCase()
+      )
+    ) {
       setError("Já existe uma avaliação com esse nome neste contexto.");
+      return;
+    }
+    if (form.weight <= 0) {
+      setError("O peso deve ser maior que zero.");
+      return;
+    }
+    if (form.maxScore <= 0) {
+      setError("O valor máximo deve ser maior que zero.");
       return;
     }
 
     setSaving(true);
     try {
-      const nextOrder = assessments.length > 0 ? Math.max(...assessments.map((a) => a.order)) + 1 : 0;
-      await onCreate(name.trim(), nextOrder);
-      setName("");
+      const values: AssessmentFormValues = { name: trimmedName, weight: form.weight, maxScore: form.maxScore };
+      if (editingId) {
+        await onUpdate(editingId, values);
+      } else {
+        const nextOrder = assessments.length > 0 ? Math.max(...assessments.map((a) => a.order)) + 1 : 0;
+        await onCreate(values, nextOrder);
+      }
+      cancelEdit();
     } catch {
-      setError("Não foi possível criar a avaliação. Tente novamente.");
+      setError(editingId ? "Não foi possível salvar as alterações. Tente novamente." : "Não foi possível criar a avaliação. Tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -67,19 +112,53 @@ export function AssessmentManagerModal({
           {disciplineName} · {className}
         </p>
 
-        <form onSubmit={handleSubmit} className="mb-5 flex items-end gap-2" noValidate>
-          <div className="flex-1">
-            <Input
-              label="Nova avaliação"
-              placeholder="Ex.: Prova 1, Trabalho, Projeto..."
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+        <form onSubmit={handleSubmit} className="mb-5 flex flex-col gap-2 rounded-card border border-line p-3" noValidate>
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Input
+                label={editingId ? "Editar avaliação" : "Nova avaliação"}
+                placeholder="Ex.: Prova 1, Trabalho, Projeto..."
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div className="w-20">
+              <Input
+                label="Peso"
+                type="number"
+                min={0.1}
+                step={0.1}
+                value={form.weight}
+                onChange={(e) => setForm((f) => ({ ...f, weight: Number(e.target.value) }))}
+              />
+            </div>
+            <div className="w-20">
+              <Input
+                label="Valor máx."
+                type="number"
+                min={1}
+                step={0.5}
+                value={form.maxScore}
+                onChange={(e) => setForm((f) => ({ ...f, maxScore: Number(e.target.value) }))}
+              />
+            </div>
           </div>
-          <Button type="submit" loading={saving}>
-            <Plus className="h-4 w-4" />
-            Adicionar
-          </Button>
+          <div className="flex items-center justify-end gap-2">
+            {editingId && (
+              <Button type="button" variant="secondary" onClick={cancelEdit}>
+                <X className="h-4 w-4" />
+                Cancelar
+              </Button>
+            )}
+            <Button type="submit" loading={saving}>
+              {editingId ? "Salvar alterações" : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  Adicionar
+                </>
+              )}
+            </Button>
+          </div>
         </form>
 
         {error && (
@@ -105,15 +184,28 @@ export function AssessmentManagerModal({
                   <span className="flex items-center gap-2 text-sm text-ink900">
                     <GripVertical className="h-4 w-4 text-ink-300" aria-hidden="true" />
                     {assessment.name}
+                    <span className="text-xs text-ink-400">
+                      · peso {effectiveWeight(assessment)} · máx. {effectiveMaxScore(assessment)}
+                    </span>
                   </span>
-                  <button
-                    type="button"
-                    aria-label={`Excluir ${assessment.name}`}
-                    className="rounded-card p-1.5 text-ink-400 hover:bg-danger/10 hover:text-danger"
-                    onClick={() => setDeleting(assessment)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <span className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label={`Editar ${assessment.name}`}
+                      className="rounded-card p-1.5 text-ink-400 hover:bg-ink-50 hover:text-ink900"
+                      onClick={() => startEdit(assessment)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Excluir ${assessment.name}`}
+                      className="rounded-card p-1.5 text-ink-400 hover:bg-danger/10 hover:text-danger"
+                      onClick={() => setDeleting(assessment)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </span>
                 </li>
               ))}
           </ul>

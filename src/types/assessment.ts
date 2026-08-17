@@ -29,7 +29,22 @@ export const ASSESSMENT_TERM_LABEL: Record<AssessmentTerm, string> = {
  *
  * `order` define a ordem das colunas na tabela de notas (não depende de
  * `createdAt`, para permitir reordenar sem afetar histórico).
+ *
+ * `weight`/`maxScore`/`type`/`description`/`date` (item 4 do plano V8 —
+ * "Avaliações mais completas") são OPCIONAIS e retrocompatíveis:
+ * avaliações criadas antes desta versão não têm esses campos no
+ * Firestore, então todo código que os lê usa um fallback (`weight ?? 1`,
+ * `maxScore ?? GRADE_MAX`) — nunca assuma que estão presentes.
  */
+export type AssessmentType = "prova" | "trabalho" | "participacao" | "outro";
+
+export const ASSESSMENT_TYPE_LABEL: Record<AssessmentType, string> = {
+  prova: "Prova",
+  trabalho: "Trabalho",
+  participacao: "Participação",
+  outro: "Outro",
+};
+
 export interface Assessment {
   id: string;
   disciplineId: string;
@@ -38,6 +53,14 @@ export interface Assessment {
   term: AssessmentTerm;
   name: string;
   order: number;
+  /** Peso na média ponderada da disciplina/bimestre. `undefined` ⇒ 1 (mesmo peso de todas as outras). */
+  weight?: number;
+  /** Valor máximo da avaliação (escala do lançamento). `undefined` ⇒ `GRADE_MAX` (10). */
+  maxScore?: number;
+  type?: AssessmentType;
+  description?: string;
+  /** Data da avaliação, formato ISO (YYYY-MM-DD). Opcional. */
+  date?: string;
   createdAt: unknown; // Firestore Timestamp
   updatedAt: unknown; // Firestore Timestamp
 }
@@ -50,4 +73,19 @@ export interface AssessmentInput {
   term: AssessmentTerm;
   name: string;
   order: number;
+  weight?: number;
+  maxScore?: number;
+  type?: AssessmentType;
+  description?: string;
+  date?: string;
+}
+
+/** Peso efetivo de uma avaliação — nunca leia `assessment.weight` diretamente. */
+export function effectiveWeight(assessment: Pick<Assessment, "weight">): number {
+  return assessment.weight && assessment.weight > 0 ? assessment.weight : 1;
+}
+
+/** Valor máximo efetivo de uma avaliação — nunca leia `assessment.maxScore` diretamente. */
+export function effectiveMaxScore(assessment: Pick<Assessment, "maxScore">): number {
+  return assessment.maxScore && assessment.maxScore > 0 ? assessment.maxScore : 10;
 }

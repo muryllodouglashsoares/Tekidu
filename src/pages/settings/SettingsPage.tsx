@@ -1,11 +1,14 @@
-import { useState } from "react";
-import { User, ShieldCheck, Sparkles, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { User, ShieldCheck, Sparkles, CheckCircle2, GraduationCap } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { RoleBadge } from "@/components/ui/RoleBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateOwnName } from "@/services/users/userService";
+import { getAcademicSettings, saveAcademicSettings } from "@/services/academicSettings/academicSettingsService";
+import { validateAcademicSettingsInput, type AcademicSettingsInput } from "@/types/academicSettings";
+import { describeFirebaseError } from "@/utils/firebaseError";
 
 /**
  * Configurações do usuário (itens 21–26 do briefing). Segue o mesmo
@@ -35,6 +38,67 @@ export function SettingsPage() {
   const [sendingReset, setSendingReset] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState(false);
+
+  // Regras acadêmicas configuráveis por ano letivo (item 6/7 do plano
+  // V8) — só admins veem/editam esta seção (mesma política das
+  // firestore.rules: escrita em `academicSettings` é restrita a
+  // admin).
+  const schoolYear = new Date().getFullYear();
+  const [academicForm, setAcademicForm] = useState<AcademicSettingsInput | null>(null);
+  const [academicLoading, setAcademicLoading] = useState(false);
+  const [savingAcademic, setSavingAcademic] = useState(false);
+  const [academicError, setAcademicError] = useState<string | null>(null);
+  const [academicSuccess, setAcademicSuccess] = useState(false);
+
+  useEffect(() => {
+    if (profile?.role !== "admin") return;
+    let cancelled = false;
+    setAcademicLoading(true);
+    getAcademicSettings(schoolYear)
+      .then((settings) => {
+        if (!cancelled) {
+          setAcademicForm({
+            passingAverage: settings.passingAverage,
+            recoveryThreshold: settings.recoveryThreshold,
+            minAttendanceRate: settings.minAttendanceRate,
+            termsCount: settings.termsCount,
+          });
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setAcademicError(describeFirebaseError(err, "configuracoes:regras-academicas"));
+      })
+      .finally(() => {
+        if (!cancelled) setAcademicLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.role, schoolYear]);
+
+  async function handleSaveAcademicSettings(e: React.FormEvent) {
+    e.preventDefault();
+    if (!academicForm) return;
+    setAcademicError(null);
+    setAcademicSuccess(false);
+
+    const validationError = validateAcademicSettingsInput(academicForm);
+    if (validationError) {
+      setAcademicError(validationError);
+      return;
+    }
+
+    setSavingAcademic(true);
+    try {
+      await saveAcademicSettings(schoolYear, academicForm);
+      setAcademicSuccess(true);
+    } catch (err) {
+      setAcademicError(describeFirebaseError(err, "configuracoes:salvar-regras-academicas"));
+    } finally {
+      setSavingAcademic(false);
+    }
+  }
 
   const nameChanged = name.trim() !== "" && name.trim() !== profile?.name;
 
@@ -147,6 +211,92 @@ export function SettingsPage() {
             </p>
           )}
         </Card>
+
+        {/* Regras acadêmicas (item 6/7 do plano V8) — só admins */}
+        {profile.role === "admin" && (
+          <Card className="p-5">
+            <h3 className="mb-1 flex items-center gap-2 font-display text-base font-semibold text-ink900">
+              <GraduationCap className="h-4 w-4 text-ink-500" aria-hidden="true" />
+              Regras acadêmicas — {schoolYear}
+            </h3>
+            <p className="mb-4 text-sm text-ink-500">
+              Estes valores controlam a situação calculada em Notas, Boletim, Dashboard e Relatórios
+              para o ano letivo {schoolYear}. Alterar aqui não recalcula notas já lançadas — apenas
+              muda como elas são interpretadas.
+            </p>
+
+            {academicLoading || !academicForm ? (
+              <p className="text-sm text-ink-500">Carregando…</p>
+            ) : (
+              <form onSubmit={handleSaveAcademicSettings} className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <Input
+                    label="Média mínima p/ aprovação"
+                    type="number"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                    value={academicForm.passingAverage}
+                    onChange={(e) => {
+                      setAcademicForm((f) => (f ? { ...f, passingAverage: Number(e.target.value) } : f));
+                      setAcademicSuccess(false);
+                    }}
+                  />
+                  <Input
+                    label="Média mínima p/ recuperação"
+                    type="number"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                    value={academicForm.recoveryThreshold}
+                    onChange={(e) => {
+                      setAcademicForm((f) => (f ? { ...f, recoveryThreshold: Number(e.target.value) } : f));
+                      setAcademicSuccess(false);
+                    }}
+                  />
+                  <Input
+                    label="Frequência mínima (%)"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={academicForm.minAttendanceRate}
+                    onChange={(e) => {
+                      setAcademicForm((f) => (f ? { ...f, minAttendanceRate: Number(e.target.value) } : f));
+                      setAcademicSuccess(false);
+                    }}
+                  />
+                  <Input
+                    label="Quantidade de bimestres"
+                    type="number"
+                    min={1}
+                    max={12}
+                    step={1}
+                    value={academicForm.termsCount}
+                    onChange={(e) => {
+                      setAcademicForm((f) => (f ? { ...f, termsCount: Number(e.target.value) } : f));
+                      setAcademicSuccess(false);
+                    }}
+                  />
+                </div>
+
+                {academicError && <p className="text-sm text-danger">{academicError}</p>}
+                {academicSuccess && (
+                  <p className="flex items-center gap-1.5 text-sm text-success">
+                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                    Regras acadêmicas atualizadas com sucesso.
+                  </p>
+                )}
+
+                <div>
+                  <Button type="submit" loading={savingAcademic}>
+                    Salvar regras acadêmicas
+                  </Button>
+                </div>
+              </form>
+            )}
+          </Card>
+        )}
 
         {/* Preferências */}
         <Card className="p-5">

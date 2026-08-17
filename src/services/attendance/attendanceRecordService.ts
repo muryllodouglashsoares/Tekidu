@@ -1,10 +1,11 @@
 import {
-  addDoc,
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -92,25 +93,36 @@ export async function getAttendanceRecordsBySchoolYear(schoolYear: number): Prom
 }
 
 /**
- * Cria ou atualiza o registro de presença de um aluno em uma aula
- * específica. Assim como `saveGrade`, a existência prévia é resolvida
- * pelo chamador (não pelo formato do ID do documento) — aceitável pois
- * o lançamento é uma ação pontual (clique em "Presente"/"Ausente"), não
- * um loop em lote.
+ * Constrói o ID determinístico do registro de presença de um aluno em
+ * uma aula. Formato: `{studentId}_{sessionId}`. Mesma correção
+ * estrutural de `gradeService.buildGradeId` (ver nota lá) aplicada
+ * aqui: evita duplicar registros de presença quando duas marcações do
+ * mesmo aluno/aula acontecem antes do estado local em memória ser
+ * atualizado.
  */
-export async function saveAttendanceRecord(
-  existingRecordId: string | null,
-  data: AttendanceRecordInput
-): Promise<void> {
-  if (existingRecordId) {
-    await updateDoc(doc(db, "attendanceRecords", existingRecordId), {
+export function buildAttendanceRecordId(studentId: string, sessionId: string): string {
+  return `${studentId}_${sessionId}`;
+}
+
+/**
+ * Cria ou atualiza o registro de presença de um aluno em uma aula
+ * específica, usando o ID determinístico de `buildAttendanceRecordId`
+ * — garante estruturalmente "1 aluno + 1 aula = 1 registro de
+ * presença", independente de condições de corrida no estado local.
+ */
+export async function saveAttendanceRecord(data: AttendanceRecordInput): Promise<void> {
+  const ref = doc(db, "attendanceRecords", buildAttendanceRecordId(data.studentId, data.sessionId));
+  const snapshot = await getDoc(ref);
+
+  if (snapshot.exists()) {
+    await updateDoc(ref, {
       status: data.status,
       updatedAt: serverTimestamp(),
     });
     return;
   }
 
-  await addDoc(recordsCollection, {
+  await setDoc(ref, {
     ...data,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

@@ -1,11 +1,14 @@
 import { useState } from "react";
 import type { Assessment } from "@/types/assessment";
+import { effectiveMaxScore, effectiveWeight } from "@/types/assessment";
 import type { Student } from "@/types/student";
 import {
   GRADE_MIN,
   GRADE_MAX,
-  calculateAverage,
+  calculateWeightedAverage,
   calculateSituation,
+  DEFAULT_ACADEMIC_THRESHOLDS,
+  type AcademicThresholds,
 } from "@/types/grade";
 import { SituationBadge } from "@/components/notes/SituationBadge";
 
@@ -16,6 +19,9 @@ interface GradesTableProps {
   scores: Record<string, Record<string, number | null>>;
   canEdit: boolean;
   onSaveGrade: (studentId: string, assessmentId: string, score: number | null) => Promise<void>;
+  /** Média mínima/recuperação do ano letivo (item 6 do plano V8). Cai
+   * para o padrão do sistema quando não informado. */
+  thresholds?: AcademicThresholds;
 }
 
 /**
@@ -26,7 +32,14 @@ interface GradesTableProps {
  * cabe numa célula de tabela densa — a validação/estilo de erro segue a
  * mesma linguagem visual, só sem o wrapper de formulário).
  */
-export function GradesTable({ students, assessments, scores, canEdit, onSaveGrade }: GradesTableProps) {
+export function GradesTable({
+  students,
+  assessments,
+  scores,
+  canEdit,
+  onSaveGrade,
+  thresholds = DEFAULT_ACADEMIC_THRESHOLDS,
+}: GradesTableProps) {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -62,7 +75,9 @@ export function GradesTable({ students, assessments, scores, canEdit, onSaveGrad
     }
 
     const value = Number(raw);
-    if (Number.isNaN(value) || value < GRADE_MIN || value > GRADE_MAX) {
+    const assessment = assessments.find((a) => a.id === assessmentId);
+    const maxScore = assessment ? effectiveMaxScore(assessment) : GRADE_MAX;
+    if (Number.isNaN(value) || value < GRADE_MIN || value > maxScore) {
       setErrorKey(key);
       return;
     }
@@ -105,6 +120,11 @@ export function GradesTable({ students, assessments, scores, canEdit, onSaveGrad
             {assessments.map((a) => (
               <th key={a.id} className="px-4 py-3 text-center font-medium">
                 {a.name}
+                {(a.weight !== undefined && a.weight !== 1) || (a.maxScore !== undefined && a.maxScore !== 10) ? (
+                  <span className="block text-[10px] normal-case text-ink-300">
+                    peso {effectiveWeight(a)} · máx. {effectiveMaxScore(a)}
+                  </span>
+                ) : null}
               </th>
             ))}
             <th className="px-4 py-3 text-center font-medium">Média</th>
@@ -114,8 +134,15 @@ export function GradesTable({ students, assessments, scores, canEdit, onSaveGrad
         <tbody>
           {students.map((student) => {
             const studentScores = assessments.map((a) => scores[student.id]?.[a.id] ?? null);
-            const average = calculateAverage(studentScores);
-            const situation = calculateSituation(studentScores, assessments.length);
+            // Média ponderada (item 4 do plano V8): equivalente à média
+            // simples quando todas as avaliações têm peso 1 (caso mais
+            // comum), mas passa a refletir o peso real assim que uma
+            // avaliação tiver `weight` diferente — sem exigir uma
+            // fórmula à parte quando os pesos são todos iguais.
+            const average = calculateWeightedAverage(
+              assessments.map((a, i) => ({ score: studentScores[i], weight: effectiveWeight(a) }))
+            );
+            const situation = calculateSituation(studentScores, assessments.length, thresholds);
 
             return (
               <tr key={student.id} className="border-b border-line last:border-0">

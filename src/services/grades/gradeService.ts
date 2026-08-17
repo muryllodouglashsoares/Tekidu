@@ -1,10 +1,11 @@
 import {
-  addDoc,
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -74,25 +75,62 @@ export async function getGradesBySchoolYear(schoolYear: number): Promise<Grade[]
 }
 
 /**
- * Cria ou atualiza a nota de um aluno em uma avaliação específica.
- * Como `grades` não usa `studentId_assessmentId` como ID do documento
- * (evita acoplar o formato do ID a dois campos que podem mudar de
- * forma), a existência prévia é resolvida por uma consulta antes do
- * write — aceitável aqui porque o lançamento de notas é uma ação
- * pontual do usuário (clique em uma célula), não um loop em lote.
+ * Constrói o ID determinístico do documento de nota de um aluno em
+ * uma avaliação. Formato: `{studentId}_{assessmentId}`.
+ *
+ * CORREÇÃO (auditoria V8 — item 3 "Corrigir especialmente: IDs
+ * temporários; duplicação de notas; criação versus atualização"):
+ * antes, `saveGrade` recebia um `existingGradeId` resolvido pelo
+ * CHAMADOR a partir do estado local em memória (`grades.find(...)`).
+ * Isso é uma fonte real de duplicação: se o estado local ainda não
+ * refletir uma nota recém-criada (ex.: duas edições rápidas na mesma
+ * célula, ou a tabela ainda carregando quando o usuário lança a
+ * primeira nota), duas chamadas podem concluir simultaneamente que
+ * "não existe nota ainda" e ambas executar `addDoc`, criando dois
+ * documentos para o mesmo par (aluno, avaliação).
+ *
+ * Ao usar `{studentId}_{assessmentId}` como o PRÓPRIO ID do documento
+ * (em vez de um ID gerado + busca prévia), a estrutura garante
+ * "1 aluno + 1 avaliação = 1 nota" independente de qualquer condição de
+ * corrida: não existe like "criar duas vezes", porque as duas
+ * chamadas resolvem para o MESMO documento — a segunda apenas
+ * sobrescreve a primeira (last-write-wins), nunca duplica.
  */
-export async function saveGrade(existingGradeId: string | null, data: GradeInput): Promise<void> {
-  if (existingGradeId) {
-    await updateDoc(doc(db, "grades", existingGradeId), {
+export function buildGradeId(studentId: string, assessmentId: string): string {
+  return `${studentId}_${assessmentId}`;
+}
+
+/**
+ * Cria ou atualiza a nota de um aluno em uma avaliação específica,
+ * usando o ID determinístico de `buildGradeId` — ver nota acima sobre
+ * por que isso substitui a resolução de existência pelo chamador.
+ *
+ * Ainda assim distinguimos create/update (via `getDoc` prévio) para
+ * preservar `createdAt` como a data do PRIMEIRO lançamento, não a de
+ * cada edição — importante para a trilha de auditoria (item 14).
+ */
+export async function saveGrade(data: GradeInput): Promise<void> {
+  const ref = doc(db, "grades", buildGradeId(data.studentId, data.assessmentId));
+  const snapshot = await getDoc(ref);
+
+  if (snapshot.exists()) {
+    await updateDoc(ref, {
       score: data.score,
       updatedAt: serverTimestamp(),
     });
     return;
   }
 
-  await addDoc(gradesCollection, {
+  await setDoc(ref, {
     ...data,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+}
+
+/** Busca uma nota específica pelo par (aluno, avaliação). `null` se ainda não lançada. */
+export async function getGrade(studentId: string, assessmentId: string): Promise<Grade | null> {
+  const snapshot = await getDoc(doc(db, "grades", buildGradeId(studentId, assessmentId)));
+  if (!snapshot.exists()) return null;
+  return toGrade(snapshot.id, snapshot.data());
 }

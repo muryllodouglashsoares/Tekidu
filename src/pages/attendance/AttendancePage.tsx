@@ -27,6 +27,7 @@ import {
   getRecordsBySessionIds,
   saveAttendanceRecord,
 } from "@/services/attendance/attendanceRecordService";
+import { logAuditEvent } from "@/services/audit/auditService";
 import type { AssessmentTerm } from "@/types/assessment";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { Discipline } from "@/types/discipline";
@@ -237,9 +238,13 @@ export function AttendancePage() {
   async function handleMark(studentId: string, status: AttendanceRecordStatus) {
     if (!selectedSessionId) return;
     setSaveError(null);
+    // Ver nota em `gradeService.saveGrade`/`attendanceRecordService.saveAttendanceRecord`:
+    // a criação/atualização em si agora é resolvida pelo ID
+    // determinístico do documento, não por este lookup — usado só
+    // para a atualização otimista local e para o log de auditoria.
     const existing = records.find((r) => r.studentId === studentId && r.sessionId === selectedSessionId);
     try {
-      await saveAttendanceRecord(existing?.id ?? null, {
+      await saveAttendanceRecord({
         studentId,
         sessionId: selectedSessionId,
         disciplineId,
@@ -248,6 +253,22 @@ export function AttendancePage() {
         term: term as AssessmentTerm,
         status,
       });
+
+      if (profile && existing && existing.status !== status) {
+        const student = linkedStudents.find((s) => s.id === studentId);
+        logAuditEvent({
+          type: "attendance_updated",
+          actorId: profile.uid,
+          actorName: profile.name,
+          studentId,
+          studentName: student?.name ?? null,
+          disciplineId,
+          disciplineName: selectedDiscipline?.name ?? null,
+          before: existing.status,
+          after: status,
+        });
+      }
+
       setRecords((prev) => {
         if (existing) {
           return prev.map((r) => (r.id === existing.id ? { ...r, status } : r));
