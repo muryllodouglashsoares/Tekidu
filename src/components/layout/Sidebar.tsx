@@ -29,9 +29,13 @@ interface NavItem {
 // "em desenvolvimento" em vez de 404 — ver PlaceholderPage.
 const principalNav: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/alunos", label: "Alunos", icon: Users },
-  { to: "/turmas", label: "Turmas", icon: School },
-  { to: "/disciplinas", label: "Disciplinas", icon: BookOpen },
+  // Alunos/Turmas/Disciplinas: restritas a admin/teacher desde a
+  // Tarefa 3 (Fase 1 pós-auditoria V8) — mesma restrição aplicada em
+  // AppRoutes (`allowedRoles`) e nas Firestore Security Rules
+  // (`getStudents`/`getClasses` são consultas sem escopo por aluno).
+  { to: "/alunos", label: "Alunos", icon: Users, roles: ["admin", "teacher"] },
+  { to: "/turmas", label: "Turmas", icon: School, roles: ["admin", "teacher"] },
+  { to: "/disciplinas", label: "Disciplinas", icon: BookOpen, roles: ["admin", "teacher"] },
   // Restrita a admin: mesma role autorizada pela rota (ver AppRoutes) e
   // pelas Firestore Security Rules para criar/editar contas em "users".
   { to: "/professores", label: "Professores", icon: GraduationCap, roles: ["admin"] },
@@ -47,11 +51,18 @@ const academicoNav: NavItem[] = [
   // mesma role autorizada pela rota (ver AppRoutes) e pelas Firestore
   // Security Rules das coleções attendanceSessions/attendanceRecords.
   { to: "/frequencia", label: "Frequência", icon: CalendarCheck, roles: ["admin", "teacher"] },
-  // Boletim: sem "soon" (implementada) e restrita a admin/teacher — mesma
-  // role autorizada pela rota (ver AppRoutes) e pelas Firestore Security
+  // Boletim (visão de staff — escolhe turma/aluno manualmente): sem
+  // "soon" (implementada) e restrita a admin/teacher — mesma role
+  // autorizada pela rota (ver AppRoutes) e pelas Firestore Security
   // Rules das coleções que ela consolida (grades/attendanceRecords).
   { to: "/boletim", label: "Boletim", icon: FileText, roles: ["admin", "teacher"] },
   { to: "/relatorios", label: "Relatórios", icon: BarChart3, roles: ["admin", "teacher"] },
+  // Meu Boletim (Tarefa 3, Fase 1 pós-auditoria V8): Portal do Aluno —
+  // visão somente-leitura do PRÓPRIO boletim/frequência, restrita à
+  // role "student" (o inverso exato de "Boletim" acima, que é de
+  // staff). Resolvido automaticamente pelo `uid` logado, sem escolher
+  // "qual aluno" — ver MyBoletimPage.
+  { to: "/meu-boletim", label: "Meu Boletim", icon: FileText, roles: ["student"] },
 ];
 
 function NavGroup({

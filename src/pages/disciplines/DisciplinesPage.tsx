@@ -134,8 +134,8 @@ export function DisciplinesPage() {
   }
 
   async function handleDelete() {
-    if (!deleting) return;
-    await deleteDiscipline(deleting.id);
+    if (!deleting || !profile) return;
+    await deleteDiscipline(deleting.id, { id: profile.uid, name: profile.name });
     setDeleting(null);
     await loadData();
   }

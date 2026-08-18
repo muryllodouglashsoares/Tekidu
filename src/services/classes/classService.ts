@@ -11,6 +11,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logAuditEvent } from "@/services/audit/auditService";
 import { getStudents } from "@/services/students/studentService";
 import type { ClassInput, SchoolClass } from "@/types/schoolClass";
 
@@ -61,8 +62,26 @@ export async function updateClass(id: string, data: ClassInput): Promise<void> {
   });
 }
 
-export async function deleteClass(id: string): Promise<void> {
+/**
+ * Exclui uma turma. Restrita a admin (ver firestore.rules).
+ *
+ * Registra um evento de auditoria (Tarefa 4, Fase 1 pós-auditoria V8):
+ * antes desta mudança, excluir uma turma não deixava nenhum rastro.
+ * Busca o documento ANTES de excluir para poder registrar o nome da
+ * turma removida (`before`) — depois do `deleteDoc` o documento não
+ * existe mais para consultar. Não há "depois" (o documento deixou de
+ * existir) — `after: null`.
+ */
+export async function deleteClass(id: string, actor: { id: string; name: string }): Promise<void> {
+  const schoolClass = await getClassById(id);
   await deleteDoc(doc(db, "classes", id));
+  logAuditEvent({
+    type: "class_deleted",
+    actorId: actor.id,
+    actorName: actor.name,
+    before: schoolClass?.name ?? null,
+    after: null,
+  });
 }
 
 /**

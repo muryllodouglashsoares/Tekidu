@@ -100,8 +100,8 @@ export function ClassesPage() {
   }
 
   async function handleDelete() {
-    if (!deleting) return;
-    await deleteClass(deleting.id);
+    if (!deleting || !profile) return;
+    await deleteClass(deleting.id, { id: profile.uid, name: profile.name });
     setDeleting(null);
     await loadClasses();
   }

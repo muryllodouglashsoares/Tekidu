@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getClassById, getStudentCountsByClassId } from "@/services/classes/classService";
+import { logAuditEvent } from "@/services/audit/auditService";
 import type { Discipline, DisciplineInput } from "@/types/discipline";
 import type { SchoolClass } from "@/types/schoolClass";
 
@@ -66,8 +67,30 @@ export async function updateDiscipline(id: string, data: DisciplineInput): Promi
   });
 }
 
-export async function deleteDiscipline(id: string): Promise<void> {
+/**
+ * Exclui uma disciplina. Restrita a admin (ver firestore.rules).
+ *
+ * Registra um evento de auditoria (Tarefa 4, Fase 1 pós-auditoria V8):
+ * antes desta mudança, excluir uma disciplina não deixava nenhum
+ * rastro. Mesmo racional de `classService.deleteClass`: busca o
+ * documento ANTES de excluir para registrar nome/código no `before` —
+ * não há "depois" (`after: null`).
+ */
+export async function deleteDiscipline(
+  id: string,
+  actor: { id: string; name: string }
+): Promise<void> {
+  const discipline = await getDisciplineById(id);
   await deleteDoc(doc(db, "disciplines", id));
+  logAuditEvent({
+    type: "discipline_deleted",
+    actorId: actor.id,
+    actorName: actor.name,
+    disciplineId: id,
+    disciplineName: discipline ? `${discipline.name} (${discipline.code})` : null,
+    before: discipline ? `${discipline.name} (${discipline.code})` : null,
+    after: null,
+  });
 }
 
 /**

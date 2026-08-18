@@ -98,9 +98,19 @@ export async function getStudentBoletim(
 
   const disciplineRows = await Promise.all(
     disciplines.map(async (discipline): Promise<DisciplineBoletimRow> => {
+      // `studentId` é passado adiante para estreitar a query já no
+      // servidor (em vez de buscar o contexto inteiro e filtrar aqui em
+      // memória) — mesmo resultado final de antes, mas agora também é
+      // o que torna esta função utilizável por um aluno autenticado
+      // (Tarefa 3, Fase 1 pós-auditoria V8): ver a nota de parâmetro em
+      // `gradeService.getGradesByContext`/`attendanceRecordService.getRecordsByContext`.
       const [gradesByTerm, recordsByTerm] = await Promise.all([
-        Promise.all(terms.map((term) => getGradesByContext(discipline.id, classId, schoolYear, term))),
-        Promise.all(terms.map((term) => getRecordsByContext(discipline.id, classId, schoolYear, term))),
+        Promise.all(
+          terms.map((term) => getGradesByContext(discipline.id, classId, schoolYear, term, studentId))
+        ),
+        Promise.all(
+          terms.map((term) => getRecordsByContext(discipline.id, classId, schoolYear, term, studentId))
+        ),
       ]);
 
       const studentGrades = gradesByTerm.flat().filter((g) => g.studentId === studentId);

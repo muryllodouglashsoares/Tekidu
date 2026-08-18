@@ -40,20 +40,32 @@ function toGrade(id: string, data: Record<string, unknown>): Grade {
  *
  * Exige o mesmo índice composto de `getAssessmentsByContext` (campos
  * diferentes, mesma ideia): `classId + disciplineId + term`.
+ *
+ * `studentId` (opcional, Tarefa 3 — Fase 1 pós-auditoria V8): estreita
+ * a consulta a um único aluno via `where('studentId', '==', ...)`.
+ * Além de reduzir leituras quando o chamador só precisa de um aluno
+ * (ex.: `boletimService.getStudentBoletim`, sempre por aluno), é o que
+ * torna a consulta executável para um aluno autenticado — a Security
+ * Rule de `grades` só libera leitura própria (`isOwnStudentRecord`)
+ * quando a query já filtra por `studentId`; um professor/admin
+ * continua podendo omitir este parâmetro para ver o contexto inteiro
+ * (todos os alunos), como antes.
  */
 export async function getGradesByContext(
   disciplineId: string,
   classId: string,
   schoolYear: number,
-  term: AssessmentTerm
+  term: AssessmentTerm,
+  studentId?: string
 ): Promise<Grade[]> {
-  const q = query(
-    gradesCollection,
+  const clauses = [
     where("disciplineId", "==", disciplineId),
     where("classId", "==", classId),
     where("schoolYear", "==", schoolYear),
-    where("term", "==", term)
-  );
+    where("term", "==", term),
+  ];
+  if (studentId) clauses.push(where("studentId", "==", studentId));
+  const q = query(gradesCollection, ...clauses);
   const snapshot = await getDocs(q);
   return snapshot.docs.map((d) => toGrade(d.id, d.data()));
 }

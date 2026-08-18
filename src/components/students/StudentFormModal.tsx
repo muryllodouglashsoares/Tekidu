@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { STUDENT_STATUS_LABEL, type Student, type StudentInput } from "@/types/student";
+import type { StudentCreateInput } from "@/services/students/studentService";
 import { CLASS_SHIFT_LABEL, type SchoolClass } from "@/types/schoolClass";
 
 interface StudentFormModalProps {
@@ -12,7 +13,8 @@ interface StudentFormModalProps {
   /** Turmas cadastradas, para o seletor de turma (substitui o texto livre). */
   classes: SchoolClass[];
   onClose: () => void;
-  onSubmit: (data: StudentInput) => Promise<void>;
+  onSubmitCreate: (data: StudentCreateInput) => Promise<void>;
+  onSubmitUpdate: (data: StudentInput) => Promise<void>;
 }
 
 const emptyForm: StudentInput = {
@@ -24,7 +26,13 @@ const emptyForm: StudentInput = {
   average: null,
 };
 
-export function StudentFormModal({ student, classes, onClose, onSubmit }: StudentFormModalProps) {
+export function StudentFormModal({
+  student,
+  classes,
+  onClose,
+  onSubmitCreate,
+  onSubmitUpdate,
+}: StudentFormModalProps) {
   const [form, setForm] = useState<StudentInput>(
     student
       ? {
@@ -37,6 +45,10 @@ export function StudentFormModal({ student, classes, onClose, onSubmit }: Studen
         }
       : emptyForm
   );
+  // Senha provisória da conta de login do aluno — só existe no
+  // cadastro (Tarefa 2, Fase 1 pós-auditoria V8), mesma UX de
+  // `TeacherFormModal`. Uma edição nunca recria a conta de Auth.
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -56,13 +68,25 @@ export function StudentFormModal({ student, classes, onClose, onSubmit }: Studen
       setError("A média deve estar entre 0 e 10.");
       return;
     }
+    if (!student && password.length < 6) {
+      setError("A senha provisória deve ter pelo menos 6 caracteres.");
+      return;
+    }
 
     setSaving(true);
     try {
-      await onSubmit(form);
+      if (student) {
+        await onSubmitUpdate(form);
+      } else {
+        await onSubmitCreate({ ...form, password });
+      }
       onClose();
     } catch {
-      setError("Não foi possível salvar o aluno. Tente novamente.");
+      setError(
+        student
+          ? "Não foi possível salvar as alterações. Tente novamente."
+          : "Não foi possível cadastrar o aluno. Verifique o e-mail e tente novamente."
+      );
     } finally {
       setSaving(false);
     }
@@ -81,9 +105,34 @@ export function StudentFormModal({ student, classes, onClose, onSubmit }: Studen
           label="E-mail"
           type="email"
           required
+          disabled={!!student}
           value={form.email}
           onChange={(e) => update("email", e.target.value)}
         />
+        {student && (
+          <p className="-mt-2.5 text-xs text-ink-400">
+            O e-mail de acesso não pode ser alterado por aqui.
+          </p>
+        )}
+
+        {!student && (
+          <>
+            <Input
+              label="Senha provisória"
+              type="text"
+              required
+              minLength={6}
+              placeholder="Mínimo de 6 caracteres"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <p className="-mt-2.5 text-xs text-ink-400">
+              Compartilhe essa senha com o aluno. Ele poderá trocá-la depois pela
+              opção "Esqueci minha senha" na tela de login.
+            </p>
+          </>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="Matrícula"

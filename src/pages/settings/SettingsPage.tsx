@@ -79,7 +79,7 @@ export function SettingsPage() {
 
   async function handleSaveAcademicSettings(e: React.FormEvent) {
     e.preventDefault();
-    if (!academicForm) return;
+    if (!academicForm || !profile) return;
     setAcademicError(null);
     setAcademicSuccess(false);
 
@@ -91,7 +91,7 @@ export function SettingsPage() {
 
     setSavingAcademic(true);
     try {
-      await saveAcademicSettings(schoolYear, academicForm);
+      await saveAcademicSettings(schoolYear, academicForm, { id: profile.uid, name: profile.name });
       setAcademicSuccess(true);
     } catch (err) {
       setAcademicError(describeFirebaseError(err, "configuracoes:salvar-regras-academicas"));

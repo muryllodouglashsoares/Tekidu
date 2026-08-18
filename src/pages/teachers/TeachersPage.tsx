@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Search, Pencil, Power } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
@@ -11,6 +12,7 @@ import type { UserProfile } from "@/types/user";
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 export function TeachersPage() {
+  const { profile } = useAuth();
   const [teachers, setTeachers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,22 +48,24 @@ export function TeachersPage() {
   }, [teachers, search]);
 
   async function handleCreate(data: { name: string; email: string; password: string }) {
-    await createTeacher(data);
+    if (!profile) return;
+    await createTeacher(data, { id: profile.uid, name: profile.name });
     await loadTeachers();
   }
 
   async function handleUpdate(data: { name: string; active: boolean }) {
-    if (!editing) return;
-    await updateTeacherProfile(editing.uid, data);
+    if (!editing || !profile) return;
+    await updateTeacherProfile(editing.uid, data, { id: profile.uid, name: profile.name });
     await loadTeachers();
   }
 
   async function handleToggleActive() {
-    if (!togglingActive) return;
-    await updateTeacherProfile(togglingActive.uid, {
-      name: togglingActive.name,
-      active: !togglingActive.active,
-    });
+    if (!togglingActive || !profile) return;
+    await updateTeacherProfile(
+      togglingActive.uid,
+      { name: togglingActive.name, active: !togglingActive.active },
+      { id: profile.uid, name: profile.name }
+    );
     setTogglingActive(null);
     await loadTeachers();
   }

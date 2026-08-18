@@ -38,20 +38,28 @@ function toRecord(id: string, data: Record<string, unknown>): AttendanceRecord {
  * evita N+1 queries (uma por aula) graças aos campos denormalizados em
  * `AttendanceRecord`. Exige o mesmo índice composto de
  * `getSessionsByContext`.
+ *
+ * `studentId` (opcional, Tarefa 3 — Fase 1 pós-auditoria V8): mesmo
+ * papel do parâmetro equivalente em `gradeService.getGradesByContext`
+ * — estreita a consulta a um único aluno via `where('studentId', '==',
+ * ...)`, tornando-a executável para um aluno autenticado sob a
+ * Security Rule de `attendanceRecords` (`isOwnStudentRecord`).
  */
 export async function getRecordsByContext(
   disciplineId: string,
   classId: string,
   schoolYear: number,
-  term: AssessmentTerm
+  term: AssessmentTerm,
+  studentId?: string
 ): Promise<AttendanceRecord[]> {
-  const q = query(
-    recordsCollection,
+  const clauses = [
     where("disciplineId", "==", disciplineId),
     where("classId", "==", classId),
     where("schoolYear", "==", schoolYear),
-    where("term", "==", term)
-  );
+    where("term", "==", term),
+  ];
+  if (studentId) clauses.push(where("studentId", "==", studentId));
+  const q = query(recordsCollection, ...clauses);
   const snapshot = await getDocs(q);
   return snapshot.docs.map((d) => toRecord(d.id, d.data()));
 }

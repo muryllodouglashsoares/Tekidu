@@ -29,6 +29,40 @@ service cloud.firestore {
       return isSignedIn() && profile.active == true && profile.role == 'admin';
     }
 
+    // Tarefa 3 (Fase 1 pós-auditoria V8 — Portal do Aluno).
+    function isActiveStudent() {
+      let profile = callerProfile();
+      return isSignedIn() && profile.active == true && profile.role == 'student';
+    }
+
+    // Resolve se o documento de aluno referenciado por `studentId`
+    // (o ID do documento em `students`, NUNCA o uid de Auth — ver nota
+    // de denormalização em `types/grade.ts`/`types/attendance.ts`)
+    // pertence ao aluno autenticado que está fazendo a requisição.
+    // Mesmo padrão de custo já aceito em `isOwnDiscipline` (um `get()`
+    // extra por leitura do PRÓPRIO registro; não afeta o caminho de
+    // leitura de staff, que continua sendo só `isActiveStaff()`, sem
+    // nenhum `get()` adicional).
+    //
+    // COMPATIBILIDADE COM QUERIES (list): esta função só é segura de
+    // usar em cima de uma query que já filtra `where('studentId', '==',
+    // <um valor fixo>)` — é isso que permite ao Firestore provar, sem
+    // avaliar documento por documento em tempo de execução, que TODOS
+    // os resultados possíveis satisfazem a regra (o `get()` resolve
+    // sempre para o MESMO documento `students/{studentId}`, já que o
+    // valor é fixado pela própria query, não pelo documento retornado).
+    // Uma query sem esse filtro (ex.: buscando o contexto inteiro de
+    // uma disciplina/turma/bimestre, todos os alunos juntos) é negada
+    // pelo servidor mesmo que o aluno só devesse ver uma fração do
+    // resultado — daí `gradeService.getGradesByContext`/
+    // `attendanceRecordService.getRecordsByContext` aceitarem um
+    // `studentId` opcional que estreita a query quando quem está
+    // consultando é o próprio aluno (ver `boletimService.getStudentBoletim`).
+    function isOwnStudentRecord(studentId) {
+      return isActiveStudent() &&
+        get(/databases/$(database)/documents/students/$(studentId)).data.uid == request.auth.uid;
+    }
+
     // Item 13 do plano V8 ("Refinar permissões" — menor privilégio
     // necessário): um professor só pode ESCREVER (criar/editar/excluir)
     // avaliações/notas/aulas/presença de uma disciplina da qual ele é o
@@ -50,6 +84,51 @@ service cloud.firestore {
         (profile.role == 'admin' || (profile.role == 'teacher' && isOwnDiscipline(disciplineId)));
     }
 
+    // -----------------------------------------------------------------
+    // Validação de payload (Fase 1 pós-auditoria V8, item "Tarefa 1").
+    //
+    // As funções `canWriteAcademicRecord`/`isActiveStaff` acima decidem
+    // QUEM pode escrever, mas nunca validaram O QUE está sendo escrito.
+    // Isso permitia, via chamada direta à API (contornando o frontend),
+    // gravar uma nota fora da escala, um peso negativo ou um status de
+    // frequência inexistente. As funções abaixo fecham essa lacuna.
+    //
+    // Os valores literais usados aqui (0/10 para nota, 'present'/'absent'
+    // para presença) são cópias hardcoded dos valores definidos em
+    // `src/types/grade.ts` (GRADE_MIN/GRADE_MAX) e
+    // `src/types/attendance.ts` (AttendanceRecordStatus) — as rules do
+    // Firestore não importam TypeScript, então essas constantes não
+    // podem ser referenciadas diretamente daqui. Caso os valores em
+    // `types/grade.ts`/`types/attendance.ts` mudem, estas funções
+    // precisam ser atualizadas manualmente em conjunto.
+    // -----------------------------------------------------------------
+
+    // `score` é opcional-nulo: `null` representa "nota não lançada"
+    // (ver nota em `types/grade.ts`), então é um valor válido além da
+    // faixa numérica 0–10.
+    function isValidScore(score) {
+      return score == null || (score is number && score >= 0 && score <= 10);
+    }
+
+    // `weight` só existe em avaliações criadas após o item 4 do plano
+    // V8 (retrocompatível — ver `types/assessment.ts`), por isso o
+    // campo é opcional no schema. Quando presente, precisa ser um
+    // número maior que 0 (peso zero/negativo não faz sentido em uma
+    // média ponderada — ver `effectiveWeight` em `types/assessment.ts`,
+    // que já trata peso inválido como 1 no cálculo, mas isso não deve
+    // ser usado como desculpa para permitir gravar um valor inválido).
+    function isValidAssessmentWeight() {
+      return !('weight' in request.resource.data) ||
+        request.resource.data.weight == null ||
+        (request.resource.data.weight is number && request.resource.data.weight > 0);
+    }
+
+    // Enum de `AttendanceRecordStatus` (`src/types/attendance.ts`):
+    // apenas "present"/"absent" existem hoje.
+    function isValidAttendanceStatus(status) {
+      return status == 'present' || status == 'absent';
+    }
+
     // ---------------------------------------------------------------
     // users/{uid}
     //
@@ -68,14 +147,29 @@ service cloud.firestore {
     //   padrão de acesso já usado em `students`/`classes`: apenas
     //   leitura por staff ativo — criar, atualizar e excluir usuários
     //   continuam bloqueados pelo cliente (allow write: if false).
-    // - CRIAR e ATUALIZAR: restrito a admins ativos, e somente para
-    //   documentos com role "teacher" — a tela de "Professores" cria a
-    //   conta de Authentication pelo cliente (via App secundário, ver
-    //   `lib/firebase.ts`) e precisa gravar o perfil correspondente
-    //   aqui. Isso substitui o cadastro manual via Firebase Console
-    //   que existia antes desta funcionalidade. Um admin não pode usar
-    //   esta regra para criar/promover a si mesmo ou outros como
-    //   "admin" pelo cliente — isso continua exigindo o Console.
+    // - CRIAR: dois casos, cada um restrito ao MESMO staff que já pode
+    //   criar o cadastro correspondente na coleção de domínio:
+    //   (a) `role == 'teacher'`: restrito a admin ativo — a tela de
+    //       "Professores" cria a conta de Authentication pelo cliente
+    //       (via App secundário, ver `lib/firebase.ts`) e precisa
+    //       gravar o perfil correspondente aqui. Isso substitui o
+    //       cadastro manual via Firebase Console que existia antes
+    //       desta funcionalidade.
+    //   (b) `role == 'student'` (Tarefa 2, Fase 1 pós-auditoria V8):
+    //       restrito a staff ativo (admin OU professor — o mesmo que
+    //       já pode criar `students/{studentId}`, ver mais abaixo).
+    //       Sem este documento, o aluno autentica no Firebase mas cai
+    //       em "perfil ausente" (`/sem-perfil`, `ProtectedRoute.tsx`),
+    //       pois é `users/{uid}` — não `students/{studentId}` — que
+    //       toda a aplicação usa para decidir a role de quem logou.
+    //   Um admin não pode usar esta regra para criar/promover a si
+    //   mesmo ou outros como "admin" pelo cliente — isso continua
+    //   exigindo o Console.
+    // - ATUALIZAR: restrito a admin ativo, e somente para documentos
+    //   com role "teacher" — mesma lógica de CRIAR (a). Diferente de
+    //   CRIAR, não há hoje um fluxo de "ativar/desativar" um aluno
+    //   (ver nota em `studentService.createStudent`), então UPDATE
+    //   para `role == 'student'` não foi estendido nesta tarefa.
     // - DELETAR: nunca pelo cliente. Remover a CONTA de Authentication
     //   exige Admin SDK (Cloud Function), fora do escopo desta fase;
     //   por isso "excluir" um professor na UI é uma desativação lógica
@@ -83,7 +177,8 @@ service cloud.firestore {
     // ---------------------------------------------------------------
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isActiveStaff());
-      allow create: if isActiveAdmin() && request.resource.data.role == 'teacher';
+      allow create: if (isActiveAdmin() && request.resource.data.role == 'teacher') ||
+        (isActiveStaff() && request.resource.data.role == 'student');
       allow update: if isActiveAdmin() &&
         resource.data.role == 'teacher' &&
         request.resource.data.role == 'teacher';
@@ -105,18 +200,28 @@ service cloud.firestore {
     // students/{studentId}
     //
     // Cadastro (roster) de alunos, gerenciado nesta fase por admins e
-    // professores. Ainda não existe uma ligação entre um documento em
-    // "students" e uma conta de aluno autenticada (isso é necessário
-    // para o Boletim, que é uma fase futura) — por isso a role
-    // "student" não tem acesso a esta coleção ainda.
+    // professores. Desde a Tarefa 2 (Fase 1 pós-auditoria V8), o
+    // documento pode carregar um campo `uid` que o liga à conta de
+    // Authentication do próprio aluno (`uid: null` = aluno ainda sem
+    // conta vinculada, cadastrado antes desta mudança ou aguardando
+    // migração). Isso é o que permite a extensão de leitura abaixo,
+    // pré-requisito do Portal do Aluno (Tarefa 3).
     //
-    // - LEITURA/ESCRITA: apenas admin/teacher com conta ativa
-    //   (checado via users/{uid}, nunca confiando em dados do cliente).
+    // - LEITURA: admin/teacher com conta ativa continuam podendo ler
+    //   qualquer aluno, como antes. Além disso, o PRÓPRIO aluno
+    //   autenticado pode ler o SEU documento (`resource.data.uid ==
+    //   request.auth.uid`) — nunca o de outro aluno, e nunca uma
+    //   listagem (uma query `where uid == ...` funciona porque o
+    //   Firestore aplica esta regra por documento, mas o cliente
+    //   nunca deve fazer `list` sem esse filtro).
+    // - ESCRITA (criar/editar): apenas admin/teacher com conta ativa.
+    //   O aluno nunca escreve no próprio registro por aqui.
     // - EXCLUSÃO: restrita a admin, para evitar que um professor
     //   remova permanentemente o cadastro de um aluno por engano.
     // ---------------------------------------------------------------
     match /students/{studentId} {
-      allow read, create, update: if isActiveStaff();
+      allow read: if isSignedIn() && (isActiveStaff() || resource.data.uid == request.auth.uid);
+      allow create, update: if isActiveStaff();
       allow delete: if isActiveAdmin();
     }
 
@@ -150,6 +255,19 @@ service cloud.firestore {
     // Mesma política de acesso de `classes`: admin/teacher ativos podem
     // ler/criar/editar; apenas admin pode excluir.
     //
+    // LEITURA (Tarefa 3, Fase 1 pós-auditoria V8): também liberada para
+    // qualquer aluno com conta ativa. `disciplines` não é um dado
+    // pessoal de nenhum aluno específico (é o catálogo de
+    // disciplinas/turmas/professores da instituição, igual a um
+    // catálogo de curso) — diferente de `grades`/`attendanceRecords`,
+    // aqui não existe "registro de outro aluno" para vazar, então não
+    // há necessidade (nem como, na prática: a tela de Boletim do aluno
+    // lista as disciplinas da SUA turma, não de um aluno específico)
+    // de escopar por `studentId`. Sem esta extensão,
+    // `boletimService.getStudentBoletim` (reaproveitado pelo Portal do
+    // Aluno) falharia ao chamar `getDisciplines()` para montar a lista
+    // de disciplinas da turma do aluno.
+    //
     // RESTRIÇÃO (item 13 do plano V8): um professor NÃO pode alterar o
     // campo `teacherId` de uma disciplina. Sem isso, o escopo por
     // disciplina introduzido em assessments/grades/attendanceSessions/
@@ -160,7 +278,8 @@ service cloud.firestore {
     // reatribuir o professor responsável normalmente.
     // ---------------------------------------------------------------
     match /disciplines/{disciplineId} {
-      allow read, create: if isActiveStaff();
+      allow read: if isActiveStaff() || isActiveStudent();
+      allow create: if isActiveStaff();
       allow update: if isActiveAdmin() ||
         (isActiveStaff() && request.resource.data.teacherId == resource.data.teacherId);
       allow delete: if isActiveAdmin();
@@ -190,14 +309,18 @@ service cloud.firestore {
     // ---------------------------------------------------------------
     match /assessments/{assessmentId} {
       allow read: if isActiveStaff();
-      allow create: if canWriteAcademicRecord(request.resource.data.disciplineId);
+      // Validação de payload (Tarefa 1, pós-auditoria V8): `weight`,
+      // quando presente, precisa ser > 0 — ver `isValidAssessmentWeight()`.
+      allow create: if canWriteAcademicRecord(request.resource.data.disciplineId) &&
+        isValidAssessmentWeight();
       // UPDATE checa a disciplina ATUAL (resource) E a disciplina do
       // payload enviado (request.resource) — evita que um professor
       // "sequestre" uma avaliação de outra disciplina apenas
       // reatribuindo o campo `disciplineId` para uma disciplina sua no
       // payload de update.
       allow update: if canWriteAcademicRecord(resource.data.disciplineId) &&
-        canWriteAcademicRecord(request.resource.data.disciplineId);
+        canWriteAcademicRecord(request.resource.data.disciplineId) &&
+        isValidAssessmentWeight();
       allow delete: if canWriteAcademicRecord(resource.data.disciplineId);
     }
 
@@ -211,15 +334,31 @@ service cloud.firestore {
     // resolvida a partir do perfil do requisitante e da disciplina
     // vinculada, nunca do ID do documento.
     //
-    // LEITURA: ver nota em `assessments` acima (mesmo motivo).
+    // LEITURA: staff ativo continua lendo qualquer nota (ver nota em
+    // `assessments` acima, mesmo motivo). Desde a Tarefa 3 (Fase 1
+    // pós-auditoria V8), o PRÓPRIO aluno também pode ler as SUAS notas
+    // — nunca as de outro aluno — via `isOwnStudentRecord`, que resolve
+    // `studentId` (ID do documento em `students`) até o `uid` de Auth.
+    // Ver a nota de compatibilidade com `list` em `isOwnStudentRecord`:
+    // o cliente (aluno) só pode consultar filtrando
+    // `where('studentId', '==', <seu próprio studentId>)`, nunca o
+    // contexto inteiro (disciplina+turma+bimestre, que inclui outros
+    // alunos) — ver `gradeService.getGradesByContext`.
     // ESCRITA: restrita a admin OU ao professor responsável pela
-    // disciplina da nota (item 13).
+    // disciplina da nota (item 13). O aluno nunca escreve em `grades`.
     // ---------------------------------------------------------------
     match /grades/{gradeId} {
-      allow read: if isActiveStaff();
-      allow create: if canWriteAcademicRecord(request.resource.data.disciplineId);
+      allow read: if isActiveStaff() || isOwnStudentRecord(resource.data.studentId);
+      // Validação de payload (Tarefa 1, pós-auditoria V8): `score`
+      // precisa ser `null` (nota não lançada) ou um número em 0–10 —
+      // ver `isValidScore()`. Antes desta validação, era possível
+      // gravar `score: 15` ou `score: -3` diretamente via API,
+      // contornando o limite que só existia no formulário do frontend.
+      allow create: if canWriteAcademicRecord(request.resource.data.disciplineId) &&
+        isValidScore(request.resource.data.score);
       allow update: if canWriteAcademicRecord(resource.data.disciplineId) &&
-        canWriteAcademicRecord(request.resource.data.disciplineId);
+        canWriteAcademicRecord(request.resource.data.disciplineId) &&
+        isValidScore(request.resource.data.score);
       allow delete: if canWriteAcademicRecord(resource.data.disciplineId);
     }
 
@@ -249,12 +388,23 @@ service cloud.firestore {
     // plano V8). Mesma política de `attendanceSessions` (item 13):
     // leitura por qualquer staff ativo; escrita restrita a admin OU ao
     // professor responsável pela disciplina.
+    //
+    // LEITURA (Tarefa 3, Fase 1 pós-auditoria V8): mesma extensão de
+    // `grades` acima — o PRÓPRIO aluno pode ler os SEUS registros de
+    // presença via `isOwnStudentRecord`, nunca os de outro aluno, e
+    // apenas com uma query filtrada por `studentId` (ver
+    // `attendanceRecordService.getRecordsByContext`).
     // ---------------------------------------------------------------
     match /attendanceRecords/{recordId} {
-      allow read: if isActiveStaff();
-      allow create: if canWriteAcademicRecord(request.resource.data.disciplineId);
+      allow read: if isActiveStaff() || isOwnStudentRecord(resource.data.studentId);
+      // Validação de payload (Tarefa 1, pós-auditoria V8): `status`
+      // precisa ser um dos valores do enum `AttendanceRecordStatus`
+      // (`src/types/attendance.ts`) — ver `isValidAttendanceStatus()`.
+      allow create: if canWriteAcademicRecord(request.resource.data.disciplineId) &&
+        isValidAttendanceStatus(request.resource.data.status);
       allow update: if canWriteAcademicRecord(resource.data.disciplineId) &&
-        canWriteAcademicRecord(request.resource.data.disciplineId);
+        canWriteAcademicRecord(request.resource.data.disciplineId) &&
+        isValidAttendanceStatus(request.resource.data.status);
       allow delete: if canWriteAcademicRecord(resource.data.disciplineId);
     }
 
@@ -268,13 +418,19 @@ service cloud.firestore {
     //
     // LEITURA: qualquer staff ativo (admin/teacher) — Notas, Boletim e
     // Dashboard precisam ler a configuração para calcular situação
-    // acadêmica corretamente.
+    // acadêmica corretamente. Desde a Tarefa 3 (Fase 1 pós-auditoria
+    // V8), também liberada para aluno com conta ativa: assim como
+    // `disciplines`, este documento não é um dado pessoal de nenhum
+    // aluno (é a régua institucional do ano letivo) — o Portal do
+    // Aluno precisa dele para calcular a MESMA situação acadêmica que
+    // staff vê (`boletimService.getStudentBoletim`, reaproveitado sem
+    // duplicar a fórmula).
     // ESCRITA: restrita a admin. Definir a média mínima de aprovação
     // ou a frequência mínima exigida é uma decisão institucional, não
-    // uma preferência de professor.
+    // uma preferência de professor (nem, com mais razão, de aluno).
     // ---------------------------------------------------------------
     match /academicSettings/{schoolYear} {
-      allow read: if isActiveStaff();
+      allow read: if isActiveStaff() || isActiveStudent();
       allow create, update, delete: if isActiveAdmin();
     }
 

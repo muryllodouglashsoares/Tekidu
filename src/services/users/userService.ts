@@ -1,5 +1,6 @@
-import { collection, doc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore";
 import { createStaffAuthAccount, db } from "@/lib/firebase";
+import { logAuditEvent } from "@/services/audit/auditService";
 import type { UserProfile } from "@/types/user";
 
 const usersCollection = collection(db, "users");
@@ -57,8 +58,17 @@ export interface TeacherCreateInput {
  * — por padrão a coleção só permite leitura). Sem isso, a chamada a
  * `setDoc` abaixo é rejeitada pelo servidor mesmo com a conta de
  * Authentication já criada.
+ *
+ * Registra um evento de auditoria (Tarefa 4, Fase 1 pós-auditoria V8):
+ * antes desta mudança, criar um professor (e, com isso, uma conta de
+ * acesso ao sistema) não deixava nenhum rastro. Não há "antes" (o
+ * documento não existia) — `before: null`. Segue o comportamento
+ * "fire-and-forget" já documentado em `auditService.ts`.
  */
-export async function createTeacher(data: TeacherCreateInput): Promise<string> {
+export async function createTeacher(
+  data: TeacherCreateInput,
+  actor: { id: string; name: string }
+): Promise<string> {
   const uid = await createStaffAuthAccount(data.email, data.password);
   await setDoc(doc(db, "users", uid), {
     uid,
@@ -68,6 +78,13 @@ export async function createTeacher(data: TeacherCreateInput): Promise<string> {
     active: true,
     createdAt: serverTimestamp(),
   });
+  logAuditEvent({
+    type: "teacher_created",
+    actorId: actor.id,
+    actorName: actor.name,
+    before: null,
+    after: `${data.name} <${data.email}>`,
+  });
   return uid;
 }
 
@@ -76,15 +93,38 @@ export async function createTeacher(data: TeacherCreateInput): Promise<string> {
  * E-mail e senha não são editáveis por aqui: alterá-los exigiria agir
  * sobre a própria conta de Authentication do professor (reautenticação),
  * o que o SDK do cliente não permite fazer em nome de outro usuário.
+ *
+ * Registra um evento de auditoria (Tarefa 4, Fase 1 pós-auditoria V8)
+ * SOMENTE quando `active` de fato muda — uma edição que só altera o
+ * nome não gera log de ativação/desativação. Busca o estado ANTERIOR
+ * (`getDoc`) antes de aplicar a atualização, para comparar contra o
+ * valor realmente salvo no servidor (não um valor em memória que o
+ * chamador possa ter desatualizado).
  */
 export async function updateTeacherProfile(
   uid: string,
-  data: { name: string; active: boolean }
+  data: { name: string; active: boolean },
+  actor: { id: string; name: string }
 ): Promise<void> {
+  const beforeSnapshot = await getDoc(doc(db, "users", uid));
+  const wasActive = beforeSnapshot.exists()
+    ? ((beforeSnapshot.data() as UserProfile).active as boolean)
+    : null;
+
   await updateDoc(doc(db, "users", uid), {
     name: data.name,
     active: data.active,
   });
+
+  if (wasActive !== null && wasActive !== data.active) {
+    logAuditEvent({
+      type: "teacher_status_changed",
+      actorId: actor.id,
+      actorName: actor.name,
+      before: wasActive ? "Ativo" : "Inativo",
+      after: data.active ? "Ativo" : "Inativo",
+    });
+  }
 }
 
 /**

@@ -13,6 +13,7 @@ import {
   deleteStudent,
   getStudents,
   updateStudent,
+  type StudentCreateInput,
 } from "@/services/students/studentService";
 import { getClasses } from "@/services/classes/classService";
 import type { Student, StudentInput } from "@/types/student";
@@ -72,12 +73,14 @@ export function StudentsPage() {
     });
   }, [students, search, classNameById]);
 
-  async function handleCreateOrUpdate(data: StudentInput) {
-    if (editing) {
-      await updateStudent(editing.id, data);
-    } else {
-      await createStudent(data);
-    }
+  async function handleCreate(data: StudentCreateInput) {
+    await createStudent(data);
+    await loadData();
+  }
+
+  async function handleUpdate(data: StudentInput) {
+    if (!editing) return;
+    await updateStudent(editing.id, data);
     await loadData();
   }
 
@@ -239,7 +242,8 @@ export function StudentsPage() {
           student={editing}
           classes={classes}
           onClose={() => setShowForm(false)}
-          onSubmit={handleCreateOrUpdate}
+          onSubmitCreate={handleCreate}
+          onSubmitUpdate={handleUpdate}
         />
       )}
 

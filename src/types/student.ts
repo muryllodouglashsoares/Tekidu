@@ -28,6 +28,24 @@ export const STUDENT_STATUS_LABEL: Record<StudentStatus, string> = {
  *   Quando isso existir, este campo passará a ser CALCULADO a partir
  *   de `grades/*` em vez de digitado manualmente. Até lá, ele é
  *   opcional e apenas informativo.
+ *
+ * NOTA SOBRE `uid` (Fase 1 pós-auditoria V8 — Tarefa 2):
+ * Liga este registro acadêmico à conta de login do aluno no Firebase
+ * Authentication, análogo ao papel de `UserProfile.uid` (ver
+ * `types/user.ts`) — mas aqui o campo mora no PRÓPRIO documento de
+ * `students`, e não em um documento separado em `users/{uid}`, porque
+ * o aluno já é modelado como `students/{studentId}` (com seu próprio
+ * `id` de documento) desde antes de existir a noção de conta de
+ * login. `uid` é o elo que permite a um aluno autenticado descobrir
+ * qual documento de `students` é o seu — pré-requisito das Security
+ * Rules de leitura escopada (`grades`/`attendanceRecords`/`students`)
+ * e do Portal do Aluno.
+ * `null` = aluno cadastrado mas SEM conta de login vinculada ainda
+ * (estado válido e esperado para todo aluno cadastrado antes desta
+ * mudança — nunca trate `uid: null` como um erro ou dado incompleto).
+ * É preenchido automaticamente no momento do CADASTRO (ver
+ * `studentService.createStudent`), nunca editado manualmente pelo
+ * formulário.
  */
 export interface Student {
   id: string;
@@ -37,11 +55,17 @@ export interface Student {
   classId: string | null;
   status: StudentStatus;
   average: number | null;
+  uid: string | null;
   createdAt: unknown; // Firestore Timestamp
   updatedAt: unknown; // Firestore Timestamp
 }
 
-/** Payload aceito pelo formulário de criação/edição de aluno. */
+/**
+ * Payload aceito pelo formulário de criação/edição de aluno.
+ * Não inclui `uid`: esse campo nunca é digitado, é sempre derivado da
+ * criação da conta de Authentication (ver `studentService.createStudent`)
+ * ou preservado como estava em uma edição (ver `studentService.updateStudent`).
+ */
 export interface StudentInput {
   name: string;
   email: string;
