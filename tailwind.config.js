@@ -4,46 +4,46 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Deep academic navy — primary brand color (ledger / diploma cover)
+        // Modern Slate/Indigo for the new template look
         ink: {
-          50: "#F1F3F9",
-          100: "#DFE3EF",
-          200: "#B9C2DC",
-          300: "#8D9AC0",
-          400: "#5A6A9B",
-          500: "#38477A",
-          600: "#26315D",
-          700: "#1B2559", // primary
-          800: "#141C45",
-          900: "#0D1230",
+          50: "#F8FAFC",
+          100: "#F1F5F9",
+          200: "#E2E8F0",
+          300: "#CBD5E1",
+          400: "#94A3B8",
+          500: "#64748B",
+          600: "#475569",
+          700: "#7583A8", // primary button color (soft indigo)
+          800: "#5D6A8E", // primary button hover
+          900: "#4B5678", // sidebar dark was here, but we will change sidebar to white
         },
-        // Warm amber — accent, evokes a wax seal / honors ribbon
+        // Accent color
         honors: {
-          50: "#FDF6E9",
-          100: "#FAEAC6",
-          200: "#F3D48C",
-          300: "#EDBE5C",
-          400: "#E8A33D", // accent
-          500: "#CC862A",
-          600: "#A66A20",
+          50: "#FEF2F2",
+          100: "#FEE2E2",
+          200: "#FECACA",
+          300: "#FCA5A5",
+          400: "#F87171", // Soft red/coral accent
+          500: "#EF4444",
+          600: "#DC2626",
         },
-        paper: "#FAFAF8",
+        paper: "#F3F5F9", // main app background (light gray/blue)
         surface: "#FFFFFF",
-        line: "#E4E4E0",
-        ink900: "#14181F",
-        success: "#1F9D6B",
-        danger: "#D64545",
+        line: "#E2E8F0",
+        ink900: "#1E293B", // main dark text
+        success: "#10B981",
+        danger: "#EF4444",
       },
       fontFamily: {
-        display: ["Fraunces", "ui-serif", "Georgia", "serif"],
+        display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["'IBM Plex Mono'", "ui-monospace", "monospace"],
       },
       borderRadius: {
-        card: "10px",
+        card: "16px", // Softer, rounder cards
       },
       boxShadow: {
-        card: "0 1px 2px rgba(20,24,31,0.04), 0 1px 8px rgba(20,24,31,0.04)",
+        card: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)", // Soft ambient shadow
       },
     },
   },

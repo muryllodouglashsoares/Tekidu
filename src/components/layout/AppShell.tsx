@@ -53,21 +53,31 @@ export function AppShell() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-line bg-surface px-4 py-3 md:px-6">
-          <button
-            className="rounded-card p-2 text-ink-600 hover:bg-ink-50 md:hidden"
-            onClick={() => setMobileOpen((v) => !v)}
-            aria-label="Abrir menu"
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-          <h1 className="font-display text-base font-semibold text-ink900">
-            {pageTitle(location.pathname)}
-          </h1>
+        <header className="flex items-center justify-between px-4 py-4 md:px-8 md:pt-6 md:pb-2">
+          <div className="flex items-center gap-4">
+            <button
+              className="rounded-full p-2 text-ink-600 hover:bg-ink-100 md:hidden bg-surface shadow-sm"
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label="Abrir menu"
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+            <h1 className="hidden md:block font-display text-xl font-bold text-ink900">
+              {pageTitle(location.pathname)}
+            </h1>
+          </div>
+          <div className="text-sm font-medium text-ink-500 hidden md:block">
+            {new Date().toLocaleDateString("pt-BR", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </div>
           <div className="w-9 md:hidden" aria-hidden="true" />
         </header>
 
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+        <main className="flex-1 px-4 py-4 md:px-8 md:py-6">
           <Outlet />
         </main>
       </div>

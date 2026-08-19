@@ -87,19 +87,19 @@ function NavGroup({
           to={item.to}
           end={item.to === "/"}
           className={({ isActive }) =>
-            `flex items-center justify-between rounded-card px-3 py-2 text-sm transition-colors ${
+            `flex items-center justify-between rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
               isActive
-                ? "bg-ink-700 text-white"
-                : "text-ink-200 hover:bg-ink-800 hover:text-white"
+                ? "bg-ink-100 text-ink-700"
+                : "text-ink-500 hover:bg-ink-50 hover:text-ink-900"
             }`
           }
         >
-          <span className="flex items-center gap-2.5">
-            <item.icon className="h-4 w-4" strokeWidth={2} />
+          <span className="flex items-center gap-3">
+            <item.icon className="h-5 w-5" strokeWidth={2} />
             {item.label}
           </span>
           {item.soon && (
-            <span className="text-[11px] text-ink-400">em breve</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400">em breve</span>
           )}
         </NavLink>
       ))}
@@ -118,44 +118,44 @@ export function Sidebar() {
     .join("");
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col bg-ink-900 px-3 py-5">
-      <div className="mb-6 flex items-center gap-2 px-3">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-honors-400 font-display text-sm font-bold text-ink-900">
-          T
-        </span>
-        <span className="font-display text-lg font-semibold text-white">Tekidu</span>
+    <aside className="flex h-full w-64 shrink-0 flex-col bg-surface border-r border-line px-4 py-6">
+      <div className="mb-8 flex items-center gap-3 px-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink-700 text-white shadow-sm">
+          <School className="h-5 w-5" />
+        </div>
+        <span className="font-display text-xl font-bold text-ink900">Tekidu</span>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-6 overflow-y-auto">
+      <nav className="flex flex-1 flex-col gap-8 overflow-y-auto px-2">
         <NavGroup title="Principal" items={principalNav} currentRole={profile?.role} />
         <NavGroup title="Acadêmico" items={academicoNav} currentRole={profile?.role} />
       </nav>
 
-      <div className="mt-4 flex flex-col gap-1 border-t border-ink-800 pt-4">
+      <div className="mt-4 flex flex-col gap-2 pt-4 px-2">
         <NavLink
           to="/configuracoes"
           className={({ isActive }) =>
-            `flex items-center gap-2.5 rounded-card px-3 py-2 text-sm transition-colors ${
+            `flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
               isActive
-                ? "bg-ink-700 text-white"
-                : "text-ink-200 hover:bg-ink-800 hover:text-white"
+                ? "bg-ink-100 text-ink-700"
+                : "text-ink-500 hover:bg-ink-50 hover:text-ink-900"
             }`
           }
         >
-          <Settings className="h-4 w-4" strokeWidth={2} />
+          <Settings className="h-5 w-5" strokeWidth={2} />
           Configurações
         </NavLink>
 
-        <div className="mt-2 flex items-center gap-2.5 px-3 py-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-600 text-xs font-semibold text-white">
+        <div className="mt-4 flex items-center gap-3 rounded-card bg-paper p-3 border border-line">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink-700 text-sm font-bold text-white shadow-sm">
             {initials || "?"}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-white">
+            <p className="truncate text-sm font-bold text-ink900">
               {profile?.name ?? "Usuário"}
             </p>
             {profile && (
-              <span className="text-xs text-ink-300">
+              <span className="text-xs font-medium text-ink-500">
                 <RoleBadgeText role={profile.role} />
               </span>
             )}
