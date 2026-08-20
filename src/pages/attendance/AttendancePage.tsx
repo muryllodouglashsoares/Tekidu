@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CalendarCheck, CalendarPlus, ClipboardList, History, ListChecks, Table2, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
-import { Spinner } from "@/components/ui/Spinner";
+import { TableSkeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { AttendanceFilters } from "@/components/attendance/AttendanceFilters";
 import { AttendanceStats } from "@/components/attendance/AttendanceStats";
@@ -45,6 +47,7 @@ type ViewMode = "resumo" | "porData";
 
 export function AttendancePage() {
   const { profile } = useAuth();
+  const toast = useToast();
   const canEdit = profile?.role === "admin" || profile?.role === "teacher";
 
   const [activeTab, setActiveTab] = useState<Tab>("register");
@@ -290,7 +293,9 @@ export function AttendancePage() {
         ];
       });
     } catch (error) {
-      setSaveError(describeFirebaseError(error, "frequência:salvar-presença"));
+      const message = describeFirebaseError(error, "frequência:salvar-presença");
+      setSaveError(message);
+      toast.error(message);
       throw new Error("save-failed");
     }
   }
@@ -308,12 +313,14 @@ export function AttendancePage() {
       order: nextOrder,
     });
     await loadContextData();
+    toast.success(`${label} criada com sucesso.`);
   }
 
   async function handleDeleteSession(sessionId: string) {
     await deleteSession(sessionId);
     if (selectedSessionId === sessionId) setSelectedSessionId("");
     await loadContextData();
+    toast.success("Aula excluída.");
   }
 
   // -------------------------------------------------------------
@@ -582,14 +589,11 @@ function RegisterTab({
 
       {baseLoading ? (
         <Card>
-          <Spinner label="Carregando dados acadêmicos..." />
+          <TableSkeleton columns={5} />
         </Card>
       ) : baseError ? (
-        <Card className="p-8 text-center">
-          <p className="mb-3 text-sm text-danger">{baseError}</p>
-          <Button variant="secondary" onClick={onRetryBase}>
-            Tentar novamente
-          </Button>
+        <Card>
+          <ErrorState message={baseError} onRetry={onRetryBase} />
         </Card>
       ) : !classId ? (
         <EmptyState
@@ -611,14 +615,11 @@ function RegisterTab({
         />
       ) : contextLoading ? (
         <Card>
-          <Spinner label="Carregando frequência..." />
+          <TableSkeleton columns={4} />
         </Card>
       ) : contextError ? (
-        <Card className="p-8 text-center">
-          <p className="mb-3 text-sm text-danger">{contextError}</p>
-          <Button variant="secondary" onClick={onRetryContext}>
-            Tentar novamente
-          </Button>
+        <Card>
+          <ErrorState message={contextError} onRetry={onRetryContext} />
         </Card>
       ) : (
         <>
@@ -670,9 +671,15 @@ function RegisterTab({
 
             {sessions.length === 0 ? (
               <EmptyState
+                bare
                 icon={CalendarCheck}
                 title="Nenhuma frequência registrada"
                 description="Cadastre a primeira aula deste bimestre para começar a lançar presença."
+                action={
+                  canEdit
+                    ? { label: "Cadastrar aula", onClick: onOpenSessionModal }
+                    : undefined
+                }
               />
             ) : !selectedSessionId ? (
               <div className="p-8 text-center text-sm text-ink-500">Selecione uma aula para lançar a presença.</div>
@@ -808,14 +815,11 @@ function HistoryTab({
 
       {loading ? (
         <Card>
-          <Spinner label="Carregando histórico..." />
+          <TableSkeleton columns={6} />
         </Card>
       ) : error ? (
-        <Card className="p-8 text-center">
-          <p className="mb-3 text-sm text-danger">{error}</p>
-          <Button variant="secondary" onClick={onRetry}>
-            Tentar novamente
-          </Button>
+        <Card>
+          <ErrorState message={error} onRetry={onRetry} />
         </Card>
       ) : (
         <Card className="overflow-hidden">

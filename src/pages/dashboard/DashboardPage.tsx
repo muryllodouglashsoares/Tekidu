@@ -11,7 +11,8 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { Spinner } from "@/components/ui/Spinner";
+import { CardGridSkeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/layout/ErrorState";
 import { Button } from "@/components/ui/Button";
 import { SituationBadge } from "@/components/notes/SituationBadge";
 import { getClasses } from "@/services/classes/classService";
@@ -45,31 +46,28 @@ export function DashboardPage() {
 
   const schoolYear = new Date().getFullYear();
 
+  async function loadData() {
+    setLoading(true);
+    setError(null);
+    try {
+      const [studentsData, classesData, overviewData] = await Promise.all([
+        getStudents(),
+        getClasses(),
+        getAcademicOverview(schoolYear),
+      ]);
+      setStudents(studentsData);
+      setClasses(classesData);
+      setOverview(overviewData);
+    } catch (err) {
+      setError(describeFirebaseError(err, "dashboard:carregar"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [studentsData, classesData, overviewData] = await Promise.all([
-          getStudents(),
-          getClasses(),
-          getAcademicOverview(schoolYear),
-        ]);
-        if (!cancelled) {
-          setStudents(studentsData);
-          setClasses(classesData);
-          setOverview(overviewData);
-        }
-      } catch (err) {
-        if (!cancelled) setError(describeFirebaseError(err, "dashboard:carregar"));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolYear]);
 
   const classNameById = useMemo(() => {
@@ -89,14 +87,19 @@ export function DashboardPage() {
     : 0;
 
   if (loading) {
-    return <Spinner label="Carregando dashboard..." />;
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="h-28 animate-pulse rounded-card bg-ink-100" />
+        <CardGridSkeleton count={4} />
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-sm text-danger">{error}</p>
-      </div>
+      <Card>
+        <ErrorState message={error} onRetry={loadData} />
+      </Card>
     );
   }
 

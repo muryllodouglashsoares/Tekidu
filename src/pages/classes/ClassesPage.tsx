@@ -1,15 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search, Eye, Pencil, Trash2, Users } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Trash2, Users, School } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
-import { Spinner } from "@/components/ui/Spinner";
+import { TableSkeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/layout/ErrorState";
+import { EmptyState } from "@/components/layout/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ClassFormModal } from "@/components/classes/ClassFormModal";
 import { ClassDetailModal } from "@/components/classes/ClassDetailModal";
 import { ClassShiftBadge } from "@/components/classes/ClassShiftBadge";
 import { ClassStatusBadge } from "@/components/classes/ClassStatusBadge";
+import { SortableTh } from "@/components/table/SortableTh";
+import { Pagination } from "@/components/table/Pagination";
+import { FilterSummary } from "@/components/table/FilterSummary";
+import { BulkActionsBar } from "@/components/table/BulkActionsBar";
+import { RowCheckbox } from "@/components/table/RowCheckbox";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useSort } from "@/hooks/useSort";
+import { usePagination } from "@/hooks/usePagination";
+import { useRowSelection } from "@/hooks/useRowSelection";
 import {
   createClass,
   deleteClass,
@@ -21,14 +33,17 @@ import {
   CLASS_SHIFT_LABEL,
   CLASS_STATUS_LABEL,
   type ClassInput,
+  type ClassStatus,
   type SchoolClass,
 } from "@/types/schoolClass";
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 const ALL = "all";
+type SortKey = "name" | "grade" | "schoolYear" | "shift" | "students" | "status";
 
 export function ClassesPage() {
   const { profile } = useAuth();
+  const toast = useToast();
   const canManage = profile?.role === "admin" || profile?.role === "teacher";
   const canDelete = profile?.role === "admin";
 
@@ -37,7 +52,8 @@ export function ClassesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const search = useDebouncedValue(searchInput);
   const [yearFilter, setYearFilter] = useState<string>(ALL);
   const [gradeFilter, setGradeFilter] = useState<string>(ALL);
   const [shiftFilter, setShiftFilter] = useState<string>(ALL);
@@ -47,6 +63,9 @@ export function ClassesPage() {
   const [showForm, setShowForm] = useState(false);
   const [viewing, setViewing] = useState<SchoolClass | null>(null);
   const [deleting, setDeleting] = useState<SchoolClass | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkStatusValue, setBulkStatusValue] = useState<ClassStatus>("active");
+  const [bulkStatusChanging, setBulkStatusChanging] = useState(false);
 
   async function loadClasses() {
     setLoading(true);
@@ -78,6 +97,22 @@ export function ClassesPage() {
     [classes]
   );
 
+  const activeFilterCount = [
+    search.trim() !== "",
+    yearFilter !== ALL,
+    gradeFilter !== ALL,
+    shiftFilter !== ALL,
+    statusFilter !== ALL,
+  ].filter(Boolean).length;
+
+  function clearFilters() {
+    setSearchInput("");
+    setYearFilter(ALL);
+    setGradeFilter(ALL);
+    setShiftFilter(ALL);
+    setStatusFilter(ALL);
+  }
+
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return classes.filter((c) => {
@@ -90,20 +125,85 @@ export function ClassesPage() {
     });
   }, [classes, search, yearFilter, gradeFilter, shiftFilter, statusFilter]);
 
+  const { sort, toggleSort, sorted } = useSort<SchoolClass, SortKey>(filtered, (c, key) => {
+    switch (key) {
+      case "name":
+        return c.name;
+      case "grade":
+        return c.grade;
+      case "schoolYear":
+        return c.schoolYear;
+      case "shift":
+        return CLASS_SHIFT_LABEL[c.shift];
+      case "students":
+        return studentCounts[c.id] ?? 0;
+      case "status":
+        return CLASS_STATUS_LABEL[c.status];
+      default:
+        return null;
+    }
+  });
+
+  const { page, pageSize, totalPages, totalItems, pageItems, setPage, changePageSize, resetPage } =
+    usePagination(sorted, 10);
+
+  useEffect(() => {
+    resetPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, yearFilter, gradeFilter, shiftFilter, statusFilter]);
+
+  const selection = useRowSelection<SchoolClass>((c) => c.id);
+  const pageSelectionState = selection.visibleSelectionState(pageItems);
+
   async function handleCreateOrUpdate(data: ClassInput) {
     if (editing) {
       await updateClass(editing.id, data);
+      toast.success(`${data.name} foi atualizada com sucesso.`);
     } else {
       await createClass(data);
+      toast.success(`${data.name} foi cadastrada com sucesso.`);
     }
     await loadClasses();
   }
 
   async function handleDelete() {
     if (!deleting || !profile) return;
+    const name = deleting.name;
     await deleteClass(deleting.id, { id: profile.uid, name: profile.name });
     setDeleting(null);
     await loadClasses();
+    toast.success(`${name} foi excluída.`);
+  }
+
+  async function handleBulkDelete() {
+    if (!profile) return;
+    const ids = Array.from(selection.selectedIds);
+    await Promise.all(ids.map((id) => deleteClass(id, { id: profile.uid, name: profile.name })));
+    setBulkDeleting(false);
+    selection.clear();
+    await loadClasses();
+    toast.success(`${ids.length} turma${ids.length === 1 ? "" : "s"} excluída${ids.length === 1 ? "" : "s"}.`);
+  }
+
+  async function handleBulkStatusChange() {
+    const targets = classes.filter((c) => selection.selectedIds.has(c.id));
+    await Promise.all(
+      targets.map((c) =>
+        updateClass(c.id, {
+          name: c.name,
+          grade: c.grade,
+          schoolYear: c.schoolYear,
+          shift: c.shift,
+          status: bulkStatusValue,
+        })
+      )
+    );
+    setBulkStatusChanging(false);
+    selection.clear();
+    await loadClasses();
+    toast.success(
+      `Status de ${targets.length} turma${targets.length === 1 ? "" : "s"} atualizado para "${CLASS_STATUS_LABEL[bulkStatusValue]}".`
+    );
   }
 
   return (
@@ -133,153 +233,230 @@ export function ClassesPage() {
           <input
             className="w-full bg-transparent text-sm text-ink900 outline-none placeholder:text-ink-300"
             placeholder="Buscar turma..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </Card>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:w-auto lg:shrink-0">
-          <Select
-            label="Filtrar por ano letivo"
-            hideLabel
-            value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value)}
-          >
-            <option value={ALL}>Ano letivo</option>
-            {yearOptions.map((year) => (
-              <option key={year} value={String(year)}>
-                {year}
-              </option>
-            ))}
-          </Select>
-          <Select
-            label="Filtrar por série"
-            hideLabel
-            value={gradeFilter}
-            onChange={(e) => setGradeFilter(e.target.value)}
-          >
-            <option value={ALL}>Série</option>
-            {gradeOptions.map((grade) => (
-              <option key={grade} value={grade}>
-                {grade}
-              </option>
-            ))}
-          </Select>
-          <Select
-            label="Filtrar por turno"
-            hideLabel
-            value={shiftFilter}
-            onChange={(e) => setShiftFilter(e.target.value)}
-          >
-            <option value={ALL}>Turno</option>
-            {Object.entries(CLASS_SHIFT_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-          <Select
-            label="Filtrar por status"
-            hideLabel
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value={ALL}>Status</option>
-            {Object.entries(CLASS_STATUS_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
+        <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Select
+              label="Filtrar por ano letivo"
+              hideLabel
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+            >
+              <option value={ALL}>Ano letivo</option>
+              {yearOptions.map((year) => (
+                <option key={year} value={String(year)}>
+                  {year}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="Filtrar por série"
+              hideLabel
+              value={gradeFilter}
+              onChange={(e) => setGradeFilter(e.target.value)}
+            >
+              <option value={ALL}>Série</option>
+              {gradeOptions.map((grade) => (
+                <option key={grade} value={grade}>
+                  {grade}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="Filtrar por turno"
+              hideLabel
+              value={shiftFilter}
+              onChange={(e) => setShiftFilter(e.target.value)}
+            >
+              <option value={ALL}>Turno</option>
+              {Object.entries(CLASS_SHIFT_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="Filtrar por status"
+              hideLabel
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value={ALL}>Status</option>
+              {Object.entries(CLASS_STATUS_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <FilterSummary activeCount={activeFilterCount} onClear={clearFilters} />
         </div>
       </div>
 
-      <Card className="overflow-hidden">
-        {loading ? (
-          <Spinner label="Carregando turmas..." />
-        ) : error ? (
-          <div className="p-8 text-center">
-            <p className="mb-3 text-sm text-danger">{error}</p>
-            <Button variant="secondary" onClick={loadClasses}>
-              Tentar novamente
+      {canManage && (
+        <BulkActionsBar count={selection.count} onClear={selection.clear}>
+          <div className="flex items-center gap-1.5">
+            <Select
+              label="Novo status"
+              hideLabel
+              value={bulkStatusValue}
+              onChange={(e) => setBulkStatusValue(e.target.value as ClassStatus)}
+              className="!w-auto"
+            >
+              {Object.entries(CLASS_STATUS_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+            <Button size="sm" variant="secondary" onClick={() => setBulkStatusChanging(true)}>
+              Alterar status
             </Button>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-sm text-ink-500">
-            {classes.length === 0
-              ? "Nenhuma turma cadastrada ainda."
-              : "Nenhuma turma encontrada para esses filtros."}
-          </div>
+          {canDelete && (
+            <Button size="sm" variant="secondary" className="!text-danger" onClick={() => setBulkDeleting(true)}>
+              <Trash2 className="h-3.5 w-3.5" />
+              Excluir
+            </Button>
+          )}
+        </BulkActionsBar>
+      )}
+
+      <Card className="overflow-hidden">
+        {loading ? (
+          <TableSkeleton columns={7} />
+        ) : error ? (
+          <ErrorState message={error} onRetry={loadClasses} />
+        ) : totalItems === 0 ? (
+          classes.length === 0 ? (
+            <EmptyState
+              bare
+              icon={School}
+              title="Nenhuma turma cadastrada ainda"
+              description="Crie a primeira turma para começar a matricular alunos e vincular disciplinas."
+              action={
+                canManage
+                  ? {
+                      label: "Nova turma",
+                      onClick: () => {
+                        setEditing(null);
+                        setShowForm(true);
+                      },
+                    }
+                  : undefined
+              }
+            />
+          ) : (
+            <EmptyState
+              bare
+              icon={Search}
+              title="Nenhuma turma encontrada"
+              description="Não encontramos turmas para os filtros selecionados. Tente ajustá-los ou limpar a busca."
+            />
+          )
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
-                  <th className="px-4 py-3 font-medium">Turma</th>
-                  <th className="px-4 py-3 font-medium">Série</th>
-                  <th className="px-4 py-3 font-medium">Ano letivo</th>
-                  <th className="px-4 py-3 font-medium">Turno</th>
-                  <th className="px-4 py-3 font-medium">Alunos</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium" />
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((schoolClass) => (
-                  <tr key={schoolClass.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3 font-medium text-ink900">{schoolClass.name}</td>
-                    <td className="px-4 py-3 text-ink-600">{schoolClass.grade}</td>
-                    <td className="px-4 py-3 tabular text-ink-600">{schoolClass.schoolYear}</td>
-                    <td className="px-4 py-3">
-                      <ClassShiftBadge shift={schoolClass.shift} />
-                    </td>
-                    <td className="px-4 py-3 text-ink-600">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Users className="h-3.5 w-3.5 text-ink-400" />
-                        {studentCounts[schoolClass.id] ?? 0} aluno
-                        {(studentCounts[schoolClass.id] ?? 0) === 1 ? "" : "s"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <ClassStatusBadge status={schoolClass.status} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          aria-label={`Ver detalhes de ${schoolClass.name}`}
-                          className="rounded-card p-1.5 text-ink-400 hover:bg-ink-50 hover:text-ink-700"
-                          onClick={() => setViewing(schoolClass)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        {canManage && (
-                          <button
-                            aria-label={`Editar ${schoolClass.name}`}
-                            className="rounded-card p-1.5 text-ink-400 hover:bg-ink-50 hover:text-ink-700"
-                            onClick={() => {
-                              setEditing(schoolClass);
-                              setShowForm(true);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button
-                            aria-label={`Excluir ${schoolClass.name}`}
-                            className="rounded-card p-1.5 text-ink-400 hover:bg-danger/10 hover:text-danger"
-                            onClick={() => setDeleting(schoolClass)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
+                    {canManage && (
+                      <th className="w-10 px-4 py-3">
+                        <RowCheckbox
+                          checked={pageSelectionState === "all"}
+                          indeterminate={pageSelectionState === "some"}
+                          onChange={() => selection.toggleAllVisible(pageItems)}
+                          label="Selecionar todas as turmas desta página"
+                        />
+                      </th>
+                    )}
+                    <SortableTh label="Turma" active={sort.key === "name"} direction={sort.direction} onClick={() => toggleSort("name")} />
+                    <SortableTh label="Série" active={sort.key === "grade"} direction={sort.direction} onClick={() => toggleSort("grade")} />
+                    <SortableTh label="Ano letivo" active={sort.key === "schoolYear"} direction={sort.direction} onClick={() => toggleSort("schoolYear")} />
+                    <SortableTh label="Turno" active={sort.key === "shift"} direction={sort.direction} onClick={() => toggleSort("shift")} />
+                    <SortableTh label="Alunos" active={sort.key === "students"} direction={sort.direction} onClick={() => toggleSort("students")} />
+                    <SortableTh label="Status" active={sort.key === "status"} direction={sort.direction} onClick={() => toggleSort("status")} />
+                    <th className="px-4 py-3 font-medium" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {pageItems.map((schoolClass) => (
+                    <tr key={schoolClass.id} className="border-b border-line last:border-0">
+                      {canManage && (
+                        <td className="px-4 py-3">
+                          <RowCheckbox
+                            checked={selection.isSelected(schoolClass)}
+                            onChange={() => selection.toggle(schoolClass)}
+                            label={`Selecionar ${schoolClass.name}`}
+                          />
+                        </td>
+                      )}
+                      <td className="px-4 py-3 font-medium text-ink900">{schoolClass.name}</td>
+                      <td className="px-4 py-3 text-ink-600">{schoolClass.grade}</td>
+                      <td className="px-4 py-3 tabular text-ink-600">{schoolClass.schoolYear}</td>
+                      <td className="px-4 py-3">
+                        <ClassShiftBadge shift={schoolClass.shift} />
+                      </td>
+                      <td className="px-4 py-3 text-ink-600">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Users className="h-3.5 w-3.5 text-ink-400" />
+                          {studentCounts[schoolClass.id] ?? 0} aluno
+                          {(studentCounts[schoolClass.id] ?? 0) === 1 ? "" : "s"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <ClassStatusBadge status={schoolClass.status} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1">
+                          <button
+                            aria-label={`Ver detalhes de ${schoolClass.name}`}
+                            className="rounded-card p-1.5 text-ink-400 hover:bg-ink-50 hover:text-ink-700"
+                            onClick={() => setViewing(schoolClass)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          {canManage && (
+                            <button
+                              aria-label={`Editar ${schoolClass.name}`}
+                              className="rounded-card p-1.5 text-ink-400 hover:bg-ink-50 hover:text-ink-700"
+                              onClick={() => {
+                                setEditing(schoolClass);
+                                setShowForm(true);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              aria-label={`Excluir ${schoolClass.name}`}
+                              className="rounded-card p-1.5 text-ink-400 hover:bg-danger/10 hover:text-danger"
+                              onClick={() => setDeleting(schoolClass)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={changePageSize}
+            />
+          </>
         )}
       </Card>
 
@@ -300,6 +477,30 @@ export function ClassesPage() {
           confirmLabel="Excluir"
           onCancel={() => setDeleting(null)}
           onConfirm={handleDelete}
+        />
+      )}
+
+      {bulkDeleting && (
+        <ConfirmDialog
+          title="Excluir turmas selecionadas"
+          description={`Tem certeza de que deseja excluir ${selection.count} turma${
+            selection.count === 1 ? "" : "s"
+          }? Esta ação não pode ser desfeita.`}
+          confirmLabel="Excluir"
+          onCancel={() => setBulkDeleting(false)}
+          onConfirm={handleBulkDelete}
+        />
+      )}
+
+      {bulkStatusChanging && (
+        <ConfirmDialog
+          title="Alterar status em lote"
+          description={`O status de ${selection.count} turma${
+            selection.count === 1 ? "" : "s"
+          } será alterado para "${CLASS_STATUS_LABEL[bulkStatusValue]}".`}
+          confirmLabel="Confirmar"
+          onCancel={() => setBulkStatusChanging(false)}
+          onConfirm={handleBulkStatusChange}
         />
       )}
     </div>

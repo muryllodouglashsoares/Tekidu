@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, School, Users } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Spinner } from "@/components/ui/Spinner";
+import { TableSkeleton, CardGridSkeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { ReportFilters } from "@/components/reports/ReportFilters";
@@ -258,26 +258,20 @@ export function ReportsPage() {
 
       {baseLoading ? (
         <Card>
-          <Spinner label="Carregando relatórios..." />
+          <CardGridSkeleton count={4} />
         </Card>
       ) : baseError ? (
-        <Card className="p-8 text-center">
-          <p className="mb-3 text-sm text-danger">{baseError}</p>
-          <Button variant="secondary" onClick={loadBaseData}>
-            Tentar novamente
-          </Button>
+        <Card>
+          <ErrorState message={baseError} onRetry={loadBaseData} />
         </Card>
       ) : selectedStudent && selectedStudentClass ? (
         reportLoading ? (
           <Card>
-            <Spinner label="Carregando relatório do aluno..." />
+            <TableSkeleton columns={5} />
           </Card>
         ) : reportError ? (
-          <Card className="p-8 text-center">
-            <p className="mb-3 text-sm text-danger">{reportError}</p>
-            <Button variant="secondary" onClick={loadStudentReport}>
-              Tentar novamente
-            </Button>
+          <Card>
+            <ErrorState message={reportError} onRetry={loadStudentReport} />
           </Card>
         ) : boletim ? (
           <StudentDevelopmentReport
@@ -296,7 +290,7 @@ export function ReportsPage() {
           </div>
           <Card className="overflow-hidden">
             {studentsInClass.length === 0 ? (
-              <EmptyState icon={Users} title="Turma sem alunos" description="Esta turma ainda não possui alunos cadastrados." />
+              <EmptyState bare icon={Users} title="Turma sem alunos" description="Esta turma ainda não possui alunos cadastrados." />
             ) : (
               <StudentReportTable
                 summaries={studentSummaries}

@@ -1,14 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Search, Eye, Pencil, Trash2, BookOpen, User, Layers, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
-import { Spinner } from "@/components/ui/Spinner";
+import { TableSkeleton, CardGridSkeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/layout/ErrorState";
+import { EmptyState } from "@/components/layout/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DisciplineFormModal } from "@/components/disciplines/DisciplineFormModal";
 import { DisciplineDetailModal } from "@/components/disciplines/DisciplineDetailModal";
 import { DisciplineStatusBadge } from "@/components/disciplines/DisciplineStatusBadge";
+import { SortableTh } from "@/components/table/SortableTh";
+import { Pagination } from "@/components/table/Pagination";
+import { FilterSummary } from "@/components/table/FilterSummary";
+import { BulkActionsBar } from "@/components/table/BulkActionsBar";
+import { RowCheckbox } from "@/components/table/RowCheckbox";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useSort } from "@/hooks/useSort";
+import { usePagination } from "@/hooks/usePagination";
+import { useRowSelection } from "@/hooks/useRowSelection";
 import {
   createDiscipline,
   deleteDiscipline,
@@ -21,15 +33,18 @@ import {
   DISCIPLINE_STATUS_LABEL,
   type Discipline,
   type DisciplineInput,
+  type DisciplineStatus,
 } from "@/types/discipline";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { UserProfile } from "@/types/user";
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 const ALL = "all";
+type SortKey = "name" | "teacher" | "classes" | "workload" | "status";
 
 export function DisciplinesPage() {
   const { profile } = useAuth();
+  const toast = useToast();
   const canManage = profile?.role === "admin" || profile?.role === "teacher";
   const canDelete = profile?.role === "admin";
 
@@ -40,7 +55,8 @@ export function DisciplinesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const search = useDebouncedValue(searchInput);
   const [yearFilter, setYearFilter] = useState<string>(ALL);
   const [teacherFilter, setTeacherFilter] = useState<string>(ALL);
   const [classFilter, setClassFilter] = useState<string>(ALL);
@@ -50,6 +66,9 @@ export function DisciplinesPage() {
   const [showForm, setShowForm] = useState(false);
   const [viewing, setViewing] = useState<Discipline | null>(null);
   const [deleting, setDeleting] = useState<Discipline | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkStatusValue, setBulkStatusValue] = useState<DisciplineStatus>("active");
+  const [bulkStatusChanging, setBulkStatusChanging] = useState(false);
 
   async function loadData() {
     setLoading(true);
@@ -94,6 +113,22 @@ export function DisciplinesPage() {
     [disciplines]
   );
 
+  const activeFilterCount = [
+    search.trim() !== "",
+    yearFilter !== ALL,
+    teacherFilter !== ALL,
+    classFilter !== ALL,
+    statusFilter !== ALL,
+  ].filter(Boolean).length;
+
+  function clearFilters() {
+    setSearchInput("");
+    setYearFilter(ALL);
+    setTeacherFilter(ALL);
+    setClassFilter(ALL);
+    setStatusFilter(ALL);
+  }
+
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return disciplines.filter((d) => {
@@ -109,6 +144,34 @@ export function DisciplinesPage() {
       return true;
     });
   }, [disciplines, search, yearFilter, teacherFilter, classFilter, statusFilter, classNameById]);
+
+  const { sort, toggleSort, sorted } = useSort<Discipline, SortKey>(filtered, (d, key) => {
+    switch (key) {
+      case "name":
+        return d.name;
+      case "teacher":
+        return d.teacherName;
+      case "classes":
+        return d.classIds.length;
+      case "workload":
+        return d.workload;
+      case "status":
+        return DISCIPLINE_STATUS_LABEL[d.status];
+      default:
+        return null;
+    }
+  });
+
+  const { page, pageSize, totalPages, totalItems, pageItems, setPage, changePageSize, resetPage } =
+    usePagination(sorted, 10);
+
+  useEffect(() => {
+    resetPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, yearFilter, teacherFilter, classFilter, statusFilter]);
+
+  const selection = useRowSelection<Discipline>((d) => d.id);
+  const pageSelectionState = selection.visibleSelectionState(pageItems);
 
   const stats = useMemo(() => {
     const active = disciplines.filter((d) => d.status === "active").length;
@@ -127,17 +190,55 @@ export function DisciplinesPage() {
   async function handleCreateOrUpdate(data: DisciplineInput) {
     if (editing) {
       await updateDiscipline(editing.id, data);
+      toast.success(`${data.name} foi atualizada com sucesso.`);
     } else {
       await createDiscipline(data);
+      toast.success(`${data.name} foi cadastrada com sucesso.`);
     }
     await loadData();
   }
 
   async function handleDelete() {
     if (!deleting || !profile) return;
+    const label = `${deleting.name} (${deleting.code})`;
     await deleteDiscipline(deleting.id, { id: profile.uid, name: profile.name });
     setDeleting(null);
     await loadData();
+    toast.success(`${label} foi excluída.`);
+  }
+
+  async function handleBulkDelete() {
+    if (!profile) return;
+    const ids = Array.from(selection.selectedIds);
+    await Promise.all(ids.map((id) => deleteDiscipline(id, { id: profile.uid, name: profile.name })));
+    setBulkDeleting(false);
+    selection.clear();
+    await loadData();
+    toast.success(`${ids.length} disciplina${ids.length === 1 ? "" : "s"} excluída${ids.length === 1 ? "" : "s"}.`);
+  }
+
+  async function handleBulkStatusChange() {
+    const targets = disciplines.filter((d) => selection.selectedIds.has(d.id));
+    await Promise.all(
+      targets.map((d) =>
+        updateDiscipline(d.id, {
+          name: d.name,
+          code: d.code,
+          workload: d.workload,
+          schoolYear: d.schoolYear,
+          status: bulkStatusValue,
+          teacherId: d.teacherId,
+          teacherName: d.teacherName,
+          classIds: d.classIds,
+        })
+      )
+    );
+    setBulkStatusChanging(false);
+    selection.clear();
+    await loadData();
+    toast.success(
+      `Status de ${targets.length} disciplina${targets.length === 1 ? "" : "s"} atualizado para "${DISCIPLINE_STATUS_LABEL[bulkStatusValue]}".`
+    );
   }
 
   return (
@@ -164,10 +265,16 @@ export function DisciplinesPage() {
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={BookOpen} label="Disciplinas" sublabel="Total cadastradas" value={stats.total} />
-        <StatCard icon={BookOpen} label="Ativas" sublabel="Em funcionamento" value={stats.active} />
-        <StatCard icon={Layers} label="Turmas" sublabel="Turmas vinculadas" value={stats.classes} />
-        <StatCard icon={User} label="Professores" sublabel="Responsáveis" value={stats.teachers} />
+        {loading && disciplines.length === 0 ? (
+          <CardGridSkeleton count={4} />
+        ) : (
+          <>
+            <StatCard icon={BookOpen} label="Disciplinas" sublabel="Total cadastradas" value={stats.total} />
+            <StatCard icon={BookOpen} label="Ativas" sublabel="Em funcionamento" value={stats.active} />
+            <StatCard icon={Layers} label="Turmas" sublabel="Turmas vinculadas" value={stats.classes} />
+            <StatCard icon={User} label="Professores" sublabel="Responsáveis" value={stats.teachers} />
+          </>
+        )}
       </div>
 
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -176,12 +283,13 @@ export function DisciplinesPage() {
           <input
             className="w-full bg-transparent text-sm text-ink900 outline-none placeholder:text-ink-300"
             placeholder="Buscar disciplina, professor ou turma..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </Card>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:w-auto lg:shrink-0">
+        <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Select
             label="Filtrar por ano letivo"
             hideLabel
@@ -234,57 +342,108 @@ export function DisciplinesPage() {
               </option>
             ))}
           </Select>
+          </div>
+          <FilterSummary activeCount={activeFilterCount} onClear={clearFilters} />
         </div>
       </div>
 
-      <Card className="overflow-hidden">
-        {loading ? (
-          <Spinner label="Carregando disciplinas..." />
-        ) : error ? (
-          <div className="p-8 text-center">
-            <p className="mb-3 text-sm text-danger">{error}</p>
-            <Button variant="secondary" onClick={loadData}>
-              Tentar novamente
+      {canManage && (
+        <BulkActionsBar count={selection.count} onClear={selection.clear}>
+          <div className="flex items-center gap-1.5">
+            <Select
+              label="Novo status"
+              hideLabel
+              value={bulkStatusValue}
+              onChange={(e) => setBulkStatusValue(e.target.value as DisciplineStatus)}
+              className="!w-auto"
+            >
+              {Object.entries(DISCIPLINE_STATUS_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+            <Button size="sm" variant="secondary" onClick={() => setBulkStatusChanging(true)}>
+              Alterar status
             </Button>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-sm text-ink-500">
-            {disciplines.length === 0 ? (
-              <div className="flex flex-col items-center gap-3">
-                <p>Nenhuma disciplina cadastrada ainda.</p>
-                {canManage && (
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setEditing(null);
-                      setShowForm(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Cadastrar disciplina
-                  </Button>
-                )}
-              </div>
-            ) : (
-              "Nenhuma disciplina encontrada para esses filtros."
-            )}
-          </div>
+          {canDelete && (
+            <Button size="sm" variant="secondary" className="!text-danger" onClick={() => setBulkDeleting(true)}>
+              <Trash2 className="h-3.5 w-3.5" />
+              Excluir
+            </Button>
+          )}
+        </BulkActionsBar>
+      )}
+
+      <Card className="overflow-hidden">
+        {loading ? (
+          <TableSkeleton columns={6} />
+        ) : error ? (
+          <ErrorState message={error} onRetry={loadData} />
+        ) : totalItems === 0 ? (
+          disciplines.length === 0 ? (
+            <EmptyState
+              bare
+              icon={BookOpen}
+              title="Nenhuma disciplina cadastrada ainda"
+              description="Cadastre a primeira disciplina e vincule-a a turmas e a um professor responsável."
+              action={
+                canManage
+                  ? {
+                      label: "Cadastrar disciplina",
+                      onClick: () => {
+                        setEditing(null);
+                        setShowForm(true);
+                      },
+                    }
+                  : undefined
+              }
+            />
+          ) : (
+            <EmptyState
+              bare
+              icon={Search}
+              title="Nenhuma disciplina encontrada"
+              description="Não encontramos disciplinas para os filtros selecionados. Tente ajustá-los ou limpar a busca."
+            />
+          )
         ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
-                  <th className="px-4 py-3 font-medium">Disciplina</th>
-                  <th className="px-4 py-3 font-medium">Professor</th>
-                  <th className="px-4 py-3 font-medium">Turmas</th>
-                  <th className="px-4 py-3 font-medium">Carga horária</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
+                  {canManage && (
+                    <th className="w-10 px-4 py-3">
+                      <RowCheckbox
+                        checked={pageSelectionState === "all"}
+                        indeterminate={pageSelectionState === "some"}
+                        onChange={() => selection.toggleAllVisible(pageItems)}
+                        label="Selecionar todas as disciplinas desta página"
+                      />
+                    </th>
+                  )}
+                  <SortableTh label="Disciplina" active={sort.key === "name"} direction={sort.direction} onClick={() => toggleSort("name")} />
+                  <SortableTh label="Professor" active={sort.key === "teacher"} direction={sort.direction} onClick={() => toggleSort("teacher")} />
+                  <SortableTh label="Turmas" active={sort.key === "classes"} direction={sort.direction} onClick={() => toggleSort("classes")} />
+                  <SortableTh label="Carga horária" active={sort.key === "workload"} direction={sort.direction} onClick={() => toggleSort("workload")} />
+                  <SortableTh label="Status" active={sort.key === "status"} direction={sort.direction} onClick={() => toggleSort("status")} />
                   <th className="px-4 py-3 font-medium" />
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((discipline) => (
+                {pageItems.map((discipline) => (
                   <tr key={discipline.id} className="border-b border-line last:border-0">
+                    {canManage && (
+                      <td className="px-4 py-3">
+                        <RowCheckbox
+                          checked={selection.isSelected(discipline)}
+                          onChange={() => selection.toggle(discipline)}
+                          label={`Selecionar ${discipline.name}`}
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-card bg-ink-50 text-ink-600">
@@ -357,6 +516,15 @@ export function DisciplinesPage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={changePageSize}
+          />
+          </>
         )}
       </Card>
 
@@ -391,6 +559,30 @@ export function DisciplinesPage() {
           confirmLabel="Excluir"
           onCancel={() => setDeleting(null)}
           onConfirm={handleDelete}
+        />
+      )}
+
+      {bulkDeleting && (
+        <ConfirmDialog
+          title="Excluir disciplinas selecionadas"
+          description={`Tem certeza de que deseja excluir ${selection.count} disciplina${
+            selection.count === 1 ? "" : "s"
+          }? Esta ação não pode ser desfeita.`}
+          confirmLabel="Excluir"
+          onCancel={() => setBulkDeleting(false)}
+          onConfirm={handleBulkDelete}
+        />
+      )}
+
+      {bulkStatusChanging && (
+        <ConfirmDialog
+          title="Alterar status em lote"
+          description={`O status de ${selection.count} disciplina${
+            selection.count === 1 ? "" : "s"
+          } será alterado para "${DISCIPLINE_STATUS_LABEL[bulkStatusValue]}".`}
+          confirmLabel="Confirmar"
+          onCancel={() => setBulkStatusChanging(false)}
+          onConfirm={handleBulkStatusChange}
         />
       )}
     </div>

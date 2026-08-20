@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { FileQuestion, UserX } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
-import { Spinner } from "@/components/ui/Spinner";
+import { TableSkeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { BoletimSummary } from "@/components/boletim/BoletimSummary";
 import { BoletimTable } from "@/components/boletim/BoletimTable";
@@ -96,14 +96,11 @@ export function MyBoletimPage() {
 
       {loadingStudent ? (
         <Card>
-          <Spinner label="Carregando seus dados..." />
+          <TableSkeleton columns={5} />
         </Card>
       ) : studentError ? (
-        <Card className="p-8 text-center">
-          <p className="mb-3 text-sm text-danger">{studentError}</p>
-          <Button variant="secondary" onClick={loadStudent}>
-            Tentar novamente
-          </Button>
+        <Card>
+          <ErrorState message={studentError} onRetry={loadStudent} />
         </Card>
       ) : !student ? (
         <EmptyState
@@ -142,14 +139,11 @@ export function MyBoletimPage() {
 
           {boletimLoading ? (
             <Card>
-              <Spinner label="Carregando boletim..." />
+              <TableSkeleton columns={5} />
             </Card>
           ) : boletimError ? (
-            <Card className="p-8 text-center">
-              <p className="mb-3 text-sm text-danger">{boletimError}</p>
-              <Button variant="secondary" onClick={loadBoletim}>
-                Tentar novamente
-              </Button>
+            <Card>
+              <ErrorState message={boletimError} onRetry={loadBoletim} />
             </Card>
           ) : boletim ? (
             boletim.disciplines.length === 0 ? (

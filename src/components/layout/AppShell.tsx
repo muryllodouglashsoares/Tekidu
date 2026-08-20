@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Search } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { CommandPalette } from "@/components/command-palette/CommandPalette";
 
 const TITLES: Record<string, string> = {
   "/": "Dashboard",
@@ -32,6 +33,20 @@ function pageTitle(pathname: string): string {
 export function AppShell() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Fase 2 — Command Palette: Ctrl+K (Windows/Linux) e Cmd+K (Mac)
+  // abrem a busca global de qualquer lugar dentro das rotas protegidas.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen(true);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-paper">
@@ -66,21 +81,36 @@ export function AppShell() {
               {pageTitle(location.pathname)}
             </h1>
           </div>
-          <div className="text-sm font-medium text-ink-500 hidden md:block">
-            {new Date().toLocaleDateString("pt-BR", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              className="flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-2 text-sm text-ink-400 shadow-sm transition-colors hover:text-ink-600 md:w-64"
+              aria-label="Buscar (Ctrl+K)"
+            >
+              <Search className="h-4 w-4 shrink-0" />
+              <span className="hidden truncate md:inline">Buscar...</span>
+              <kbd className="ml-auto hidden shrink-0 rounded border border-line bg-ink-50 px-1.5 py-0.5 text-[10px] font-medium text-ink-400 md:inline">
+                Ctrl+K
+              </kbd>
+            </button>
+            <div className="text-sm font-medium text-ink-500 hidden lg:block">
+              {new Date().toLocaleDateString("pt-BR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </div>
           </div>
-          <div className="w-9 md:hidden" aria-hidden="true" />
         </header>
 
         <main className="flex-1 px-4 py-4 md:px-8 md:py-6">
           <Outlet />
         </main>
       </div>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   );
 }

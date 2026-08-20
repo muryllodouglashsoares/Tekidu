@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, BookOpen, ClipboardList, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
-import { Spinner } from "@/components/ui/Spinner";
+import { TableSkeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { GradesTable } from "@/components/notes/GradesTable";
 import { AssessmentManagerModal } from "@/components/notes/AssessmentManagerModal";
@@ -30,6 +32,7 @@ import { describeFirebaseError } from "@/utils/firebaseError";
 
 export function NotesPage() {
   const { profile } = useAuth();
+  const toast = useToast();
   const canEdit = profile?.role === "admin" || profile?.role === "teacher";
 
   // -------------------------------------------------------------
@@ -260,7 +263,9 @@ export function NotesPage() {
         ];
       });
     } catch (error) {
-      setSaveError(describeFirebaseError(error, "notas:salvar-nota"));
+      const message = describeFirebaseError(error, "notas:salvar-nota");
+      setSaveError(message);
+      toast.error(message);
       throw new Error("save-failed");
     }
   }
@@ -277,6 +282,7 @@ export function NotesPage() {
       maxScore: values.maxScore,
     });
     await loadContextData();
+    toast.success(`Avaliação "${values.name}" criada com sucesso.`);
   }
 
   async function handleUpdateAssessment(
@@ -296,6 +302,7 @@ export function NotesPage() {
       maxScore: values.maxScore,
     });
     await loadContextData();
+    toast.success(`Avaliação "${values.name}" atualizada com sucesso.`);
   }
 
   async function handleDeleteAssessment(assessmentId: string) {
@@ -313,6 +320,7 @@ export function NotesPage() {
       });
     }
     await loadContextData();
+    toast.success(`Avaliação "${assessment?.name ?? ""}" excluída.`);
   }
 
   return (
@@ -400,14 +408,11 @@ export function NotesPage() {
 
       {baseLoading ? (
         <Card>
-          <Spinner label="Carregando dados acadêmicos..." />
+          <TableSkeleton columns={5} />
         </Card>
       ) : baseError ? (
-        <Card className="p-8 text-center">
-          <p className="mb-3 text-sm text-danger">{baseError}</p>
-          <Button variant="secondary" onClick={loadBaseData}>
-            Tentar novamente
-          </Button>
+        <Card>
+          <ErrorState message={baseError} onRetry={loadBaseData} />
         </Card>
       ) : !classId ? (
         <EmptyState
@@ -467,14 +472,9 @@ export function NotesPage() {
             </div>
 
             {contextLoading ? (
-              <Spinner label="Carregando notas..." />
+              <TableSkeleton columns={4} />
             ) : contextError ? (
-              <div className="p-8 text-center">
-                <p className="mb-3 text-sm text-danger">{contextError}</p>
-                <Button variant="secondary" onClick={loadContextData}>
-                  Tentar novamente
-                </Button>
-              </div>
+              <ErrorState message={contextError} onRetry={loadContextData} />
             ) : (
               <GradesTable
                 students={linkedStudents}

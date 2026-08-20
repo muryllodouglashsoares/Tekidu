@@ -2,12 +2,19 @@ import { type ButtonHTMLAttributes, forwardRef } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost";
+  /** "md" (padrão, inalterado) ou "sm" para contextos compactos como toolbars de ações em lote. */
+  size?: "md" | "sm";
   loading?: boolean;
 }
 
 const base =
   "inline-flex items-center justify-center gap-2 rounded-full text-sm font-medium " +
-  "px-5 py-2.5 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+  "transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+
+const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {
+  md: "px-5 py-2.5",
+  sm: "px-3.5 py-1.5 text-xs",
+};
 
 const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary: "bg-ink-700 text-white hover:bg-ink-800 active:bg-ink-900 shadow-sm",
@@ -17,11 +24,11 @@ const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = "primary", loading, className = "", children, disabled, ...props }, ref) => {
+  ({ variant = "primary", size = "md", loading, className = "", children, disabled, ...props }, ref) => {
     return (
       <button
         ref={ref}
-        className={`${base} ${variants[variant]} ${className}`}
+        className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}
         disabled={disabled || loading}
         {...props}
       >

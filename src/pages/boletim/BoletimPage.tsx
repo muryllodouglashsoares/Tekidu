@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, FileQuestion, School, Users } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Spinner } from "@/components/ui/Spinner";
+import { TableSkeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { ClassCard } from "@/components/boletim/ClassCard";
@@ -192,14 +192,11 @@ export function BoletimPage() {
 
       {baseLoading ? (
         <Card>
-          <Spinner label="Carregando dados acadêmicos..." />
+          <TableSkeleton columns={5} />
         </Card>
       ) : baseError ? (
-        <Card className="p-8 text-center">
-          <p className="mb-3 text-sm text-danger">{baseError}</p>
-          <Button variant="secondary" onClick={loadBaseData}>
-            Tentar novamente
-          </Button>
+        <Card>
+          <ErrorState message={baseError} onRetry={loadBaseData} />
         </Card>
       ) : !selectedClass ? (
         <ClassesSection classes={classOptions} allClassesEmpty={classes.length === 0} studentCounts={studentCounts} onSelect={handleClassChange} />
@@ -211,14 +208,11 @@ export function BoletimPage() {
         />
       ) : boletimLoading ? (
         <Card>
-          <Spinner label="Carregando boletim..." />
+          <TableSkeleton columns={5} />
         </Card>
       ) : boletimError ? (
-        <Card className="p-8 text-center">
-          <p className="mb-3 text-sm text-danger">{boletimError}</p>
-          <Button variant="secondary" onClick={loadBoletim}>
-            Tentar novamente
-          </Button>
+        <Card>
+          <ErrorState message={boletimError} onRetry={loadBoletim} />
         </Card>
       ) : boletim ? (
         <BoletimView
@@ -304,6 +298,7 @@ function StudentsSection({
       <Card className="overflow-hidden">
         {students.length === 0 ? (
           <EmptyState
+            bare
             icon={Users}
             title="Turma sem alunos"
             description="Esta turma ainda não possui alunos cadastrados."
