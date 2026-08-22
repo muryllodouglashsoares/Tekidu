@@ -458,6 +458,42 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ---------------------------------------------------------------
+    // Notificações (Fase 5 do plano de evolução — ver
+    // `services/notifications/notificationService.ts` e
+    // `types/notification.ts`).
+    //
+    // LEITURA: um usuário só pode ler as PRÓPRIAS notificações
+    // (`recipientUid == request.auth.uid`). Isso vale tanto para
+    // `get` de um documento quanto para `list`/queries — toda query no
+    // service já filtra por `where("recipientUid", "==", uid)`, então
+    // essa regra nunca barra o uso legítimo, só impede um usuário de
+    // tentar ler notificações de outra pessoa.
+    //
+    // CRIAÇÃO: restrita a staff ativo (admin/professor), que é quem
+    // dispara os eventos que geram notificação (lançar nota, vincular
+    // disciplina, cadastrar professor...). Um aluno nunca cria
+    // notificação para ninguém, nem para si mesmo. Isso é
+    // deliberadamente mais permissivo que "só o próprio destinatário
+    // grava", porque quem cria a notificação nunca é o destinatário
+    // (ex.: o professor lança a nota, o ALUNO é quem recebe).
+    //
+    // ATUALIZAÇÃO: só o destinatário pode alterar sua notificação, e
+    // apenas o campo `read` — impede que o destinatário reescreva
+    // título/mensagem/link de uma notificação que já recebeu.
+    //
+    // EXCLUSÃO: não exposta na UI desta etapa; mantida bloqueada, no
+    // mesmo espírito de `auditLogs`, até haver necessidade real.
+    // ---------------------------------------------------------------
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.recipientUid == request.auth.uid;
+      allow create: if isActiveStaff();
+      allow update: if isSignedIn() &&
+        resource.data.recipientUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if false;
+    }
+
     // Nenhuma outra coleção existe ainda. Por padrão, o Firestore nega
     // tudo que não tem uma regra explícita — não é necessário (nem
     // recomendado) adicionar um "match /{document=**}" de bloqueio,

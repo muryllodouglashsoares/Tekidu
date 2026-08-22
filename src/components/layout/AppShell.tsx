@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Menu, X, Search } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
+import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 const TITLES: Record<string, string> = {
   "/": "Dashboard",
@@ -102,6 +103,7 @@ export function AppShell() {
                 year: "numeric",
               })}
             </div>
+            <NotificationCenter />
           </div>
         </header>
 

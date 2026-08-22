@@ -391,15 +391,19 @@ export function StudentsPage() {
                         </td>
                       )}
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/alunos/${student.id}`)}
+                          className="flex items-center gap-3 text-left hover:underline"
+                        >
                           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-semibold text-ink-700">
                             {initials(student.name)}
                           </span>
-                          <div className="min-w-0">
-                            <p className="truncate font-medium text-ink900">{student.name}</p>
-                            <p className="truncate text-xs text-ink-400">{student.email}</p>
-                          </div>
-                        </div>
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium text-ink900">{student.name}</span>
+                            <span className="block truncate text-xs text-ink-400">{student.email}</span>
+                          </span>
+                        </button>
                       </td>
                       <td className="px-4 py-3 tabular text-ink-600">
                         {student.registrationNumber}

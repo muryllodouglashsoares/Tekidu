@@ -1,6 +1,7 @@
 import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore";
 import { createStaffAuthAccount, db } from "@/lib/firebase";
 import { logAuditEvent } from "@/services/audit/auditService";
+import { createNotifications } from "@/services/notifications/notificationService";
 import type { UserProfile } from "@/types/user";
 
 const usersCollection = collection(db, "users");
@@ -38,6 +39,20 @@ export async function getAllTeachers(): Promise<UserProfile[]> {
   return snapshot.docs
     .map((d) => d.data() as UserProfile)
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Lista os admins com conta ativa, exceto (opcionalmente) um deles —
+ * usado para notificar "os outros admins" quando um evento
+ * administrativo acontece (Fase 5 — "novo usuário"), sem notificar o
+ * próprio autor da ação.
+ */
+export async function getActiveAdmins(excludeUid?: string): Promise<UserProfile[]> {
+  const q = query(usersCollection, where("role", "==", "admin"), where("active", "==", true));
+  const snapshot = await getDocs(q);
+  return snapshot.docs
+    .map((d) => d.data() as UserProfile)
+    .filter((admin) => admin.uid !== excludeUid);
 }
 
 /** Payload aceito pelo formulário de cadastro de professor. */
@@ -85,6 +100,27 @@ export async function createTeacher(
     before: null,
     after: `${data.name} <${data.email}>`,
   });
+
+  // Fase 5 — notifica os DEMAIS admins ativos ("novo usuário"). Fire-
+  // and-forget (ver notificationService): o cadastro do professor já
+  // está concluído nesse ponto, independente do resultado disto.
+  getActiveAdmins(actor.id)
+    .then((admins) => {
+      createNotifications(
+        admins.map((admin) => ({
+          recipientUid: admin.uid,
+          type: "teacher_created",
+          title: "Novo professor cadastrado",
+          message: `${actor.name} cadastrou ${data.name} como professor(a).`,
+          link: "/professores",
+        }))
+      );
+    })
+    .catch((error) => {
+      // eslint-disable-next-line no-console
+      console.error("[userService] Falha ao notificar admins sobre novo professor", error);
+    });
+
   return uid;
 }
 

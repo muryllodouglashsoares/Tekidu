@@ -42,6 +42,23 @@ export type AuditEventType =
   | "class_deleted"
   | "discipline_deleted";
 
+/**
+ * Rótulo legível para cada tipo de evento — usado pela aba "Histórico"
+ * do Perfil 360° (Fase 8, `StudentProfilePage`), a primeira tela a
+ * efetivamente EXIBIR os logs de auditoria para o usuário (até aqui
+ * eles só eram gravados, nunca lidos de volta pela UI).
+ */
+export const AUDIT_EVENT_LABEL: Record<AuditEventType, string> = {
+  grade_updated: "Nota alterada",
+  assessment_deleted: "Avaliação excluída",
+  attendance_updated: "Frequência alterada",
+  academic_settings_updated: "Régua acadêmica alterada",
+  teacher_created: "Professor cadastrado",
+  teacher_status_changed: "Status do professor alterado",
+  class_deleted: "Turma excluída",
+  discipline_deleted: "Disciplina excluída",
+};
+
 export interface AuditLog {
   id: string;
   type: AuditEventType;

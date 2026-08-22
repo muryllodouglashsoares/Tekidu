@@ -29,6 +29,7 @@ import {
 } from "@/services/disciplines/disciplineService";
 import { getClasses, getStudentCountsByClassId } from "@/services/classes/classService";
 import { getTeachers } from "@/services/users/userService";
+import { createNotification } from "@/services/notifications/notificationService";
 import {
   DISCIPLINE_STATUS_LABEL,
   type Discipline,
@@ -188,6 +189,7 @@ export function DisciplinesPage() {
   }, [disciplines]);
 
   async function handleCreateOrUpdate(data: DisciplineInput) {
+    const previousTeacherId = editing?.teacherId ?? null;
     if (editing) {
       await updateDiscipline(editing.id, data);
       toast.success(`${data.name} foi atualizada com sucesso.`);
@@ -195,6 +197,22 @@ export function DisciplinesPage() {
       await createDiscipline(data);
       toast.success(`${data.name} foi cadastrada com sucesso.`);
     }
+
+    // Fase 5 — notifica o professor quando ele é vinculado (ou trocado)
+    // como responsável pela disciplina. Só dispara se o vínculo
+    // realmente mudou, para não notificar em toda edição (ex.: só
+    // mudar a carga horária) — mesmo cuidado de "só loga quando o
+    // campo relevante muda" já usado em `updateTeacherProfile`.
+    if (data.teacherId && data.teacherId !== previousTeacherId) {
+      createNotification({
+        recipientUid: data.teacherId,
+        type: "discipline_assigned",
+        title: "Você foi vinculado a uma disciplina",
+        message: `Você agora é o(a) professor(a) responsável por ${data.name}.`,
+        link: "/disciplinas",
+      });
+    }
+
     await loadData();
   }
 

@@ -21,6 +21,7 @@ import {
 } from "@/services/assessments/assessmentService";
 import { getGradesByContext, saveGrade } from "@/services/grades/gradeService";
 import { logAuditEvent } from "@/services/audit/auditService";
+import { createNotification } from "@/services/notifications/notificationService";
 import { getAcademicSettings } from "@/services/academicSettings/academicSettingsService";
 import { ASSESSMENT_TERM_LABEL, type Assessment, type AssessmentTerm } from "@/types/assessment";
 import type { Grade } from "@/types/grade";
@@ -238,6 +239,26 @@ export function NotesPage() {
           before: existing.score === null ? null : String(existing.score),
           after: score === null ? null : String(score),
         });
+      }
+
+      // Fase 5 — notifica o aluno quando uma nota dele é lançada ou
+      // alterada ("nova nota" / "alteração de nota"). Mesma condição
+      // do log de auditoria acima (só dispara quando o valor realmente
+      // muda, não a cada clique que resalva o mesmo valor) e só
+      // notifica se o aluno já tem conta de acesso vinculada (`uid` —
+      // ver nota em `types/student.ts`).
+      if (score !== null && (!existing || existing.score !== score)) {
+        const student = linkedStudents.find((s) => s.id === studentId);
+        const assessment = assessments.find((a) => a.id === assessmentId);
+        if (student?.uid) {
+          createNotification({
+            recipientUid: student.uid,
+            type: "grade_posted",
+            title: existing ? "Nota atualizada" : "Nova nota lançada",
+            message: `${assessment?.name ?? "Uma avaliação"} em ${selectedDiscipline?.name ?? "sua disciplina"}: ${score.toFixed(1)}`,
+            link: "/meu-boletim",
+          });
+        }
       }
 
       // Atualização otimista local — evita recarregar a tabela inteira

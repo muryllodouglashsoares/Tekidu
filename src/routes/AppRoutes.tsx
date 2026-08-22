@@ -6,6 +6,7 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
 import { StudentsPage } from "@/pages/students/StudentsPage";
+import { StudentProfilePage } from "@/pages/students/StudentProfilePage";
 import { ClassesPage } from "@/pages/classes/ClassesPage";
 import { DisciplinesPage } from "@/pages/disciplines/DisciplinesPage";
 import { TeachersPage } from "@/pages/teachers/TeachersPage";
@@ -94,6 +95,11 @@ export function AppRoutes() {
               própria visão em "/meu-boletim", abaixo. */}
           <Route element={<ProtectedRoute allowedRoles={["admin", "teacher"]} />}>
             <Route path="/alunos" element={<StudentsPage />} />
+            {/* Perfil 360° (Fase 8): central acadêmica de UM aluno —
+                identificação, resumo, notas por disciplina, desenvolvimento
+                e frequência. Mesma restrição de acesso de "/alunos" (é
+                alcançado a partir de lá). */}
+            <Route path="/alunos/:studentId" element={<StudentProfilePage />} />
             <Route path="/turmas" element={<ClassesPage />} />
             <Route path="/disciplinas" element={<DisciplinesPage />} />
           </Route>
