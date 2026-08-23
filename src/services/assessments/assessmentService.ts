@@ -74,6 +74,51 @@ export async function getAssessmentsBySchoolYear(schoolYear: number): Promise<As
   return snapshot.docs.map((d) => toAssessment(d.id, d.data()));
 }
 
+/**
+ * Lista as avaliações de VÁRIAS disciplinas de um ano letivo — Etapa 7
+ * do plano multi-role ("escopar turma/disciplina para o professor").
+ *
+ * Diferente de `getAssessmentsBySchoolYear` (uma única consulta sem
+ * filtro de disciplina — por isso só seguro para admin), esta função
+ * faz UMA consulta por disciplina (`where('disciplineId','==', id) +
+ * where('schoolYear','==', schoolYear)`), em paralelo. É
+ * deliberadamente uma query de igualdade por vez (não um único
+ * `where('disciplineId','in', ids)`) porque só uma query com o valor
+ * de `disciplineId` FIXO permite às Firestore Rules provar, sem
+ * avaliar cada documento individualmente, que o resultado inteiro
+ * satisfaz `isOwnDiscipline(disciplineId)` — mesmo racional já usado
+ * em `isOwnStudentRecord` (ver `firestore.rules`). Uma cláusula `in`
+ * teria o mesmo problema de `getAssessmentsBySchoolYear`: a regra não
+ * consegue provar a posse de CADA valor possível do conjunto de uma
+ * vez, e o Firestore rejeitaria a consulta inteira.
+ *
+ * Usada por `teacherOverviewService` (Portal do Professor) no lugar de
+ * `getAssessmentsBySchoolYear` — antes, o professor buscava as
+ * avaliações do ANO LETIVO INTEIRO (todas as disciplinas da escola) e
+ * filtrava em memória; a UI já escondia o resultado, mas a leitura em
+ * si não era escopada, então nada impedia a mesma chamada de trazer
+ * dados de disciplinas de outros professores. Ver nota na regra de
+ * `assessments` em `firestore.rules`.
+ */
+export async function getAssessmentsByDisciplineIds(
+  disciplineIds: string[],
+  schoolYear: number
+): Promise<Assessment[]> {
+  if (disciplineIds.length === 0) return [];
+  const results = await Promise.all(
+    disciplineIds.map(async (disciplineId) => {
+      const q = query(
+        assessmentsCollection,
+        where("disciplineId", "==", disciplineId),
+        where("schoolYear", "==", schoolYear)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((d) => toAssessment(d.id, d.data()));
+    })
+  );
+  return results.flat();
+}
+
 export async function createAssessment(data: AssessmentInput): Promise<string> {
   const ref = await addDoc(assessmentsCollection, {
     ...data,

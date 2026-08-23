@@ -65,6 +65,24 @@ export async function getAllSessions(): Promise<AttendanceSession[]> {
   return snapshot.docs.map((d) => toSession(d.id, d.data()));
 }
 
+/**
+ * Lista as aulas de VÁRIAS disciplinas (qualquer bimestre) — versão
+ * escopada de `getAllSessions` para o Portal do Professor. Mesmo
+ * racional de `assessmentService.getAssessmentsByDisciplineIds` (uma
+ * consulta por disciplina, nunca `in`).
+ */
+export async function getSessionsByDisciplineIds(disciplineIds: string[]): Promise<AttendanceSession[]> {
+  if (disciplineIds.length === 0) return [];
+  const results = await Promise.all(
+    disciplineIds.map(async (disciplineId) => {
+      const q = query(sessionsCollection, where("disciplineId", "==", disciplineId));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((d) => toSession(d.id, d.data()));
+    })
+  );
+  return results.flat();
+}
+
 export async function createSession(data: AttendanceSessionInput): Promise<string> {
   const ref = await addDoc(sessionsCollection, {
     ...data,

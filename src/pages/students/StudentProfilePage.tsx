@@ -31,11 +31,14 @@ import {
   type StudentBoletim,
   type StudentDevelopmentPoint,
 } from "@/services/boletim/boletimService";
-import { getAttendanceRecordsBySchoolYear } from "@/services/attendance/attendanceRecordService";
+import {
+  getAttendanceRecordsBySchoolYear,
+  getRecordsByContext,
+} from "@/services/attendance/attendanceRecordService";
 import { getAuditLogsForStudent } from "@/services/audit/auditService";
 import { computeEvolution } from "@/services/reports/reportsService";
 import { ASSESSMENT_TERM_LABEL } from "@/types/assessment";
-import { BOLETIM_PERIOD_LABEL, type BoletimPeriod } from "@/types/boletim";
+import { BOLETIM_PERIOD_LABEL, ALL_ASSESSMENT_TERMS, type BoletimPeriod } from "@/types/boletim";
 import { calculateAttendanceRate, calculateAttendanceStatus } from "@/types/attendance";
 import { AUDIT_EVENT_LABEL } from "@/types/auditLog";
 import type { Student } from "@/types/student";
@@ -91,6 +94,13 @@ export function StudentProfilePage() {
   const classPath = isTeacherView ? "/minhas-turmas" : "/turmas";
 
   const [unauthorized, setUnauthorized] = useState(false);
+  // Disciplinas do professor vinculadas a este aluno (Etapa 7) — vem
+  // pronta de `getTeacherStudentsOverview` (já escopada a
+  // `discipline.teacherId === profile.uid`), reaproveitada por
+  // `AttendanceTab` para nunca buscar frequência fora das disciplinas
+  // do professor. `null` para admin (não se aplica) ou enquanto não
+  // carregou.
+  const [teacherDisciplineIds, setTeacherDisciplineIds] = useState<string[] | null>(null);
 
   async function loadStudent() {
     if (!studentId) return;
@@ -110,13 +120,14 @@ export function StudentProfilePage() {
       // (`getTeacherStudentsOverview` — nenhum cálculo novo).
       if (studentData && isTeacherView && profile) {
         const myStudents = await getTeacherStudentsOverview(profile.uid, schoolYear);
-        const allowed = myStudents.some((s) => s.student.id === studentData.id);
-        if (!allowed) {
+        const match = myStudents.find((s) => s.student.id === studentData.id);
+        if (!match) {
           setUnauthorized(true);
           setStudent(null);
           setLoading(false);
           return;
         }
+        setTeacherDisciplineIds(match.disciplines.map((d) => d.id));
       }
 
       setStudent(studentData);
@@ -271,7 +282,13 @@ export function StudentProfilePage() {
       )}
 
       {tab === "attendance" && student.classId && (
-        <AttendanceTab studentId={student.id} schoolYear={schoolYear} boletim={boletim} />
+        <AttendanceTab
+          studentId={student.id}
+          schoolYear={schoolYear}
+          boletim={boletim}
+          classId={student.classId}
+          teacherDisciplineIds={teacherDisciplineIds}
+        />
       )}
 
       {tab === "history" && profile?.role === "admin" && <HistoryTab studentId={student.id} />}
@@ -449,10 +466,19 @@ function AttendanceTab({
   studentId,
   schoolYear,
   boletim,
+  classId,
+  teacherDisciplineIds,
 }: {
   studentId: string;
   schoolYear: number;
   boletim: StudentBoletim | null;
+  classId: string | null;
+  /**
+   * Etapa 7 — quando não-nulo (visão do professor), restringe a busca
+   * de presença às disciplinas informadas em vez do ano letivo inteiro
+   * (ver `load` abaixo). `null` = visão do admin, sem restrição.
+   */
+  teacherDisciplineIds: string[] | null;
 }) {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -462,12 +488,34 @@ function AttendanceTab({
     setLoading(true);
     setError(null);
     try {
-      // Uma única consulta de campo simples (staff lê `attendanceRecords`
-      // sem restrição por aluno — ver firestore.rules), filtrada aqui no
-      // cliente para este aluno. Evita N consultas (uma por disciplina x
-      // bimestre) só para montar os totais de faltas/presenças abaixo.
-      const all = await getAttendanceRecordsBySchoolYear(schoolYear);
-      setRecords(all.filter((r) => r.studentId === studentId));
+      if (teacherDisciplineIds !== null) {
+        // Etapa 7 — visão do professor: em vez de uma única consulta
+        // ampla de `attendanceRecords` do ano letivo inteiro (que
+        // dependia só da UI para esconder disciplinas de outros
+        // professores), busca uma consulta por disciplina PRÓPRIA x
+        // bimestre, já filtrada por `studentId` no servidor — mesmo
+        // padrão de `boletimService.getStudentBoletim`. Sem `classId`
+        // (aluno sem turma) não há o que buscar.
+        if (!classId || teacherDisciplineIds.length === 0) {
+          setRecords([]);
+        } else {
+          const results = await Promise.all(
+            teacherDisciplineIds.flatMap((disciplineId) =>
+              ALL_ASSESSMENT_TERMS.map((term) =>
+                getRecordsByContext(disciplineId, classId, schoolYear, term, studentId)
+              )
+            )
+          );
+          setRecords(results.flat());
+        }
+      } else {
+        // Uma única consulta de campo simples (admin lê `attendanceRecords`
+        // sem restrição por aluno — ver firestore.rules), filtrada aqui no
+        // cliente para este aluno. Evita N consultas (uma por disciplina x
+        // bimestre) só para montar os totais de faltas/presenças abaixo.
+        const all = await getAttendanceRecordsBySchoolYear(schoolYear);
+        setRecords(all.filter((r) => r.studentId === studentId));
+      }
     } catch (err) {
       setError(describeFirebaseError(err, "perfil-aluno:frequencia"));
     } finally {
@@ -478,7 +526,7 @@ function AttendanceTab({
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId, schoolYear]);
+  }, [studentId, schoolYear, classId, teacherDisciplineIds]);
 
   const presentCount = records.filter((r) => r.status === "present").length;
   const absentCount = records.filter((r) => r.status === "absent").length;

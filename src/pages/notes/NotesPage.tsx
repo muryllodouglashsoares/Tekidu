@@ -21,7 +21,7 @@ import {
 } from "@/services/assessments/assessmentService";
 import { getGradesByContext, saveGrade } from "@/services/grades/gradeService";
 import { logAuditEvent } from "@/services/audit/auditService";
-import { createNotification } from "@/services/notifications/notificationService";
+import { createNotification, createNotifications } from "@/services/notifications/notificationService";
 import { getAcademicSettings } from "@/services/academicSettings/academicSettingsService";
 import { ASSESSMENT_TERM_LABEL, type Assessment, type AssessmentTerm } from "@/types/assessment";
 import type { Grade } from "@/types/grade";
@@ -86,10 +86,24 @@ export function NotesPage() {
   const [disciplineId, setDisciplineId] = useState<string>("");
   const [term, setTerm] = useState<string>("");
 
-  const classOptions = useMemo(
-    () => classes.filter((c) => String(c.schoolYear) === yearFilter),
-    [classes, yearFilter]
-  );
+  // Etapa 7 — escopo de turma/disciplina para o professor: disciplinas
+  // sem `teacherId === profile.uid` nem aparecem nos seletores. Antes,
+  // um professor via TODAS as disciplinas da escola em "Notas" (a
+  // escrita já era bloqueada por `canWriteAcademicRecord` nas Rules,
+  // mas a LEITURA de avaliações/notas de disciplinas de outros
+  // professores não era escopada nem na UI nem no servidor). Admin
+  // continua vendo tudo, sem filtro.
+  const myDisciplines = useMemo(() => {
+    if (profile?.role !== "teacher") return disciplines;
+    return disciplines.filter((d) => d.teacherId === profile.uid);
+  }, [disciplines, profile]);
+
+  const classOptions = useMemo(() => {
+    const inYear = classes.filter((c) => String(c.schoolYear) === yearFilter);
+    if (profile?.role !== "teacher") return inYear;
+    const myClassIds = new Set(myDisciplines.flatMap((d) => d.classIds));
+    return inYear.filter((c) => myClassIds.has(c.id));
+  }, [classes, yearFilter, profile, myDisciplines]);
 
   // Só disciplinas vinculadas à turma selecionada (evita combinações
   // inválidas — ex.: aluno da Turma A aparecendo numa disciplina
@@ -98,8 +112,8 @@ export function NotesPage() {
   // `discipline.schoolYear`.
   const disciplineOptions = useMemo(() => {
     if (!classId) return [];
-    return getDisciplinesForClass(disciplines, classId);
-  }, [disciplines, classId]);
+    return getDisciplinesForClass(myDisciplines, classId);
+  }, [myDisciplines, classId]);
 
   // Reseta seleções dependentes quando o pai muda, para nunca deixar
   // uma combinação inválida selecionada.
@@ -302,6 +316,24 @@ export function NotesPage() {
       weight: values.weight,
       maxScore: values.maxScore,
     });
+
+    // Etapa 6 — notifica os alunos da turma que uma nova avaliação foi
+    // cadastrada, ANTES do lançamento da nota (que já é coberto por
+    // `grade_posted` em `handleSaveGrade`). Só os alunos com conta
+    // vinculada (`student.uid`) recebem — mesmo filtro já usado em
+    // `handleSaveGrade`.
+    createNotifications(
+      linkedStudents
+        .filter((s) => s.uid)
+        .map((s) => ({
+          recipientUid: s.uid as string,
+          type: "assessment_created" as const,
+          title: "Nova avaliação cadastrada",
+          message: `${values.name} em ${selectedDiscipline?.name ?? "sua disciplina"}.`,
+          link: "/meu-boletim",
+        }))
+    );
+
     await loadContextData();
     toast.success(`Avaliação "${values.name}" criada com sucesso.`);
   }
@@ -322,6 +354,27 @@ export function NotesPage() {
       weight: values.weight,
       maxScore: values.maxScore,
     });
+
+    // Etapa 6 — só notifica em atualização quando o NOME muda (ex.:
+    // "Prova 1" virou "Prova remarcada"). Ajustar peso/nota máxima não
+    // muda nada que o aluno precise saber antes da nota ser lançada,
+    // então não gera notificação — mesmo critério de "só quando há
+    // valor real" já usado em `DisciplinesPage.handleSave` (só notifica
+    // quando o vínculo de professor realmente muda).
+    if (values.name !== assessment.name) {
+      createNotifications(
+        linkedStudents
+          .filter((s) => s.uid)
+          .map((s) => ({
+            recipientUid: s.uid as string,
+            type: "assessment_updated" as const,
+            title: "Avaliação atualizada",
+            message: `${assessment.name} agora é "${values.name}" em ${selectedDiscipline?.name ?? "sua disciplina"}.`,
+            link: "/meu-boletim",
+          }))
+      );
+    }
+
     await loadContextData();
     toast.success(`Avaliação "${values.name}" atualizada com sucesso.`);
   }

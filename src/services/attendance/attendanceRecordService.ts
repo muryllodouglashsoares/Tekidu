@@ -101,6 +101,32 @@ export async function getAttendanceRecordsBySchoolYear(schoolYear: number): Prom
 }
 
 /**
+ * Lista os registros de presença de VÁRIAS disciplinas de um ano
+ * letivo — versão escopada de `getAttendanceRecordsBySchoolYear` para
+ * o Portal do Professor. Mesmo racional de
+ * `assessmentService.getAssessmentsByDisciplineIds` (uma consulta por
+ * disciplina, nunca `in`).
+ */
+export async function getAttendanceRecordsByDisciplineIds(
+  disciplineIds: string[],
+  schoolYear: number
+): Promise<AttendanceRecord[]> {
+  if (disciplineIds.length === 0) return [];
+  const results = await Promise.all(
+    disciplineIds.map(async (disciplineId) => {
+      const q = query(
+        recordsCollection,
+        where("disciplineId", "==", disciplineId),
+        where("schoolYear", "==", schoolYear)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((d) => toRecord(d.id, d.data()));
+    })
+  );
+  return results.flat();
+}
+
+/**
  * Constrói o ID determinístico do registro de presença de um aluno em
  * uma aula. Formato: `{studentId}_{sessionId}`. Mesma correção
  * estrutural de `gradeService.buildGradeId` (ver nota lá) aplicada

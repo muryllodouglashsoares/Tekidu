@@ -1,10 +1,10 @@
 import { getStudents } from "@/services/students/studentService";
 import { getClasses } from "@/services/classes/classService";
 import { getDisciplines } from "@/services/disciplines/disciplineService";
-import { getAssessmentsBySchoolYear } from "@/services/assessments/assessmentService";
-import { getAllSessions } from "@/services/attendanceSessions/attendanceSessionService";
-import { getGradesBySchoolYear } from "@/services/grades/gradeService";
-import { getAttendanceRecordsBySchoolYear } from "@/services/attendance/attendanceRecordService";
+import { getAssessmentsByDisciplineIds } from "@/services/assessments/assessmentService";
+import { getSessionsByDisciplineIds } from "@/services/attendanceSessions/attendanceSessionService";
+import { getGradesByDisciplineIds } from "@/services/grades/gradeService";
+import { getAttendanceRecordsByDisciplineIds } from "@/services/attendance/attendanceRecordService";
 import { getAcademicSettings } from "@/services/academicSettings/academicSettingsService";
 import { computeDevelopmentSeries, type ReportSeriesPoint } from "@/services/reports/reportsService";
 import { calculateAverage, deriveSituationFromAverage, type AcademicSituation } from "@/types/grade";
@@ -25,21 +25,24 @@ import type { Discipline } from "@/types/discipline";
  * de novo, ele foi extraído para cá e o Dashboard passou a chamar
  * `getTeacherAssignments` também (ver DashboardPage.tsx).
  *
- * ESCOPO/SEGURANÇA (item 13/14 do plano): todas as funções abaixo já
- * recebem `teacherUid` e filtram TUDO a partir dele — um professor
- * nunca vê turma/aluno fora de `discipline.teacherId === teacherUid`.
- * Isso é reforçado no nível de UI (só usado nas telas restritas a
- * `teacher`) e continua sujeito às Firestore Rules por trás de cada
- * leitura (ver firestore.rules — leitura de staff hoje é ampla,
- * porque a escrita já é a barreira real via `isOwnDiscipline`); nada
- * aqui reduz ou substitui essa barreira, apenas evita que a UI do
- * professor precise renderizar/filtrar a escola inteira.
+ * ESCOPO/SEGURANÇA (item 13/14 do plano; fechado na Etapa 7): todas as
+ * funções abaixo recebem `teacherUid` e filtram TUDO a partir dele —
+ * um professor nunca vê turma/aluno fora de `discipline.teacherId ===
+ * teacherUid`. Até a Etapa 6, isso só era garantido em memória (a
+ * leitura em si buscava o ano letivo INTEIRO via `getXBySchoolYear` e
+ * filtrava depois) — a Etapa 7 fechou essa lacuna: `loadTeacherRawData`
+ * agora busca `myDisciplines` PRIMEIRO e usa as versões
+ * `getXByDisciplineIds` (uma consulta por disciplina, nunca uma
+ * consulta ampla do ano inteiro) para avaliações/aulas/notas/presença
+ * — o que permite a `firestore.rules` (`isOwnDiscipline`) validar e
+ * BLOQUEAR de fato a leitura, não só confiar na UI para escondê-la.
  *
- * PERFORMANCE: reaproveita exatamente as mesmas consultas "por ano
- * letivo inteiro" que `academicOverviewService.getAcademicOverview` já
- * faz para o Dashboard do admin (uma leitura por coleção, sem N+1 por
- * turma/disciplina) — nenhuma consulta nova é adicionada ao padrão já
- * aceito pelo projeto para o tamanho de uma escola.
+ * PERFORMANCE: `myDisciplines` normalmente tem poucas entradas (as
+ * disciplinas de UM professor), então o custo de "uma consulta por
+ * disciplina" em paralelo (`Promise.all`) é próximo do de uma única
+ * consulta ampla — só o admin (`academicOverviewService`, que continua
+ * usando `getXBySchoolYear` porque precisa da escola inteira) paga o
+ * custo de uma leitura por coleção.
  */
 
 export interface TeacherAssignment {
@@ -80,18 +83,28 @@ interface TeacherRawData {
 }
 
 async function loadTeacherRawData(teacherUid: string, schoolYear: number): Promise<TeacherRawData> {
-  const [disciplines, classes, students, assessments, sessions, grades, records, settings] = await Promise.all([
+  // Etapa 7 — busca disciplinas/turmas/alunos primeiro (leitura de
+  // catálogo, já ampla por Security Rule — ver nota em
+  // `firestore.rules`) para resolver `myDisciplines` ANTES de buscar
+  // avaliações/aulas/notas/presença, que agora são escopadas por
+  // disciplina (`getXByDisciplineIds`) em vez de "o ano letivo
+  // inteiro" (`getXBySchoolYear`).
+  const [disciplines, classes, students, settings] = await Promise.all([
     getDisciplines(),
     getClasses(),
     getStudents(),
-    getAssessmentsBySchoolYear(schoolYear),
-    getAllSessions(),
-    getGradesBySchoolYear(schoolYear),
-    getAttendanceRecordsBySchoolYear(schoolYear),
     getAcademicSettings(schoolYear),
   ]);
 
   const myDisciplines = disciplines.filter((d) => d.teacherId === teacherUid);
+  const myDisciplineIds = myDisciplines.map((d) => d.id);
+
+  const [assessments, sessions, grades, records] = await Promise.all([
+    getAssessmentsByDisciplineIds(myDisciplineIds, schoolYear),
+    getSessionsByDisciplineIds(myDisciplineIds),
+    getGradesByDisciplineIds(myDisciplineIds, schoolYear),
+    getAttendanceRecordsByDisciplineIds(myDisciplineIds, schoolYear),
+  ]);
 
   const classById = new Map<string, SchoolClass>();
   for (const c of classes) classById.set(c.id, c);

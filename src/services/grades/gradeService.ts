@@ -87,6 +87,29 @@ export async function getGradesBySchoolYear(schoolYear: number): Promise<Grade[]
 }
 
 /**
+ * Lista as notas de VÁRIAS disciplinas de um ano letivo — versão
+ * escopada de `getGradesBySchoolYear` para o Portal do Professor. Ver
+ * o racional completo em `assessmentService.getAssessmentsByDisciplineIds`
+ * (mesmo padrão: uma consulta por disciplina, nunca `in`, para que a
+ * Security Rule `isOwnDiscipline` consiga validar a lista inteira).
+ */
+export async function getGradesByDisciplineIds(disciplineIds: string[], schoolYear: number): Promise<Grade[]> {
+  if (disciplineIds.length === 0) return [];
+  const results = await Promise.all(
+    disciplineIds.map(async (disciplineId) => {
+      const q = query(
+        gradesCollection,
+        where("disciplineId", "==", disciplineId),
+        where("schoolYear", "==", schoolYear)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((d) => toGrade(d.id, d.data()));
+    })
+  );
+  return results.flat();
+}
+
+/**
  * Constrói o ID determinístico do documento de nota de um aluno em
  * uma avaliação. Formato: `{studentId}_{assessmentId}`.
  *

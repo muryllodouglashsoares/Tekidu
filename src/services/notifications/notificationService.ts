@@ -4,6 +4,7 @@ import {
   doc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
@@ -92,6 +93,70 @@ export async function getUnreadCount(uid: string): Promise<number> {
   );
   const snapshot = await getDocs(q);
   return snapshot.size;
+}
+
+/**
+ * Etapa 6 — versão em tempo real de `getRecentNotifications`, usada
+ * pelo painel do sino enquanto ele está aberto. `onSnapshot` mantém a
+ * lista sincronizada sem precisar de um botão "atualizar" nem de
+ * polling: uma nota lançada por um professor em outra aba aparece no
+ * sino do aluno sem recarregar a página.
+ *
+ * Retorna a função de `unsubscribe` — o CHAMADOR é responsável por
+ * invocá-la no cleanup do `useEffect` (ver `NotificationCenter.tsx`);
+ * não fazer isso vazaria um listener por montagem/desmontagem do
+ * painel, cobrando leituras do Firestore para sempre.
+ */
+export function subscribeToRecentNotifications(
+  uid: string,
+  onChange: (notifications: Notification[]) => void,
+  onError?: (error: unknown) => void
+): () => void {
+  const q = query(
+    notificationsCollection,
+    where("recipientUid", "==", uid),
+    orderBy("createdAt", "desc"),
+    limit(RECENT_LIMIT)
+  );
+  return onSnapshot(
+    q,
+    (snapshot) => onChange(snapshot.docs.map((d) => toNotification(d.id, d.data()))),
+    (error) => {
+      console.error("[NotificationService] Falha no listener de notificações", error);
+      onError?.(error);
+    }
+  );
+}
+
+/**
+ * Etapa 6 — versão em tempo real de `getUnreadCount`. Assinada
+ * IMEDIATAMENTE ao entrar no app (não só quando o painel abre), para
+ * o contador do sino já nascer certo e se manter certo mesmo com o
+ * painel fechado — é o que faz o sino "acender" sozinho quando uma
+ * notificação nova chega, sem o usuário precisar clicar em nada.
+ *
+ * Consulta separada de `subscribeToRecentNotifications` (mesmo
+ * racional de `getUnreadCount`): garante a contagem certa mesmo além
+ * de `RECENT_LIMIT` notificações não lidas acumuladas.
+ */
+export function subscribeToUnreadCount(
+  uid: string,
+  onChange: (count: number) => void,
+  onError?: (error: unknown) => void
+): () => void {
+  const q = query(
+    notificationsCollection,
+    where("recipientUid", "==", uid),
+    where("read", "==", false)
+  );
+  return onSnapshot(
+    q,
+    (snapshot) => onChange(snapshot.size),
+    (error) => {
+      console.error("[NotificationService] Falha no listener de contagem", error);
+      onError?.(error);
+    }
+  );
 }
 
 export async function markAsRead(notificationId: string): Promise<void> {

@@ -104,17 +104,36 @@ export async function getStudentBoletim(
       // o que torna esta função utilizável por um aluno autenticado
       // (Tarefa 3, Fase 1 pós-auditoria V8): ver a nota de parâmetro em
       // `gradeService.getGradesByContext`/`attendanceRecordService.getRecordsByContext`.
-      const [gradesByTerm, recordsByTerm] = await Promise.all([
-        Promise.all(
-          terms.map((term) => getGradesByContext(discipline.id, classId, schoolYear, term, studentId))
-        ),
-        Promise.all(
-          terms.map((term) => getRecordsByContext(discipline.id, classId, schoolYear, term, studentId))
-        ),
-      ]);
-
-      const studentGrades = gradesByTerm.flat().filter((g) => g.studentId === studentId);
-      const studentRecords = recordsByTerm.flat().filter((r) => r.studentId === studentId);
+      //
+      // TRY/CATCH (Etapa 7): desde o escopo de leitura por disciplina em
+      // `firestore.rules` (`isOwnDiscipline`), um PROFESSOR consultando o
+      // boletim de um aluno de uma turma onde ele só leciona ALGUMAS
+      // disciplinas recebe "permissão negada" para as disciplinas dos
+      // OUTROS professores dessa turma — o comportamento correto e
+      // esperado. Sem este try/catch, essa negação derrubaria o
+      // `Promise.all` inteiro e quebraria o boletim também para as
+      // disciplinas que o professor TEM permissão de ver. Em vez disso,
+      // a disciplina sem permissão aparece como "sem dados" — o mesmo
+      // estado vazio já usado para uma disciplina sem lançamentos ainda
+      // (regra 3 do plano: nada de erro onde um estado vazio já existe).
+      // Para admin/aluno (dono do próprio registro), isso nunca ocorre.
+      let studentGrades: import("@/types/grade").Grade[] = [];
+      let studentRecords: import("@/types/attendance").AttendanceRecord[] = [];
+      try {
+        const [gradesByTerm, recordsByTerm] = await Promise.all([
+          Promise.all(
+            terms.map((term) => getGradesByContext(discipline.id, classId, schoolYear, term, studentId))
+          ),
+          Promise.all(
+            terms.map((term) => getRecordsByContext(discipline.id, classId, schoolYear, term, studentId))
+          ),
+        ]);
+        studentGrades = gradesByTerm.flat().filter((g) => g.studentId === studentId);
+        studentRecords = recordsByTerm.flat().filter((r) => r.studentId === studentId);
+      } catch {
+        // Sem permissão para esta disciplina específica — trata como
+        // "sem dados" em vez de propagar o erro (ver nota acima).
+      }
 
       const average = calculateAverage(studentGrades.map((g) => g.score));
       const present = studentRecords.filter((r) => r.status === "present").length;
@@ -127,9 +146,9 @@ export async function getStudentBoletim(
         // Reaproveita a MESMA função central usada por Notas
         // (`calculateSituation` → `deriveSituationFromAverage` em
         // types/grade.ts) — o Boletim não tem sua própria fórmula de
-        // aprovação; só não usa a variante "incomplete" (que depende
+        // aprovação; só não usa a variante \"incomplete\" (que depende
         // da contagem de avaliações de UM bimestre específico; no
-        // período "Anual" isso deixaria de fazer sentido, já que
+        // período \"Anual\" isso deixaria de fazer sentido, já que
         // consolidamos 4 bimestres).
         situation: deriveSituationFromAverage(average, thresholds),
         attendanceRate,

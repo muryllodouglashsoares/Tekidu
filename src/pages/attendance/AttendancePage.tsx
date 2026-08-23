@@ -21,6 +21,7 @@ import { getStudents } from "@/services/students/studentService";
 import {
   getSessionsByContext,
   getAllSessions,
+  getSessionsByDisciplineIds,
   createSession,
   deleteSession,
 } from "@/services/attendanceSessions/attendanceSessionService";
@@ -30,6 +31,8 @@ import {
   saveAttendanceRecord,
 } from "@/services/attendance/attendanceRecordService";
 import { logAuditEvent } from "@/services/audit/auditService";
+import { createNotification } from "@/services/notifications/notificationService";
+import { getAcademicSettings } from "@/services/academicSettings/academicSettingsService";
 import type { AssessmentTerm } from "@/types/assessment";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { Discipline } from "@/types/discipline";
@@ -111,22 +114,46 @@ export function AttendancePage() {
     if (!yearFilter && yearOptions.length > 0) setYearFilter(String(yearOptions[0]));
   }, [yearOptions, yearFilter]);
 
+  // Etapa 6 — frequência mínima configurada para o ano letivo
+  // selecionado, usada só para decidir se um lançamento de presença
+  // CRUZOU o limiar (ver `handleMark`). Buscada uma vez por ano
+  // letivo, não por lançamento — `getAcademicSettings` já cai para os
+  // padrões do sistema quando o ano não tem configuração própria.
+  const [minAttendanceRate, setMinAttendanceRate] = useState<number | null>(null);
+  useEffect(() => {
+    if (!yearFilter) return;
+    getAcademicSettings(Number(yearFilter))
+      .then((settings) => setMinAttendanceRate(settings.minAttendanceRate))
+      .catch(() => {
+        /* alerta de frequência é um extra; falha aqui não deve travar o lançamento de presença */
+      });
+  }, [yearFilter]);
+
   const [classId, setClassId] = useState<string>("");
   const [disciplineId, setDisciplineId] = useState<string>("");
   const [term, setTerm] = useState<string>("");
 
-  const classOptions = useMemo(
-    () => classes.filter((c) => String(c.schoolYear) === yearFilter),
-    [classes, yearFilter]
-  );
+  // Etapa 7 — mesmo escopo de turma/disciplina para o professor já
+  // aplicado em NotesPage: ver a nota lá para o racional completo.
+  const myDisciplines = useMemo(() => {
+    if (profile?.role !== "teacher") return disciplines;
+    return disciplines.filter((d) => d.teacherId === profile.uid);
+  }, [disciplines, profile]);
+
+  const classOptions = useMemo(() => {
+    const inYear = classes.filter((c) => String(c.schoolYear) === yearFilter);
+    if (profile?.role !== "teacher") return inYear;
+    const myClassIds = new Set(myDisciplines.flatMap((d) => d.classIds));
+    return inYear.filter((c) => myClassIds.has(c.id));
+  }, [classes, yearFilter, profile, myDisciplines]);
 
   // Ver nota em `getDisciplinesForClass` (disciplineService): o
   // relacionamento correto é só `classIds`, sem exigir que
   // `discipline.schoolYear` também bata com o ano da turma.
   const disciplineOptions = useMemo(() => {
     if (!classId) return [];
-    return getDisciplinesForClass(disciplines, classId);
-  }, [disciplines, classId]);
+    return getDisciplinesForClass(myDisciplines, classId);
+  }, [myDisciplines, classId]);
 
   useEffect(() => {
     setDisciplineId("");
@@ -272,6 +299,52 @@ export function AttendancePage() {
         });
       }
 
+      // Etapa 6 — "alerta de frequência": notifica o aluno só quando o
+      // lançamento CRUZA o limiar mínimo configurado (de "acima" para
+      // "abaixo"), nunca a cada falta isolada já abaixo do limiar. Ver
+      // nota em `types/notification.ts` sobre esse critério.
+      // Compara o resumo do CONTEXTO ATUAL (registros já carregados em
+      // `records`, mesma coleção que alimenta `summaryByStudent`) antes
+      // e depois deste lançamento — não a frequência geral do aluno em
+      // todas as disciplinas, que é um recorte diferente (ver
+      // `studentAttendanceOverviewService`, usado no Portal do Aluno).
+      if (minAttendanceRate !== null) {
+        const studentRecordsBefore = records.filter((r) => r.studentId === studentId);
+        const newRecord: AttendanceRecord = {
+          id: existing?.id ?? `temp-${studentId}-${selectedSessionId}`,
+          studentId,
+          sessionId: selectedSessionId,
+          disciplineId,
+          classId,
+          schoolYear: Number(yearFilter),
+          term: term as AssessmentTerm,
+          status,
+          createdAt: existing?.createdAt ?? null,
+          updatedAt: null,
+        };
+        const studentRecordsAfter = existing
+          ? studentRecordsBefore.map((r) => (r.id === existing.id ? newRecord : r))
+          : [...studentRecordsBefore, newRecord];
+        const rateBefore = summarizeAttendance(studentId, studentRecordsBefore).rate;
+        const rateAfter = summarizeAttendance(studentId, studentRecordsAfter).rate;
+        if (
+          rateAfter !== null &&
+          rateAfter < minAttendanceRate &&
+          (rateBefore === null || rateBefore >= minAttendanceRate)
+        ) {
+          const student = linkedStudents.find((s) => s.id === studentId);
+          if (student?.uid) {
+            createNotification({
+              recipientUid: student.uid,
+              type: "attendance_warning",
+              title: "Frequência abaixo do mínimo",
+              message: `Sua frequência em ${selectedDiscipline?.name ?? "uma disciplina"} está em ${rateAfter.toFixed(1)}%, abaixo do mínimo exigido (${minAttendanceRate}%).`,
+              link: "/minha-frequencia",
+            });
+          }
+        }
+      }
+
       setRecords((prev) => {
         if (existing) {
           return prev.map((r) => (r.id === existing.id ? { ...r, status } : r));
@@ -339,7 +412,16 @@ export function AttendancePage() {
     setHistoryLoading(true);
     setHistoryError(null);
     try {
-      const allSessions = await getAllSessions();
+      // Etapa 7 — escopo de disciplina para o professor: antes,
+      // `getAllSessions()` trazia o histórico de aulas de TODAS as
+      // disciplinas da escola (só a UI filtrava depois). Para um
+      // professor, a leitura em si já sai restrita às suas próprias
+      // disciplinas — ver racional em
+      // `attendanceSessionService.getSessionsByDisciplineIds`.
+      const allSessions =
+        profile?.role === "teacher"
+          ? await getSessionsByDisciplineIds(myDisciplines.map((d) => d.id))
+          : await getAllSessions();
       const allRecords = await getRecordsBySessionIds(allSessions.map((s) => s.id));
       setHistorySessions(allSessions);
       setHistoryRecords(allRecords);
@@ -357,6 +439,16 @@ export function AttendancePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, historyLoaded, historyLoading]);
+
+  // Etapa 7 — turmas/disciplinas oferecidas ao professor no filtro do
+  // Histórico: mesmo escopo por disciplina do professor, mas SEM o
+  // filtro de ano letivo de `classOptions` (o Histórico é uma visão
+  // "qualquer ano", ver comentário acima da aba).
+  const historyClassOptions = useMemo(() => {
+    if (profile?.role !== "teacher") return classes;
+    const myClassIds = new Set(myDisciplines.flatMap((d) => d.classIds));
+    return classes.filter((c) => myClassIds.has(c.id));
+  }, [classes, profile, myDisciplines]);
 
   const historyRows: AttendanceHistoryRow[] = useMemo(() => {
     return historySessions
@@ -446,8 +538,8 @@ export function AttendancePage() {
           error={historyError}
           onRetry={loadHistoryData}
           rows={historyRows}
-          classes={classes}
-          disciplines={disciplines}
+          classes={historyClassOptions}
+          disciplines={myDisciplines}
           classFilter={historyClassFilter}
           onClassFilterChange={setHistoryClassFilter}
           disciplineFilter={historyDisciplineFilter}

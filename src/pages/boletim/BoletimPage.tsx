@@ -12,15 +12,19 @@ import { BoletimFilters } from "@/components/boletim/BoletimFilters";
 import { BoletimSummary } from "@/components/boletim/BoletimSummary";
 import { BoletimTable } from "@/components/boletim/BoletimTable";
 import { getClasses, getStudentCountsByClassId } from "@/services/classes/classService";
+import { getDisciplines } from "@/services/disciplines/disciplineService";
 import { getStudents } from "@/services/students/studentService";
 import { getStudentBoletim, type StudentBoletim } from "@/services/boletim/boletimService";
+import { useAuth } from "@/contexts/AuthContext";
 import { BOLETIM_PERIOD_LABEL, type BoletimPeriod } from "@/types/boletim";
 import type { SchoolClass } from "@/types/schoolClass";
+import type { Discipline } from "@/types/discipline";
 import type { Student } from "@/types/student";
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 export function BoletimPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { profile } = useAuth();
 
   // -------------------------------------------------------------
   // Dados base (turmas + alunos) — mesmo padrão de carregamento único
@@ -28,6 +32,7 @@ export function BoletimPage() {
   // formas de acesso (Turma → Aluno e Filtros) em memória.
   // -------------------------------------------------------------
   const [classes, setClasses] = useState<SchoolClass[]>([]);
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [studentCounts, setStudentCounts] = useState<Record<string, number>>({});
   const [baseLoading, setBaseLoading] = useState(true);
@@ -37,12 +42,14 @@ export function BoletimPage() {
     setBaseLoading(true);
     setBaseError(null);
     try {
-      const [classesData, studentsData, counts] = await Promise.all([
+      const [classesData, disciplinesData, studentsData, counts] = await Promise.all([
         getClasses(),
+        getDisciplines(),
         getStudents(),
         getStudentCountsByClassId(),
       ]);
       setClasses(classesData);
+      setDisciplines(disciplinesData);
       setStudents(studentsData);
       setStudentCounts(counts);
     } catch (error) {
@@ -83,10 +90,21 @@ export function BoletimPage() {
     });
   }
 
-  const classOptions = useMemo(
-    () => classes.filter((c) => String(c.schoolYear) === yearFilter),
-    [classes, yearFilter]
-  );
+  const classOptions = useMemo(() => {
+    const inYear = classes.filter((c) => String(c.schoolYear) === yearFilter);
+    // Etapa 7 — escopo de turma para o professor: `/boletim` é
+    // acessível a admin E professor (ver AppRoutes.tsx); antes, um
+    // professor podia consultar o boletim de QUALQUER turma da escola,
+    // não só das suas — o boletim consolida notas de TODAS as
+    // disciplinas de um aluno, então isso vazava dados acadêmicos de
+    // disciplinas de outros professores. Restringe a lista de turmas às
+    // que têm ao menos uma disciplina deste professor.
+    if (profile?.role !== "teacher") return inYear;
+    const myClassIds = new Set(
+      disciplines.filter((d) => d.teacherId === profile.uid).flatMap((d) => d.classIds)
+    );
+    return inYear.filter((c) => myClassIds.has(c.id));
+  }, [classes, yearFilter, profile, disciplines]);
 
   const selectedClass = useMemo(
     () => classOptions.find((c) => c.id === classId) ?? null,

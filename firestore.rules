@@ -307,8 +307,23 @@ service cloud.firestore {
     // avaliações de QUALQUER disciplina, mesmo sem estar vinculado a
     // ela.
     // ---------------------------------------------------------------
+    // ESCOPO DE LEITURA (Etapa 7 do plano multi-role — fecha o item
+    // registrado como pendente: "assessments ainda libera leitura
+    // ampla para qualquer isActiveStaff()"). Até aqui, leitura era
+    // `isActiveStaff()` sozinho: qualquer professor ativo podia LER
+    // avaliações de disciplinas de OUTROS professores (a barreira real
+    // era só na ESCRITA, via `canWriteAcademicRecord`). Agora: admin
+    // continua irrestrito; professor só lê quando é o dono da
+    // disciplina (`isOwnDiscipline`, mesma função já usada na escrita).
+    // COMPATIBILIDADE COM QUERIES: exige que toda consulta de professor
+    // filtre por um `disciplineId` FIXO (`where('disciplineId','==',
+    // id)`), nunca uma consulta ampla do ano letivo inteiro — ver
+    // `assessmentService.getAssessmentsByDisciplineIds` (uma consulta
+    // por disciplina, nunca `in`) e `teacherOverviewService`/
+    // `NotesPage`/`ReportsPage`, atualizados para esse padrão.
     match /assessments/{assessmentId} {
-      allow read: if isActiveStaff();
+      allow read: if isActiveAdmin() ||
+        (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId));
       // Validação de payload (Tarefa 1, pós-auditoria V8): `weight`,
       // quando presente, precisa ser > 0 — ver `isValidAssessmentWeight()`.
       allow create: if canWriteAcademicRecord(request.resource.data.disciplineId) &&
@@ -334,10 +349,11 @@ service cloud.firestore {
     // resolvida a partir do perfil do requisitante e da disciplina
     // vinculada, nunca do ID do documento.
     //
-    // LEITURA: staff ativo continua lendo qualquer nota (ver nota em
-    // `assessments` acima, mesmo motivo). Desde a Tarefa 3 (Fase 1
-    // pós-auditoria V8), o PRÓPRIO aluno também pode ler as SUAS notas
-    // — nunca as de outro aluno — via `isOwnStudentRecord`, que resolve
+    // LEITURA: desde a Etapa 7, staff só lê a nota quando é ADMIN ou
+    // quando é o professor DONO da disciplina daquela nota
+    // (`isOwnDiscipline` — mesmo fechamento aplicado a `assessments`
+    // acima). O PRÓPRIO aluno também pode ler as SUAS notas — nunca as
+    // de outro aluno — via `isOwnStudentRecord`, que resolve
     // `studentId` (ID do documento em `students`) até o `uid` de Auth.
     // Ver a nota de compatibilidade com `list` em `isOwnStudentRecord`:
     // o cliente (aluno) só pode consultar filtrando
@@ -348,7 +364,9 @@ service cloud.firestore {
     // disciplina da nota (item 13). O aluno nunca escreve em `grades`.
     // ---------------------------------------------------------------
     match /grades/{gradeId} {
-      allow read: if isActiveStaff() || isOwnStudentRecord(resource.data.studentId);
+      allow read: if isActiveAdmin() ||
+        (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId)) ||
+        isOwnStudentRecord(resource.data.studentId);
       // Validação de payload (Tarefa 1, pós-auditoria V8): `score`
       // precisa ser `null` (nota não lançada) ou um número em 0–10 —
       // ver `isValidScore()`. Antes desta validação, era possível
@@ -371,8 +389,16 @@ service cloud.firestore {
     // leitura por qualquer staff ativo; escrita restrita a admin OU ao
     // professor responsável pela disciplina.
     // ---------------------------------------------------------------
+    // Uma aula (data letiva) de um contexto disciplina + turma +
+    // bimestre — parte da funcionalidade de Frequência. Mesmo papel de
+    // `assessments` em Notas, e mesma política de acesso (item 13 +
+    // fechamento da Etapa 7): leitura por admin OU pelo professor
+    // dono da disciplina (`isOwnDiscipline`); escrita restrita a admin
+    // OU ao professor responsável pela disciplina.
+    // ---------------------------------------------------------------
     match /attendanceSessions/{sessionId} {
-      allow read: if isActiveStaff();
+      allow read: if isActiveAdmin() ||
+        (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId));
       allow create: if canWriteAcademicRecord(request.resource.data.disciplineId);
       allow update: if canWriteAcademicRecord(resource.data.disciplineId) &&
         canWriteAcademicRecord(request.resource.data.disciplineId);
@@ -389,14 +415,17 @@ service cloud.firestore {
     // leitura por qualquer staff ativo; escrita restrita a admin OU ao
     // professor responsável pela disciplina.
     //
-    // LEITURA (Tarefa 3, Fase 1 pós-auditoria V8): mesma extensão de
-    // `grades` acima — o PRÓPRIO aluno pode ler os SEUS registros de
-    // presença via `isOwnStudentRecord`, nunca os de outro aluno, e
-    // apenas com uma query filtrada por `studentId` (ver
-    // `attendanceRecordService.getRecordsByContext`).
+    // LEITURA (Etapa 7): mesmo fechamento de `assessments`/`grades`
+    // acima — admin lê tudo; professor só lê quando é dono da
+    // disciplina do registro (`isOwnDiscipline`). O PRÓPRIO aluno pode
+    // ler os SEUS registros de presença via `isOwnStudentRecord`, nunca
+    // os de outro aluno, e apenas com uma query filtrada por
+    // `studentId` (ver `attendanceRecordService.getRecordsByContext`).
     // ---------------------------------------------------------------
     match /attendanceRecords/{recordId} {
-      allow read: if isActiveStaff() || isOwnStudentRecord(resource.data.studentId);
+      allow read: if isActiveAdmin() ||
+        (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId)) ||
+        isOwnStudentRecord(resource.data.studentId);
       // Validação de payload (Tarefa 1, pós-auditoria V8): `status`
       // precisa ser um dos valores do enum `AttendanceRecordStatus`
       // (`src/types/attendance.ts`) — ver `isValidAttendanceStatus()`.

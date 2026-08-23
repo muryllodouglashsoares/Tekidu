@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCheck, ClipboardList, BookOpen, UserPlus, Inbox } from "lucide-react";
+import {
+  Bell,
+  CheckCheck,
+  ClipboardList,
+  BookOpen,
+  UserPlus,
+  Inbox,
+  FilePlus2,
+  FileEdit,
+  AlertTriangle,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  getRecentNotifications,
-  getUnreadCount,
   markAllAsRead,
   markAsRead,
+  subscribeToRecentNotifications,
+  subscribeToUnreadCount,
 } from "@/services/notifications/notificationService";
 import type { Notification, NotificationType } from "@/types/notification";
 
@@ -14,6 +24,9 @@ const ICON_BY_TYPE: Record<NotificationType, typeof Bell> = {
   grade_posted: ClipboardList,
   discipline_assigned: BookOpen,
   teacher_created: UserPlus,
+  assessment_created: FilePlus2,
+  assessment_updated: FileEdit,
+  attendance_warning: AlertTriangle,
 };
 
 function formatRelativeTime(value: unknown): string {
@@ -39,15 +52,22 @@ function toDate(value: unknown): Date | null {
 }
 
 /**
- * Centro de notificações (Fase 5). Acessível pelo Header — ícone de
- * sino com contador de não lidas, painel com lista/estado vazio/
- * carregamento, marcar como lida (individual e em lote) e navegação
- * para o contexto relacionado via `notification.link`.
+ * Centro de notificações (Fase 5, tempo real desde a Etapa 6).
+ * Acessível pelo Header — ícone de sino com contador de não lidas,
+ * painel com lista/estado vazio/carregamento, marcar como lida
+ * (individual e em lote) e navegação para o contexto relacionado via
+ * `notification.link`.
  *
- * Carrega sob demanda na primeira abertura (mesmo padrão de
- * `useCommandPaletteData`) — evita duas queries extras ao Firestore em
- * toda navegação só para um contador que a maioria das visitas nem vai
- * abrir.
+ * TEMPO REAL (Etapa 6): o contador do sino assina
+ * `subscribeToUnreadCount` assim que há um `profile` — não só quando o
+ * painel abre — para o sino "acender" sozinho quando uma notificação
+ * nova chega em outra aba/dispositivo, sem polling. A LISTA completa
+ * (`subscribeToRecentNotifications`) só assina enquanto o painel está
+ * ABERTO — um único listener por usuário logado (nunca um listener
+ * global, nunca um por notificação), desligado no cleanup do
+ * `useEffect` sempre que o painel fecha ou o componente desmonta, para
+ * não vazar listeners nem cobrar leituras à toa quando ninguém está
+ * olhando a lista.
  */
 export function NotificationCenter() {
   const { profile } = useAuth();
@@ -56,18 +76,38 @@ export function NotificationCenter() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [retryKey, setRetryKey] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Contador de não lidas é buscado uma vez ao entrar no app (não só
-  // quando o painel abre), para o sino já nascer com o número certo.
+  // Contador de não lidas: um único listener por usuário, vivo por
+  // toda a sessão (não só com o painel aberto) — é o que faz o sino
+  // já nascer com o número certo e se manter certo em tempo real.
   useEffect(() => {
-    if (!profile) return;
-    getUnreadCount(profile.uid)
-      .then(setUnreadCount)
-      .catch(() => {
-        /* contador é cosmético; falha aqui não deve gerar erro visível */
-      });
+    if (!profile) return undefined;
+    const unsubscribe = subscribeToUnreadCount(profile.uid, setUnreadCount);
+    return unsubscribe;
   }, [profile]);
+
+  // Lista completa: listener separado, só enquanto o painel está
+  // aberto — evita manter uma segunda assinatura ativa por toda a
+  // sessão para uma lista que a maioria das visitas nem abre.
+  useEffect(() => {
+    if (!open || !profile) return undefined;
+    setStatus("loading");
+    const unsubscribe = subscribeToRecentNotifications(
+      profile.uid,
+      (items) => {
+        setNotifications(items);
+        setStatus("ready");
+      },
+      () => setStatus("error")
+    );
+    return unsubscribe;
+  }, [open, profile, retryKey]);
+
+  function retryList() {
+    setRetryKey((k) => k + 1);
+  }
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -79,38 +119,14 @@ export function NotificationCenter() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
-  async function loadNotifications() {
-    if (!profile) return;
-    setStatus("loading");
-    try {
-      const [items, count] = await Promise.all([
-        getRecentNotifications(profile.uid),
-        getUnreadCount(profile.uid),
-      ]);
-      setNotifications(items);
-      setUnreadCount(count);
-      setStatus("ready");
-    } catch {
-      setStatus("error");
-    }
-  }
-
   function toggleOpen() {
-    setOpen((prev) => {
-      const next = !prev;
-      if (next) loadNotifications();
-      return next;
-    });
+    setOpen((prev) => !prev);
   }
 
   async function handleItemClick(notification: Notification) {
     if (!notification.read) {
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
       markAsRead(notification.id).catch(() => {
-        /* atualização otimista; uma falha aqui não trava a navegação */
+        /* o listener em tempo real corrige o estado assim que a escrita propagar */
       });
     }
     setOpen(false);
@@ -119,12 +135,10 @@ export function NotificationCenter() {
 
   async function handleMarkAllAsRead() {
     if (!profile) return;
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    setUnreadCount(0);
     try {
       await markAllAsRead(profile.uid);
     } catch {
-      // Se falhar, a próxima abertura do painel corrige o estado.
+      // Se falhar, os listeners em tempo real mantêm o estado real (não corrigido localmente).
     }
   }
 
@@ -187,7 +201,7 @@ export function NotificationCenter() {
                 <p className="text-sm text-ink-500">Não foi possível carregar as notificações.</p>
                 <button
                   type="button"
-                  onClick={loadNotifications}
+                  onClick={retryList}
                   className="mt-2 text-sm font-medium text-ink-700 hover:underline"
                 >
                   Tentar novamente

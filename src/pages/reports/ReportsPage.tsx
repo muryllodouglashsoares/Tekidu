@@ -15,8 +15,8 @@ import { StudentDevelopmentReport } from "@/components/reports/StudentDevelopmen
 import { getClasses } from "@/services/classes/classService";
 import { getDisciplines, getDisciplinesForClass } from "@/services/disciplines/disciplineService";
 import { getStudents } from "@/services/students/studentService";
-import { getGradesBySchoolYear } from "@/services/grades/gradeService";
-import { getAttendanceRecordsBySchoolYear } from "@/services/attendance/attendanceRecordService";
+import { getGradesBySchoolYear, getGradesByDisciplineIds } from "@/services/grades/gradeService";
+import { getAttendanceRecordsBySchoolYear, getAttendanceRecordsByDisciplineIds } from "@/services/attendance/attendanceRecordService";
 import { getStudentBoletim, getStudentDevelopmentSeries, type StudentBoletim } from "@/services/boletim/boletimService";
 import {
   computeClassSummaries,
@@ -24,6 +24,7 @@ import {
   computeStudentSummaries,
   type ReportScope,
 } from "@/services/reports/reportsService";
+import { useAuth } from "@/contexts/AuthContext";
 import { ASSESSMENT_TERM_LABEL, type AssessmentTerm } from "@/types/assessment";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { Discipline } from "@/types/discipline";
@@ -35,6 +36,7 @@ import { describeFirebaseError } from "@/utils/firebaseError";
 
 export function ReportsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { profile } = useAuth();
 
   // -------------------------------------------------------------
   // Dados base do ano letivo selecionado — carregados uma única vez
@@ -61,11 +63,26 @@ export function ReportsPage() {
     try {
       const classesData = await getClasses();
       const yearToLoad = Number(searchParams.get("year")) || classesData[0]?.schoolYear || new Date().getFullYear();
-      const [disciplinesData, studentsData, gradesData, recordsData] = await Promise.all([
-        getDisciplines(),
+      const disciplinesData = await getDisciplines();
+
+      // Etapa 7 — escopo de disciplina para o professor: `/relatorios`
+      // é acessível a admin E professor. Antes, um professor buscava
+      // as notas/frequência do ANO LETIVO INTEIRO (`getXBySchoolYear`,
+      // sem filtro de disciplina) para montar os indicadores — a leitura
+      // em si não era restrita às disciplinas do professor, só a UI
+      // filtrava depois. Ver o mesmo racional em
+      // `teacherOverviewService.loadTeacherRawData`.
+      const isTeacher = profile?.role === "teacher";
+      const myDisciplineIds = isTeacher
+        ? disciplinesData.filter((d) => d.teacherId === profile?.uid).map((d) => d.id)
+        : [];
+
+      const [studentsData, gradesData, recordsData] = await Promise.all([
         getStudents(),
-        getGradesBySchoolYear(yearToLoad),
-        getAttendanceRecordsBySchoolYear(yearToLoad),
+        isTeacher ? getGradesByDisciplineIds(myDisciplineIds, yearToLoad) : getGradesBySchoolYear(yearToLoad),
+        isTeacher
+          ? getAttendanceRecordsByDisciplineIds(myDisciplineIds, yearToLoad)
+          : getAttendanceRecordsBySchoolYear(yearToLoad),
       ]);
       setAllClasses(classesData);
       setDisciplines(disciplinesData);
@@ -84,7 +101,17 @@ export function ReportsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yearFilter]);
 
-  const classes = useMemo(() => allClasses.filter((c) => String(c.schoolYear) === yearFilter), [allClasses, yearFilter]);
+  const classes = useMemo(() => {
+    const inYear = allClasses.filter((c) => String(c.schoolYear) === yearFilter);
+    // Mesmo escopo de turma do professor já aplicado em Notas/
+    // Frequência/Boletim: só turmas onde o professor leciona alguma
+    // disciplina aparecem nos indicadores e no fluxo Turma → Alunos.
+    if (profile?.role !== "teacher") return inYear;
+    const myClassIds = new Set(
+      disciplines.filter((d) => d.teacherId === profile.uid).flatMap((d) => d.classIds)
+    );
+    return inYear.filter((c) => myClassIds.has(c.id));
+  }, [allClasses, yearFilter, profile, disciplines]);
 
   // -------------------------------------------------------------
   // Estado compartilhado pelos fluxos de navegação (chart/filtros →
@@ -115,17 +142,32 @@ export function ReportsPage() {
     });
   }
 
+  // Etapa 7 — mesmo escopo de disciplina do professor já aplicado em
+  // Notas/Frequência/Boletim (ver nota lá para o racional completo).
+  const myDisciplines = useMemo(() => {
+    if (profile?.role !== "teacher") return disciplines;
+    return disciplines.filter((d) => d.teacherId === profile.uid);
+  }, [disciplines, profile]);
+
   const disciplineOptions = useMemo(() => {
     if (!classId) return [];
-    return getDisciplinesForClass(disciplines, classId);
-  }, [disciplines, classId]);
+    return getDisciplinesForClass(myDisciplines, classId);
+  }, [myDisciplines, classId]);
 
   const filterClass = useMemo(() => classes.find((c) => c.id === classId) ?? null, [classes, classId]);
   const selectedDiscipline = useMemo(
-    () => disciplines.find((d) => d.id === disciplineId) ?? null,
-    [disciplines, disciplineId]
+    () => myDisciplines.find((d) => d.id === disciplineId) ?? null,
+    [myDisciplines, disciplineId]
   );
-  const viewClass = useMemo(() => allClasses.find((c) => c.id === view) ?? null, [allClasses, view]);
+  // Etapa 7 — `view` (turma "aberta" via URL) resolvida a partir de
+  // `classes` (já escopada ao professor), não de `allClasses` (todos
+  // os anos/turmas da escola): sem isso, um professor digitando
+  // `?view=<id de turma alheia>` na URL conseguiria abrir a lista de
+  // alunos de uma turma onde não leciona, mesmo sem aparecer no
+  // seletor. Para admin, `classes` cobre o ano selecionado; a
+  // navegação entre anos já passa por `yearFilter`, então isso não
+  // reduz nada do que o admin via antes.
+  const viewClass = useMemo(() => classes.find((c) => c.id === view) ?? null, [classes, view]);
   const studentsInClass = useMemo(
     () => (viewClass ? students.filter((s) => s.classId === viewClass.id) : []),
     [students, viewClass]
@@ -170,15 +212,28 @@ export function ReportsPage() {
   // -------------------------------------------------------------
   // Busca individual (item 16) — atalho direto para o relatório do
   // aluno, sem passar pelo fluxo Turma → Alunos.
+  //
+  // Etapa 7 — escopo para o professor: a busca livre por nome/matrícula
+  // pesquisava em `students` (toda a escola), o que deixava um
+  // professor descobrir/selecionar QUALQUER aluno da escola pelo nome,
+  // inclusive de turmas onde ele não leciona — contornando o mesmo
+  // escopo por turma já aplicado acima em `classes`. Restrita ao
+  // conjunto de alunos das turmas do professor (`searchableStudents`).
   // -------------------------------------------------------------
+  const searchableStudents = useMemo(() => {
+    if (profile?.role !== "teacher") return students;
+    const myClassIds = new Set(classes.map((c) => c.id));
+    return students.filter((s) => s.classId && myClassIds.has(s.classId));
+  }, [students, profile, classes]);
+
   const [search, setSearch] = useState("");
   const searchResults = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
-    return students
+    return searchableStudents
       .filter((s) => s.name.toLowerCase().includes(q) || s.registrationNumber.toLowerCase().includes(q))
       .slice(0, 8);
-  }, [students, search]);
+  }, [searchableStudents, search]);
 
   function handleSelectClass(id: string) {
     updateParams({ view: id, studentId: undefined });
