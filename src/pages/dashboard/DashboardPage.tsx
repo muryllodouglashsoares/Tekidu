@@ -13,6 +13,7 @@ import {
   School,
   ClipboardList,
   CalendarCheck,
+  LineChart,
   FileText,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
@@ -21,18 +22,15 @@ import { ErrorState } from "@/components/layout/ErrorState";
 import { Button } from "@/components/ui/Button";
 import { SituationBadge } from "@/components/notes/SituationBadge";
 import { AcademicStatusBadge } from "@/components/boletim/AcademicStatusBadge";
-import { getClasses, getStudentCountsByClassId } from "@/services/classes/classService";
+import { getClasses } from "@/services/classes/classService";
 import { getStudents, getStudentByUid } from "@/services/students/studentService";
-import { getDisciplines } from "@/services/disciplines/disciplineService";
-import { getAssessmentsBySchoolYear } from "@/services/assessments/assessmentService";
-import { getAllSessions } from "@/services/attendanceSessions/attendanceSessionService";
 import { getStudentBoletim, type StudentBoletim } from "@/services/boletim/boletimService";
 import { getRecentNotifications } from "@/services/notifications/notificationService";
 import { getAcademicOverview, type AcademicOverview, type AcademicPendency } from "@/services/academic/academicOverviewService";
+import { getTeacherAssignments, type TeacherAssignment } from "@/services/academic/teacherOverviewService";
 import { describeFirebaseError } from "@/utils/firebaseError";
 import type { Student } from "@/types/student";
 import type { SchoolClass } from "@/types/schoolClass";
-import type { Discipline } from "@/types/discipline";
 import type { Notification } from "@/types/notification";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -384,58 +382,27 @@ function SummaryRow({
 /* PROFESSOR                                                            */
 /* ------------------------------------------------------------------ */
 
-interface TeacherAssignment {
-  discipline: Discipline;
-  schoolClass: SchoolClass;
-  assessmentCount: number;
-  sessionCount: number;
-}
-
 function TeacherDashboard() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [assignments, setAssignments] = useState<TeacherAssignment[]>([]);
-  const [studentCounts, setStudentCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const schoolYear = new Date().getFullYear();
 
+  // A lista "disciplina + turma" do professor (e os contadores de
+  // avaliação/aula) vive em `teacherOverviewService.getTeacherAssignments`
+  // — a MESMA função usada por "Minhas Turmas"/"Meus Alunos" (evita
+  // duplicar aqui o filtro `teacherId === profile.uid` que antes era
+  // calculado localmente neste componente).
   async function loadData() {
     if (!profile) return;
     setLoading(true);
     setError(null);
     try {
-      const [disciplines, classes, assessments, sessions, counts] = await Promise.all([
-        getDisciplines(),
-        getClasses(),
-        getAssessmentsBySchoolYear(schoolYear),
-        getAllSessions(),
-        getStudentCountsByClassId(),
-      ]);
-
-      const classById: Record<string, SchoolClass> = {};
-      for (const c of classes) classById[c.id] = c;
-
-      const myDisciplines = disciplines.filter((d) => d.teacherId === profile.uid);
-
-      const built: TeacherAssignment[] = [];
-      for (const discipline of myDisciplines) {
-        for (const classId of discipline.classIds) {
-          const schoolClass = classById[classId];
-          if (!schoolClass) continue;
-          const assessmentCount = assessments.filter(
-            (a) => a.disciplineId === discipline.id && a.classId === classId
-          ).length;
-          const sessionCount = sessions.filter(
-            (s) => s.disciplineId === discipline.id && s.classId === classId
-          ).length;
-          built.push({ discipline, schoolClass, assessmentCount, sessionCount });
-        }
-      }
-
+      const built = await getTeacherAssignments(profile.uid, schoolYear);
       setAssignments(built);
-      setStudentCounts(counts);
     } catch (err) {
       setError(describeFirebaseError(err, "dashboard:carregar"));
     } finally {
@@ -481,6 +448,10 @@ function TeacherDashboard() {
           {assignments.length > 0 ? ` em ${new Set(assignments.map((a) => a.discipline.id)).size} disciplina${new Set(assignments.map((a) => a.discipline.id)).size === 1 ? "" : "s"}` : ""} neste ano letivo.
         </p>
         <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" onClick={() => navigate("/minhas-turmas")}>
+            <School className="h-3.5 w-3.5" />
+            Minhas turmas
+          </Button>
           <Button variant="secondary" size="sm" onClick={() => navigate("/notas")}>
             <ClipboardList className="h-3.5 w-3.5" />
             Lançar notas
@@ -551,7 +522,7 @@ function TeacherDashboard() {
                 </div>
                 <p className="flex items-center gap-1.5 text-xs text-ink-400">
                   <Users className="h-3.5 w-3.5" />
-                  {studentCounts[a.schoolClass.id] ?? 0} aluno{(studentCounts[a.schoolClass.id] ?? 0) === 1 ? "" : "s"}
+                  {a.studentCount} aluno{a.studentCount === 1 ? "" : "s"}
                 </p>
                 <div className="mt-auto flex gap-2 pt-2 border-t border-line">
                   <button
@@ -656,6 +627,18 @@ function StudentDashboard() {
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={() => navigate("/meu-boletim")}>
               Ver meu boletim completo
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => navigate("/minhas-disciplinas")}>
+              <BookOpen className="h-3.5 w-3.5" />
+              Minhas disciplinas
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => navigate("/minha-frequencia")}>
+              <CalendarCheck className="h-3.5 w-3.5" />
+              Minha frequência
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => navigate("/meu-desempenho")}>
+              <LineChart className="h-3.5 w-3.5" />
+              Meu desempenho
             </Button>
           </div>
         </Card>

@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
 import { LoginPage } from "@/pages/auth/LoginPage";
@@ -15,29 +14,31 @@ import { AttendancePage } from "@/pages/attendance/AttendancePage";
 import { BoletimPage } from "@/pages/boletim/BoletimPage";
 import { MyBoletimPage } from "@/pages/boletim/MyBoletimPage";
 import { ReportsPage } from "@/pages/reports/ReportsPage";
+import { MyClassesPage } from "@/pages/teacherPortal/MyClassesPage";
+import { MyStudentsPage } from "@/pages/teacherPortal/MyStudentsPage";
+import { MyDisciplinesPage } from "@/pages/studentPortal/MyDisciplinesPage";
+import { MyAttendancePage } from "@/pages/studentPortal/MyAttendancePage";
+import { MyPerformancePage } from "@/pages/studentPortal/MyPerformancePage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { StatusPage } from "@/pages/StatusPage";
 
 /**
- * Rota "/": Dashboard para admin/teacher (comportamento 100%
- * preservado), mas redireciona para "/meu-boletim" quando a role é
- * "student" (Tarefa 3, Fase 1 pós-auditoria V8).
+ * Rota "/": Dashboard para todas as roles.
  *
- * POR QUÊ: `DashboardPage` consulta `getStudents()`/`getAcademicOverview`
- * sem nenhum escopo por aluno — consultas que a Security Rule nega
- * por inteiro para a role "student" (uma query `list` sem filtro por
- * `uid`/`studentId` não é "provável" de estar restrita ao próprio
- * aluno, então o Firestore recusa a operação toda). Reescrever o
- * Dashboard para ter uma variante por aluno está fora do escopo desta
- * tarefa (ver "O que não fazer"); redirecionar para a tela que já é o
- * equivalente funcional para o aluno (visão do próprio desempenho) é
- * a correção mínima que evita esse erro sem tocar em `DashboardPage.tsx`.
+ * HISTÓRICO: esta função redirecionava alunos para "/meu-boletim"
+ * porque, quando foi escrita, `DashboardPage` ainda buscava
+ * `getStudents()`/`getAcademicOverview()` sem nenhum escopo por aluno
+ * — consultas que a Security Rule nega por inteiro para a role
+ * "student". Isso mudou: `DashboardPage` agora decide qual componente
+ * renderizar (`AdminDashboard`/`TeacherDashboard`/`StudentDashboard`)
+ * ANTES de qualquer busca, e `StudentDashboard` só usa
+ * `getStudentByUid`/`getStudentBoletim` (ambas liberadas ao próprio
+ * aluno pela Security Rule — ver `isOwnStudentRecord`). Redirecionar
+ * o aluno para longe de "/" deixava o Dashboard próprio dele
+ * (seção 7 do plano multi-role — saudação, média, frequência,
+ * disciplinas, notificações) inacessível, mesmo já implementado.
  */
 function HomeRoute() {
-  const { profile } = useAuth();
-  if (profile?.role === "student") {
-    return <Navigate to="/meu-boletim" replace />;
-  }
   return <DashboardPage />;
 }
 
@@ -111,6 +112,17 @@ export function AppRoutes() {
             <Route path="/professores" element={<TeachersPage />} />
           </Route>
 
+          {/* Portal do Professor — "Minhas Turmas"/"Meus Alunos" (Etapa 4
+              do plano multi-role): restritas à role "teacher", somente
+              leitura, sempre escopadas ao próprio `profile.uid` dentro
+              de `teacherOverviewService` (nunca à escola inteira). Não
+              substituem "/turmas"/"/alunos" (staff, com edição) — são a
+              visão equivalente, porém filtrada, para o professor. */}
+          <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
+            <Route path="/minhas-turmas" element={<MyClassesPage />} />
+            <Route path="/meus-alunos" element={<MyStudentsPage />} />
+          </Route>
+
           {/* Notas: restrita a admin/teacher (alunos não devem ter acesso
               ao lançamento de notas — ver ProtectedRoute). As demais
               seções abaixo ainda não implementadas nesta fase seguem o
@@ -134,14 +146,19 @@ export function AppRoutes() {
             <Route path="/relatorios" element={<ReportsPage />} />
           </Route>
 
-          {/* Meu Boletim (Tarefa 3, Fase 1 pós-auditoria V8): Portal do
-              Aluno, restrito à role "student" — somente leitura do
-              PRÓPRIO boletim/frequência, sem formulário de edição (ver
-              MyBoletimPage). Não reaproveita "/boletim" porque aquela
-              tela exige escolher turma→aluno manualmente (uso de staff);
-              aqui o aluno é resolvido automaticamente pelo `uid` logado. */}
+          {/* Portal do Aluno (Etapa 3 do plano multi-role): "Meu
+              Boletim" (Tarefa 3, Fase 1 pós-auditoria V8) + "Minhas
+              Disciplinas"/"Minha Frequência"/"Meu Desempenho" — todas
+              restritas à role "student", somente leitura do PRÓPRIO
+              aluno (resolvido pelo `uid` logado via `useOwnStudent`,
+              nunca escolhido manualmente). Não reaproveitam
+              "/boletim"/"/notas"/"/frequencia" porque aquelas telas
+              exigem escolher turma→aluno manualmente (uso de staff). */}
           <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
             <Route path="/meu-boletim" element={<MyBoletimPage />} />
+            <Route path="/minhas-disciplinas" element={<MyDisciplinesPage />} />
+            <Route path="/minha-frequencia" element={<MyAttendancePage />} />
+            <Route path="/meu-desempenho" element={<MyPerformancePage />} />
           </Route>
 
           <Route path="/configuracoes" element={<SettingsPage />} />

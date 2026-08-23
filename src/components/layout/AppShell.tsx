@@ -10,10 +10,16 @@ const TITLES: Record<string, string> = {
   "/alunos": "Alunos",
   "/turmas": "Turmas",
   "/disciplinas": "Disciplinas",
+  "/minhas-turmas": "Minhas Turmas",
+  "/meus-alunos": "Meus Alunos",
   "/notas": "Notas",
   "/frequencia": "Frequência",
   "/boletim": "Boletim",
   "/relatorios": "Relatórios",
+  "/meu-boletim": "Meu Boletim",
+  "/minhas-disciplinas": "Minhas Disciplinas",
+  "/minha-frequencia": "Minha Frequência",
+  "/meu-desempenho": "Meu Desempenho",
   "/configuracoes": "Configurações",
 };
 

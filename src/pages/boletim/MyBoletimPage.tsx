@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { FileQuestion, UserX } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
 import { TableSkeleton } from "@/components/ui/Skeleton";
@@ -8,10 +7,9 @@ import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { BoletimSummary } from "@/components/boletim/BoletimSummary";
 import { BoletimTable } from "@/components/boletim/BoletimTable";
-import { getStudentByUid } from "@/services/students/studentService";
+import { useOwnStudent } from "@/hooks/useOwnStudent";
 import { getStudentBoletim, type StudentBoletim } from "@/services/boletim/boletimService";
 import { BOLETIM_PERIOD_LABEL, type BoletimPeriod } from "@/types/boletim";
-import type { Student } from "@/types/student";
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 /**
@@ -35,11 +33,8 @@ import { describeFirebaseError } from "@/utils/firebaseError";
  * cálculo do boletim em si).
  */
 export function MyBoletimPage() {
-  const { firebaseUser } = useAuth();
-
-  const [student, setStudent] = useState<Student | null | undefined>(undefined);
-  const [loadingStudent, setLoadingStudent] = useState(true);
-  const [studentError, setStudentError] = useState<string | null>(null);
+  const { student, loading: loadingStudent, error: studentError, reload: loadStudent } =
+    useOwnStudent("meu-boletim:aluno");
 
   const [period, setPeriod] = useState<BoletimPeriod>("annual");
   const [boletim, setBoletim] = useState<StudentBoletim | null>(null);
@@ -47,25 +42,6 @@ export function MyBoletimPage() {
   const [boletimError, setBoletimError] = useState<string | null>(null);
 
   const schoolYear = new Date().getFullYear();
-
-  async function loadStudent() {
-    if (!firebaseUser) return;
-    setLoadingStudent(true);
-    setStudentError(null);
-    try {
-      const data = await getStudentByUid(firebaseUser.uid);
-      setStudent(data);
-    } catch (error) {
-      setStudentError(describeFirebaseError(error, "meu-boletim:aluno"));
-    } finally {
-      setLoadingStudent(false);
-    }
-  }
-
-  useEffect(() => {
-    loadStudent();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firebaseUser?.uid]);
 
   async function loadBoletim() {
     if (!student?.classId) return;

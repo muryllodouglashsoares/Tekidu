@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   FileText,
   BarChart3,
+  LineChart,
   Settings,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,16 +30,29 @@ interface NavItem {
 // "em desenvolvimento" em vez de 404 — ver PlaceholderPage.
 const principalNav: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  // Alunos/Turmas/Disciplinas: restritas a admin/teacher desde a
-  // Tarefa 3 (Fase 1 pós-auditoria V8) — mesma restrição aplicada em
-  // AppRoutes (`allowedRoles`) e nas Firestore Security Rules
-  // (`getStudents`/`getClasses` são consultas sem escopo por aluno).
+  // Alunos/Turmas/Disciplinas: visão de STAFF (escola inteira, com
+  // edição) — continuam acessíveis a admin/teacher (Tarefa 3, Fase 1
+  // pós-auditoria V8; mesma restrição em AppRoutes/Firestore Rules).
+  // O professor também tem "Minhas Turmas"/"Meus Alunos" abaixo
+  // (grupo "Minhas Turmas"), que é a visão ESCOPADA equivalente —
+  // nenhuma foi removida, para não tirar uma funcionalidade que já
+  // funciona hoje (regra 5 do plano multi-role).
   { to: "/alunos", label: "Alunos", icon: Users, roles: ["admin", "teacher"] },
   { to: "/turmas", label: "Turmas", icon: School, roles: ["admin", "teacher"] },
   { to: "/disciplinas", label: "Disciplinas", icon: BookOpen, roles: ["admin", "teacher"] },
   // Restrita a admin: mesma role autorizada pela rota (ver AppRoutes) e
   // pelas Firestore Security Rules para criar/editar contas em "users".
   { to: "/professores", label: "Professores", icon: GraduationCap, roles: ["admin"] },
+];
+
+// Etapa 4 do plano multi-role — Portal do Professor: "Minhas Turmas" e
+// "Meus Alunos" são a visão do professor filtrada por
+// `discipline.teacherId === profile.uid` (ver teacherOverviewService),
+// diferente do grupo "Principal" acima, que é a visão de staff da
+// escola inteira. Só aparece para `teacher` (ver NavGroup/`roles`).
+const minhasTurmasNav: NavItem[] = [
+  { to: "/minhas-turmas", label: "Minhas Turmas", icon: School, roles: ["teacher"] },
+  { to: "/meus-alunos", label: "Meus Alunos", icon: Users, roles: ["teacher"] },
 ];
 
 const academicoNav: NavItem[] = [
@@ -63,6 +77,12 @@ const academicoNav: NavItem[] = [
   // staff). Resolvido automaticamente pelo `uid` logado, sem escolher
   // "qual aluno" — ver MyBoletimPage.
   { to: "/meu-boletim", label: "Meu Boletim", icon: FileText, roles: ["student"] },
+  // Etapa 3 do plano multi-role — restante do Portal do Aluno: mesma
+  // regra de "Meu Boletim" acima (somente leitura, `uid` resolvido
+  // automaticamente, nunca escolhe "qual aluno").
+  { to: "/minhas-disciplinas", label: "Minhas Disciplinas", icon: BookOpen, roles: ["student"] },
+  { to: "/minha-frequencia", label: "Frequência", icon: CalendarCheck, roles: ["student"] },
+  { to: "/meu-desempenho", label: "Meu Desempenho", icon: LineChart, roles: ["student"] },
 ];
 
 function NavGroup({
@@ -128,6 +148,7 @@ export function Sidebar() {
 
       <nav className="flex flex-1 flex-col gap-8 overflow-y-auto px-2">
         <NavGroup title="Principal" items={principalNav} currentRole={profile?.role} />
+        <NavGroup title="Minhas Turmas" items={minhasTurmasNav} currentRole={profile?.role} />
         <NavGroup title="Acadêmico" items={academicoNav} currentRole={profile?.role} />
       </nav>
 
