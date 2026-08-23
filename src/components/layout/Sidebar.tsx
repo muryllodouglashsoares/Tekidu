@@ -31,15 +31,14 @@ interface NavItem {
 const principalNav: NavItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   // Alunos/Turmas/Disciplinas: visão de STAFF (escola inteira, com
-  // edição) — continuam acessíveis a admin/teacher (Tarefa 3, Fase 1
-  // pós-auditoria V8; mesma restrição em AppRoutes/Firestore Rules).
-  // O professor também tem "Minhas Turmas"/"Meus Alunos" abaixo
-  // (grupo "Minhas Turmas"), que é a visão ESCOPADA equivalente —
-  // nenhuma foi removida, para não tirar uma funcionalidade que já
-  // funciona hoje (regra 5 do plano multi-role).
-  { to: "/alunos", label: "Alunos", icon: Users, roles: ["admin", "teacher"] },
-  { to: "/turmas", label: "Turmas", icon: School, roles: ["admin", "teacher"] },
-  { to: "/disciplinas", label: "Disciplinas", icon: BookOpen, roles: ["admin", "teacher"] },
+  // edição) — restrita a admin. Antes também aparecia para "teacher",
+  // mas essa visão foi retirada do professor: agora ele usa
+  // EXCLUSIVAMENTE o grupo "Minhas Turmas" abaixo (rotas escopadas ao
+  // próprio `profile.uid`), nunca mais a escola inteira. Ver decisão
+  // registrada em AppRoutes.tsx.
+  { to: "/alunos", label: "Alunos", icon: Users, roles: ["admin"] },
+  { to: "/turmas", label: "Turmas", icon: School, roles: ["admin"] },
+  { to: "/disciplinas", label: "Disciplinas", icon: BookOpen, roles: ["admin"] },
   // Restrita a admin: mesma role autorizada pela rota (ver AppRoutes) e
   // pelas Firestore Security Rules para criar/editar contas em "users".
   { to: "/professores", label: "Professores", icon: GraduationCap, roles: ["admin"] },
@@ -53,6 +52,10 @@ const principalNav: NavItem[] = [
 const minhasTurmasNav: NavItem[] = [
   { to: "/minhas-turmas", label: "Minhas Turmas", icon: School, roles: ["teacher"] },
   { to: "/meus-alunos", label: "Meus Alunos", icon: Users, roles: ["teacher"] },
+  // Etapa 4b do plano multi-role: comparação entre as turmas do
+  // professor e evolução por bimestre de cada uma — mesma role
+  // restrita a "teacher" dos outros dois itens deste grupo.
+  { to: "/desempenho-turmas", label: "Desempenho", icon: LineChart, roles: ["teacher"] },
 ];
 
 const academicoNav: NavItem[] = [

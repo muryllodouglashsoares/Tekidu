@@ -2,6 +2,7 @@ import { getStudents } from "@/services/students/studentService";
 import { getClasses } from "@/services/classes/classService";
 import { getDisciplines } from "@/services/disciplines/disciplineService";
 import { getAssessmentsBySchoolYear } from "@/services/assessments/assessmentService";
+import { getAllSessions } from "@/services/attendanceSessions/attendanceSessionService";
 import { getGradesBySchoolYear } from "@/services/grades/gradeService";
 import { getAttendanceRecordsBySchoolYear } from "@/services/attendance/attendanceRecordService";
 import { getAcademicSettings } from "@/services/academicSettings/academicSettingsService";
@@ -36,7 +37,11 @@ import type { Discipline } from "@/types/discipline";
  * `getAttendanceRecordsBySchoolYear`, `getAssessmentsBySchoolYear` —
  * cada uma UMA consulta de campo único, sem N+1 por turma/disciplina),
  * adequado à escala de uma escola (dezenas/centenas de alunos, não
- * milhões de registros).
+ * milhões de registros). `getAllSessions` é exceção: não existe uma
+ * consulta de aulas por ano letivo pronta no projeto (só por contexto
+ * completo — disciplina+turma+bimestre — em `getSessionsByContext`),
+ * então lemos todas e filtramos por `schoolYear` em memória, mesmo
+ * padrão já usado por `teacherOverviewService.loadTeacherRawData`.
  */
 
 export interface StudentAcademicOverview {
@@ -63,11 +68,12 @@ export interface AcademicOverview {
 }
 
 export async function getAcademicOverview(schoolYear: number): Promise<AcademicOverview> {
-  const [students, classes, disciplinesAll, assessments, grades, records, settings] = await Promise.all([
+  const [students, classes, disciplinesAll, assessments, sessions, grades, records, settings] = await Promise.all([
     getStudents(),
     getClasses(),
     getDisciplines(),
     getAssessmentsBySchoolYear(schoolYear),
+    getAllSessions(),
     getGradesBySchoolYear(schoolYear),
     getAttendanceRecordsBySchoolYear(schoolYear),
     getAcademicSettings(schoolYear),
@@ -127,6 +133,8 @@ export async function getAcademicOverview(schoolYear: number): Promise<AcademicO
     classesThisYear,
     assessments,
     grades,
+    sessionsThisYear: sessions.filter((s) => s.schoolYear === schoolYear),
+    records,
     minAttendanceRate: settings.minAttendanceRate,
   });
 
@@ -141,9 +149,21 @@ function buildPendencies(args: {
   classesThisYear: SchoolClass[];
   assessments: import("@/types/assessment").Assessment[];
   grades: import("@/types/grade").Grade[];
+  sessionsThisYear: import("@/types/attendance").AttendanceSession[];
+  records: import("@/types/attendance").AttendanceRecord[];
   minAttendanceRate: number;
 }): AcademicPendency[] {
-  const { studentOverviews, studentsThisYear, studentsWithoutClass, disciplinesThisYear, classesThisYear, assessments, grades } = args;
+  const {
+    studentOverviews,
+    studentsThisYear,
+    studentsWithoutClass,
+    disciplinesThisYear,
+    classesThisYear,
+    assessments,
+    grades,
+    sessionsThisYear,
+    records,
+  } = args;
   const pendencies: AcademicPendency[] = [];
 
   // 🔴 Alunos abaixo da média (item 12 — "Nota: aluno abaixo da média")
@@ -211,6 +231,40 @@ function buildPendencies(args: {
       label: `${incompleteAssessments} avaliaç${incompleteAssessments === 1 ? "ão incompleta" : "ões incompletas"}`,
       actionLabel: "Lançar notas",
       actionHref: "/notas",
+    });
+  }
+
+  // 🟡 Aulas com frequência incompleta (mesma ideia de "avaliações
+  // incompletas" acima, mas para `attendanceSessions`/`attendanceRecords`
+  // — item 12 do plano V8 também cobre "lançamento" de frequência, não
+  // só de notas. Uma aula (`AttendanceSession`) está incompleta quando
+  // nem todos os alunos matriculados na turma naquele momento têm um
+  // `AttendanceRecord` (presente/ausente) lançado para ela.
+  const recordedByStudentInSession = new Map<string, Set<string>>();
+  for (const r of records) {
+    const set = recordedByStudentInSession.get(r.sessionId) ?? new Set<string>();
+    set.add(r.studentId);
+    recordedByStudentInSession.set(r.sessionId, set);
+  }
+
+  let incompleteSessions = 0;
+  let missingAttendanceRecords = 0;
+  for (const session of sessionsThisYear) {
+    const expected = studentCountByClass.get(session.classId) ?? 0;
+    if (expected === 0) continue;
+    const filled = recordedByStudentInSession.get(session.id)?.size ?? 0;
+    if (filled < expected) {
+      incompleteSessions += 1;
+      missingAttendanceRecords += expected - filled;
+    }
+  }
+  if (missingAttendanceRecords > 0) {
+    pendencies.push({
+      id: "incomplete-attendance-sessions",
+      severity: "low",
+      label: `${incompleteSessions} aula${incompleteSessions === 1 ? "" : "s"} com frequência incompleta`,
+      actionLabel: "Registrar frequência",
+      actionHref: "/frequencia",
     });
   }
 

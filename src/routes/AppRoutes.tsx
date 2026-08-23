@@ -16,6 +16,7 @@ import { MyBoletimPage } from "@/pages/boletim/MyBoletimPage";
 import { ReportsPage } from "@/pages/reports/ReportsPage";
 import { MyClassesPage } from "@/pages/teacherPortal/MyClassesPage";
 import { MyStudentsPage } from "@/pages/teacherPortal/MyStudentsPage";
+import { PerformancePage } from "@/pages/teacherPortal/PerformancePage";
 import { MyDisciplinesPage } from "@/pages/studentPortal/MyDisciplinesPage";
 import { MyAttendancePage } from "@/pages/studentPortal/MyAttendancePage";
 import { MyPerformancePage } from "@/pages/studentPortal/MyPerformancePage";
@@ -86,20 +87,30 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/" element={<HomeRoute />} />
 
-          {/* Alunos/Turmas/Disciplinas: restritas a admin/teacher desde a
-              Tarefa 3 (Fase 1 pós-auditoria V8). Antes, estas rotas não
-              tinham `allowedRoles` — inofensivo enquanto a role "student"
-              não tinha contas reais (Tarefa 2), mas passaria a quebrar
-              (erro de permissão do Firestore) assim que um aluno logasse,
-              já que `getStudents()`/`getClasses()`/`getDisciplines()`
-              aqui são consultas SEM escopo por aluno. O aluno tem sua
-              própria visão em "/meu-boletim", abaixo. */}
-          <Route element={<ProtectedRoute allowedRoles={["admin", "teacher"]} />}>
+          {/* Alunos/Turmas/Disciplinas: visão de STAFF com edição —
+              restrita a admin (decisão tomada após a Etapa 4: agora que
+              o Portal do Professor está validado, o professor usa
+              EXCLUSIVAMENTE suas rotas escopadas "/minhas-turmas",
+              "/meus-alunos" e "/desempenho-turmas" — nunca mais a visão
+              de escola inteira, que permitia editar qualquer turma/aluno
+              fora de suas disciplinas. Só o admin continua com acesso
+              irrestrito ao sistema.
+              NOTA DE SEGURANÇA (a aprofundar na Etapa 7): esta restrição
+              é só de ROTA/UX (ver ProtectedRoute) — as Firestore Rules
+              (firestore.rules) hoje ainda liberam leitura/escrita destas
+              coleções para qualquer `isActiveStaff()`, incluindo
+              "teacher". Enquanto essa regra não for revista, um professor
+              tecnicamente ainda poderia editar `classes`/`disciplines`
+              chamando o Firestore diretamente, fora desta UI — a
+              consolidação da regra (torná-la `isAdmin()`-only) é o
+              próximo passo pendente da Etapa 7. */}
+          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
             <Route path="/alunos" element={<StudentsPage />} />
             {/* Perfil 360° (Fase 8): central acadêmica de UM aluno —
                 identificação, resumo, notas por disciplina, desenvolvimento
                 e frequência. Mesma restrição de acesso de "/alunos" (é
-                alcançado a partir de lá). */}
+                alcançado a partir de lá). O professor tem o EQUIVALENTE
+                escopado em "/meus-alunos/:studentId", abaixo. */}
             <Route path="/alunos/:studentId" element={<StudentProfilePage />} />
             <Route path="/turmas" element={<ClassesPage />} />
             <Route path="/disciplinas" element={<DisciplinesPage />} />
@@ -115,12 +126,21 @@ export function AppRoutes() {
           {/* Portal do Professor — "Minhas Turmas"/"Meus Alunos" (Etapa 4
               do plano multi-role): restritas à role "teacher", somente
               leitura, sempre escopadas ao próprio `profile.uid` dentro
-              de `teacherOverviewService` (nunca à escola inteira). Não
-              substituem "/turmas"/"/alunos" (staff, com edição) — são a
-              visão equivalente, porém filtrada, para o professor. */}
+              de `teacherOverviewService` (nunca à escola inteira). Desde
+              a restrição de "/alunos" a admin, estas rotas passaram a
+              ser o ÚNICO caminho do professor até dados de aluno/turma —
+              "/meus-alunos/:studentId" é o equivalente escopado do
+              Perfil 360° de staff (StudentProfilePage), com verificação
+              de que o aluno pertence a uma disciplina do professor
+              logado antes de renderizar (ver StudentProfilePage).
+              "/desempenho-turmas" (Etapa 4b) completa o Portal do
+              Professor: compara as turmas do professor entre si e
+              mostra a evolução por bimestre de cada uma. */}
           <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
             <Route path="/minhas-turmas" element={<MyClassesPage />} />
             <Route path="/meus-alunos" element={<MyStudentsPage />} />
+            <Route path="/meus-alunos/:studentId" element={<StudentProfilePage />} />
+            <Route path="/desempenho-turmas" element={<PerformancePage />} />
           </Route>
 
           {/* Notas: restrita a admin/teacher (alunos não devem ter acesso

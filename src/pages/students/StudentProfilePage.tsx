@@ -7,6 +7,7 @@ import {
   CalendarCheck,
   FileText,
   History,
+  ShieldAlert,
   User,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +24,7 @@ import { AttendanceStatusBadge } from "@/components/attendance/AttendanceStatusB
 import { DevelopmentLineChart } from "@/components/reports/DevelopmentLineChart";
 import { getStudentById } from "@/services/students/studentService";
 import { getClassById } from "@/services/classes/classService";
+import { getTeacherStudentsOverview } from "@/services/academic/teacherOverviewService";
 import {
   getStudentBoletim,
   getStudentDevelopmentSeries,
@@ -79,12 +81,44 @@ export function StudentProfilePage() {
   const [tab, setTab] = useState<Tab>("overview");
   const schoolYear = new Date().getFullYear();
 
+  // Reaproveitada por staff ("/alunos/:studentId", só admin) e pelo
+  // professor ("/meus-alunos/:studentId", escopado). O `basePath`
+  // decide para onde os links "Voltar"/breadcrumb apontam, já que o
+  // professor não tem mais acesso a "/alunos"/"/turmas" (ver decisão
+  // registrada em AppRoutes.tsx).
+  const isTeacherView = profile?.role === "teacher";
+  const basePath = isTeacherView ? "/meus-alunos" : "/alunos";
+  const classPath = isTeacherView ? "/minhas-turmas" : "/turmas";
+
+  const [unauthorized, setUnauthorized] = useState(false);
+
   async function loadStudent() {
     if (!studentId) return;
     setLoading(true);
     setError(null);
+    setUnauthorized(false);
     try {
       const studentData = await getStudentById(studentId);
+
+      // Verificação de escopo do professor (consequência direta de
+      // "/meus-alunos/:studentId" reaproveitar este MESMO componente):
+      // como a rota não impede, por si só, que um professor troque o
+      // `:studentId` na URL por qualquer outro (ver nota de segurança
+      // em ProtectedRoute — rota é UX, não barreira), confirmamos aqui
+      // que o aluno pertence a alguma disciplina do professor logado,
+      // reaproveitando a MESMA lista já usada por "/meus-alunos"
+      // (`getTeacherStudentsOverview` — nenhum cálculo novo).
+      if (studentData && isTeacherView && profile) {
+        const myStudents = await getTeacherStudentsOverview(profile.uid, schoolYear);
+        const allowed = myStudents.some((s) => s.student.id === studentData.id);
+        if (!allowed) {
+          setUnauthorized(true);
+          setStudent(null);
+          setLoading(false);
+          return;
+        }
+      }
+
       setStudent(studentData);
       if (studentData?.classId) {
         setSchoolClass(await getClassById(studentData.classId));
@@ -99,7 +133,7 @@ export function StudentProfilePage() {
   useEffect(() => {
     loadStudent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId]);
+  }, [studentId, profile?.uid]);
 
   async function loadBoletim() {
     if (!student?.classId) return;
@@ -146,13 +180,24 @@ export function StudentProfilePage() {
     );
   }
 
+  if (unauthorized) {
+    return (
+      <EmptyState
+        icon={ShieldAlert}
+        title="Aluno fora do seu escopo"
+        description="Este aluno não está matriculado em nenhuma turma/disciplina vinculada a você."
+        action={{ label: "Voltar para Meus Alunos", onClick: () => navigate(basePath) }}
+      />
+    );
+  }
+
   if (!student) {
     return (
       <EmptyState
         icon={User}
         title="Aluno não encontrado"
         description="Este aluno pode ter sido removido. Volte para a lista de alunos."
-        action={{ label: "Voltar para Alunos", onClick: () => navigate("/alunos") }}
+        action={{ label: "Voltar para Alunos", onClick: () => navigate(basePath) }}
       />
     );
   }
@@ -161,19 +206,19 @@ export function StudentProfilePage() {
     <div>
       <Breadcrumb
         items={[
-          { label: "Alunos", onClick: () => navigate("/alunos") },
-          ...(schoolClass ? [{ label: schoolClass.name, onClick: () => navigate("/turmas") }] : []),
+          { label: isTeacherView ? "Meus Alunos" : "Alunos", onClick: () => navigate(basePath) },
+          ...(schoolClass ? [{ label: schoolClass.name, onClick: () => navigate(classPath) }] : []),
           { label: student.name },
         ]}
       />
 
       <button
         type="button"
-        onClick={() => navigate("/alunos")}
+        onClick={() => navigate(basePath)}
         className="mb-4 flex items-center gap-1.5 text-sm font-medium text-ink-500 hover:text-ink-800"
       >
         <ArrowLeft className="h-4 w-4" />
-        Voltar para Alunos
+        {isTeacherView ? "Voltar para Meus Alunos" : "Voltar para Alunos"}
       </button>
 
       <Card className="mb-6 p-6">

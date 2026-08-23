@@ -6,6 +6,7 @@ import { getAllSessions } from "@/services/attendanceSessions/attendanceSessionS
 import { getGradesBySchoolYear } from "@/services/grades/gradeService";
 import { getAttendanceRecordsBySchoolYear } from "@/services/attendance/attendanceRecordService";
 import { getAcademicSettings } from "@/services/academicSettings/academicSettingsService";
+import { computeDevelopmentSeries, type ReportSeriesPoint } from "@/services/reports/reportsService";
 import { calculateAverage, deriveSituationFromAverage, type AcademicSituation } from "@/types/grade";
 import { calculateAttendanceRate } from "@/types/attendance";
 import type { Student } from "@/types/student";
@@ -227,4 +228,57 @@ export async function getTeacherStudentsOverview(teacherUid: string, schoolYear:
   }
 
   return Array.from(byStudentId.values()).sort((a, b) => a.student.name.localeCompare(b.student.name, "pt-BR"));
+}
+
+/**
+ * "Desempenho" do professor (Etapa 4b do plano multi-role): mesma
+ * lista de `getTeacherClassesOverview` (uma linha por
+ * disciplina+turma do professor), mas cada item também carrega a
+ * série de médias por bimestre — para permitir (a) comparar turmas
+ * entre si pela média/frequência ANUAL já calculada aqui, e (b) ver a
+ * evolução de UMA turma+disciplina ao longo do ano (o mesmo padrão de
+ * `MyPerformancePage.tsx` do aluno, mas por turma em vez de por
+ * aluno).
+ *
+ * REAPROVEITAMENTO (regra 1 do plano — nada de service duplicado):
+ * a série por bimestre usa `reportsService.computeDevelopmentSeries`,
+ * a MESMA função já usada pelo gráfico de "/relatorios" (visão do
+ * admin) — nenhuma lógica de agregação por bimestre é reimplementada
+ * aqui, só aplicada ao recorte "notas desta turma+disciplina,
+ * filtradas aos alunos atualmente matriculados nela".
+ */
+export interface TeacherClassPerformance extends TeacherClassOverview {
+  series: ReportSeriesPoint[];
+}
+
+export async function getTeacherPerformanceOverview(
+  teacherUid: string,
+  schoolYear: number
+): Promise<TeacherClassPerformance[]> {
+  const data = await loadTeacherRawData(teacherUid, schoolYear);
+  const assignments = buildAssignments(data);
+
+  return assignments.map((assignment) => {
+    const { discipline, schoolClass } = assignment;
+    const studentsInClass = data.studentsByClassId.get(schoolClass.id) ?? [];
+    const studentIds = new Set(studentsInClass.map((s) => s.id));
+
+    const classGrades = data.grades.filter(
+      (g) => g.disciplineId === discipline.id && g.classId === schoolClass.id && studentIds.has(g.studentId)
+    );
+    const average = calculateAverage(classGrades.map((g) => g.score));
+
+    const classRecords = data.records.filter(
+      (r) => r.disciplineId === discipline.id && r.classId === schoolClass.id && studentIds.has(r.studentId)
+    );
+    const present = classRecords.filter((r) => r.status === "present").length;
+    const attendanceRate = calculateAttendanceRate(present, classRecords.length);
+
+    // Escopo já pré-filtrado (disciplina+turma+alunos matriculados)
+    // acima, então `computeDevelopmentSeries` não precisa repetir esse
+    // filtro — só agrupa as notas já corretas por bimestre.
+    const series = computeDevelopmentSeries(classGrades, {});
+
+    return { ...assignment, average, attendanceRate, series };
+  });
 }

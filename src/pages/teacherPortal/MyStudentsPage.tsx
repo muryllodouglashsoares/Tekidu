@@ -24,9 +24,15 @@ const ALL = "all";
  * frequência exibidas aqui são calculadas SÓ sobre as disciplinas
  * deste professor com o aluno, não a média geral do aluno na escola.
  *
- * "Ver perfil" reaproveita a mesma `StudentProfilePage` já usada por
- * staff em `/alunos/:studentId` (a rota já permite `teacher`) — não
- * duplica a tela de perfil acadêmico só para o portal do professor.
+ * "Ver perfil" leva a "/meus-alunos/:studentId" — o equivalente
+ * ESCOPADO do Perfil 360° de staff, que verifica que o aluno pertence
+ * a uma disciplina do professor logado antes de renderizar (ver
+ * StudentProfilePage). Desde que "/alunos/:studentId" passou a ser
+ * restrita a admin, este é o ÚNICO caminho do professor até o perfil
+ * de um aluno — não reaproveita mais a rota de staff diretamente,
+ * mas continua reaproveitando o MESMO COMPONENTE `StudentProfilePage`
+ * (não duplica a tela de perfil acadêmico só para o portal do
+ * professor).
  */
 export function MyStudentsPage() {
   const { profile } = useAuth();
@@ -174,7 +180,7 @@ export function MyStudentsPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
-                        onClick={() => navigate(`/alunos/${row.student.id}`)}
+                        onClick={() => navigate(`/meus-alunos/${row.student.id}`)}
                         className="inline-flex items-center gap-1 text-xs font-medium text-ink-600 hover:text-ink-900"
                       >
                         <Eye className="h-3.5 w-3.5" />
