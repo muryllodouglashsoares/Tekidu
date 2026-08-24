@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { School, Users, GraduationCap, FileText, CheckCircle, Shield, LineChart, LayoutDashboard } from "lucide-react";
+import { Users, GraduationCap, FileText, CheckCircle, Shield, LineChart, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export function LandingPage() {
