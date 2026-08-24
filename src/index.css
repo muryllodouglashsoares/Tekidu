@@ -2,15 +2,136 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   TEKIDU — TOKENS DE COR (Light / Dark)
+   ==========================================================================
+   Baseado no guia "Ajuste importante — Paleta de cores e aplicação na
+   plataforma":
+     • Neutros constroem a interface (base dominante, em ambos os modos).
+     • Azul (ink-700/800/900) constrói a identidade — ações, navegação
+       ativa, links, foco e destaques. Nunca usado como fundo de grandes
+       áreas.
+     • Verde (success) representa evolução/progresso/sucesso.
+   Os valores em RGB (sem "rgb()") permitem usar os modificadores de
+   opacidade do Tailwind, ex.: bg-success/10, bg-honors-400/20.
+   ========================================================================== */
+
 @layer base {
+  :root {
+    /* Neutros */
+    --tk-ink-50: 248 250 252;
+    --tk-ink-100: 241 245 249;
+    --tk-ink-200: 226 232 240;
+    --tk-ink-300: 203 213 225;
+    --tk-ink-400: 148 163 184;
+    --tk-ink-500: 100 116 139;
+    --tk-ink-600: 71 85 105;
+
+    /* Azul — identidade (ações principais, navegação ativa, foco) */
+    --tk-ink-700: 59 95 207; /* ação principal */
+    --tk-ink-800: 47 75 168; /* hover */
+    --tk-ink-900: 36 57 127; /* active / pressed */
+
+    /* Superfícies */
+    --tk-paper: 243 245 249;
+    --tk-surface: 255 255 255;
+    --tk-line: 226 232 240;
+    --tk-ink900: 30 41 59; /* texto principal (neutro) */
+
+    /* Verde — evolução / progresso / sucesso */
+    --tk-success-50: 236 253 245;
+    --tk-success-100: 209 250 229;
+    --tk-success-200: 167 243 208;
+    --tk-success-300: 110 231 183;
+    --tk-success-400: 52 211 153;
+    --tk-success-500: 16 185 129;
+    --tk-success-600: 5 150 105;
+    --tk-success-700: 4 120 87;
+
+    /* Vermelho — estados de erro/crítico */
+    --tk-danger-50: 254 242 242;
+    --tk-danger-100: 254 226 226;
+    --tk-danger-500: 239 68 68;
+    --tk-danger-600: 220 38 38;
+
+    /* Coral — acento de "atenção", usado com contenção */
+    --tk-honors-50: 254 242 242;
+    --tk-honors-100: 254 226 226;
+    --tk-honors-200: 254 202 202;
+    --tk-honors-300: 252 165 165;
+    --tk-honors-400: 248 113 113;
+    --tk-honors-500: 239 68 68;
+    --tk-honors-600: 220 38 38;
+  }
+
+  /* ── DARK MODE ─────────────────────────────────────────────────────────
+     "NÃO TRANSFORMAR O DARK MODE EM UM SITE AZUL": o fundo permanece
+     grafite/neutro-escuro; azul e verde continuam aparecendo como
+     acentos estratégicos, apenas recalibrados para ter contraste sobre
+     fundo escuro. */
+  .dark {
+    /* Neutros (escala invertida em luminosidade, mesma função) */
+    --tk-ink-50: 23 28 44;
+    --tk-ink-100: 30 37 58;
+    --tk-ink-200: 42 49 73;
+    --tk-ink-300: 54 62 90;
+    --tk-ink-400: 138 148 178;
+    --tk-ink-500: 163 172 199;
+    --tk-ink-600: 196 203 224;
+
+    /* Azul — mais claro para manter contraste sobre fundo escuro */
+    --tk-ink-700: 96 137 255; /* ação principal */
+    --tk-ink-800: 74 115 235; /* hover */
+    --tk-ink-900: 58 89 199; /* active / pressed */
+
+    /* Superfícies — grafite/profundidade, não azul */
+    --tk-paper: 13 17 28;
+    --tk-surface: 21 26 41;
+    --tk-line: 39 46 68;
+    --tk-ink900: 241 245 249; /* texto principal (quase branco) */
+
+    /* Verde — levemente mais claro para contraste sobre fundo escuro */
+    --tk-success-50: 6 30 24;
+    --tk-success-100: 8 46 36;
+    --tk-success-200: 12 68 53;
+    --tk-success-300: 18 99 78;
+    --tk-success-400: 30 158 122;
+    --tk-success-500: 52 211 153;
+    --tk-success-600: 74 222 173;
+    --tk-success-700: 110 231 183;
+
+    /* Vermelho — mais claro para contraste sobre fundo escuro */
+    --tk-danger-50: 46 20 20;
+    --tk-danger-100: 69 26 26;
+    --tk-danger-500: 248 113 113;
+    --tk-danger-600: 252 165 165;
+
+    /* Coral — mesmo princípio */
+    --tk-honors-50: 46 20 20;
+    --tk-honors-100: 69 26 26;
+    --tk-honors-200: 100 35 35;
+    --tk-honors-300: 190 60 60;
+    --tk-honors-400: 252 165 165;
+    --tk-honors-500: 248 113 113;
+    --tk-honors-600: 239 68 68;
+  }
+
   html,
   body,
   #root {
     height: 100%;
   }
 
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
   body {
-    @apply bg-paper text-ink900 antialiased;
+    @apply bg-paper text-ink900 antialiased transition-colors duration-200;
     font-feature-settings: "cv11", "ss01";
   }
 
@@ -18,9 +139,10 @@
     @apply bg-honors-200 text-ink-900;
   }
 
-  /* Foco visível para navegação por teclado (acessibilidade) */
+  /* Foco visível para navegação por teclado (acessibilidade).
+     Azul: no guia de marca, foco é uma das funções do azul. */
   :focus-visible {
-    outline: 2px solid theme("colors.honors.400");
+    outline: 2px solid rgb(var(--tk-ink-700));
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -28,5 +150,21 @@
   /* Números tabulares para notas, frequência e IDs */
   .tabular {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Scrollbar discreta, coerente com os neutros da interface */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-ink-200;
+    border-radius: 9999px;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-ink-200;
   }
 }

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { Menu, X, Search } from "lucide-react";
+import { Menu, X, Search, Moon, Sun } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -39,6 +40,7 @@ function pageTitle(pathname: string): string {
  */
 export function AppShell() {
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -109,6 +111,15 @@ export function AppShell() {
                 year: "numeric",
               })}
             </div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+              title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+              className="rounded-full border border-line bg-surface p-2.5 text-ink-500 shadow-sm transition-colors hover:bg-ink-100 hover:text-ink-700"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
             <NotificationCenter />
           </div>
         </header>

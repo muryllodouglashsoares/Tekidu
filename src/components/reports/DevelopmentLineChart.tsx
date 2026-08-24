@@ -79,23 +79,53 @@ export function DevelopmentLineChart({
             x2={width - paddingRight}
             y1={yFor(tick)}
             y2={yFor(tick)}
-            stroke="#E4E4E0"
+            style={{ stroke: "rgb(var(--tk-line))" }}
             strokeDasharray="4 4"
           />
-          <text x={paddingLeft - 8} y={yFor(tick) + 4} textAnchor="end" fontSize="11" fill="#8D9AC0">
+          <text
+            x={paddingLeft - 8}
+            y={yFor(tick) + 4}
+            textAnchor="end"
+            fontSize="11"
+            style={{ fill: "rgb(var(--tk-ink-400))" }}
+          >
             {tick.toFixed(0)}
           </text>
         </g>
       ))}
 
-      <path d={pathD} fill="none" stroke="#1B2559" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Linha de evolução em VERDE — este gráfico representa o
+          desenvolvimento/progresso do aluno, o conceito central que o
+          verde da identidade do Tekidu deve reforçar (grid/eixos
+          permanecem neutros). */}
+      <path
+        d={pathD}
+        fill="none"
+        style={{ stroke: "rgb(var(--tk-success-500))" }}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
 
       {validPoints.map((p) => (
-        <circle key={p.index} cx={xFor(p.index)} cy={yFor(p.value)} r="4" fill="#1B2559" />
+        <circle
+          key={p.index}
+          cx={xFor(p.index)}
+          cy={yFor(p.value)}
+          r="4"
+          style={{ fill: "rgb(var(--tk-success-500))" }}
+        />
       ))}
 
       {points.map((p, i) => (
-        <text key={p.label} x={xFor(i)} y={height - 6} textAnchor="middle" fontSize="11" fill="#8D9AC0">
+        <text
+          key={p.label}
+          x={xFor(i)}
+          y={height - 6}
+          textAnchor="middle"
+          fontSize="11"
+          style={{ fill: "rgb(var(--tk-ink-400))" }}
+        >
           {p.label}
         </text>
       ))}

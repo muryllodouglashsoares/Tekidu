@@ -1,38 +1,78 @@
 /** @type {import('tailwindcss').Config} */
+
+// Todas as cores abaixo são lidas de variáveis CSS (ver src/index.css),
+// no formato "R G B" (canais separados por espaço). Isso permite:
+//  1) Trocar Light/Dark Mode só mudando as variáveis, sem tocar em
+//     nenhuma classe Tailwind usada nas páginas/componentes.
+//  2) Continuar usando modificadores de opacidade do Tailwind, como
+//     `bg-success/10` ou `bg-honors-400/20`, normalmente.
+function cssVar(name) {
+  return `rgb(var(${name}) / <alpha-value>)`;
+}
+
 export default {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
-        // Modern Slate/Indigo for the new template look
+        // ── NEUTROS ────────────────────────────────────────────────
+        // Base da interface (o "neutros dominam" do guia de marca).
+        // ink-50..600: textos secundários, bordas, fundos sutis.
+        // ink-700..900: identidade AZUL (ações, navegação ativa, foco) —
+        // ver seção "FUNÇÃO DO AZUL" do guia de marca.
         ink: {
-          50: "#F8FAFC",
-          100: "#F1F5F9",
-          200: "#E2E8F0",
-          300: "#CBD5E1",
-          400: "#94A3B8",
-          500: "#64748B",
-          600: "#475569",
-          700: "#7583A8", // primary button color (soft indigo)
-          800: "#5D6A8E", // primary button hover
-          900: "#4B5678", // sidebar dark was here, but we will change sidebar to white
+          50: cssVar("--tk-ink-50"),
+          100: cssVar("--tk-ink-100"),
+          200: cssVar("--tk-ink-200"),
+          300: cssVar("--tk-ink-300"),
+          400: cssVar("--tk-ink-400"),
+          500: cssVar("--tk-ink-500"),
+          600: cssVar("--tk-ink-600"),
+          700: cssVar("--tk-ink-700"), // azul — ação principal / identidade
+          800: cssVar("--tk-ink-800"), // azul — hover
+          900: cssVar("--tk-ink-900"), // azul — active/pressed
         },
-        // Accent color
+        // Acento coral/vermelho — usado com contenção para estados de
+        // "atenção" e selos, nunca como cor dominante.
         honors: {
-          50: "#FEF2F2",
-          100: "#FEE2E2",
-          200: "#FECACA",
-          300: "#FCA5A5",
-          400: "#F87171", // Soft red/coral accent
-          500: "#EF4444",
-          600: "#DC2626",
+          50: cssVar("--tk-honors-50"),
+          100: cssVar("--tk-honors-100"),
+          200: cssVar("--tk-honors-200"),
+          300: cssVar("--tk-honors-300"),
+          400: cssVar("--tk-honors-400"),
+          500: cssVar("--tk-honors-500"),
+          600: cssVar("--tk-honors-600"),
         },
-        paper: "#F3F5F9", // main app background (light gray/blue)
-        surface: "#FFFFFF",
-        line: "#E2E8F0",
-        ink900: "#1E293B", // main dark text
-        success: "#10B981",
-        danger: "#EF4444",
+        paper: cssVar("--tk-paper"), // fundo geral do app
+        surface: cssVar("--tk-surface"), // cards, sidebar, header
+        line: cssVar("--tk-line"), // bordas/divisores discretos
+        ink900: cssVar("--tk-ink900"), // texto principal (neutro, não azul)
+
+        // ── VERDE — EVOLUÇÃO ───────────────────────────────────────
+        // "success" é a cor de evolução/progresso/sucesso do Tekidu
+        // (ver seção "FUNÇÃO DO VERDE"). Mantido como DEFAULT para não
+        // quebrar `bg-success`/`text-success` já usados no app, com
+        // uma escala completa para gráficos, barras de progresso e
+        // variações de estado.
+        success: {
+          DEFAULT: cssVar("--tk-success-500"),
+          50: cssVar("--tk-success-50"),
+          100: cssVar("--tk-success-100"),
+          200: cssVar("--tk-success-200"),
+          300: cssVar("--tk-success-300"),
+          400: cssVar("--tk-success-400"),
+          500: cssVar("--tk-success-500"),
+          600: cssVar("--tk-success-600"),
+          700: cssVar("--tk-success-700"),
+        },
+        danger: {
+          DEFAULT: cssVar("--tk-danger-500"),
+          50: cssVar("--tk-danger-50"),
+          100: cssVar("--tk-danger-100"),
+          500: cssVar("--tk-danger-500"),
+          600: cssVar("--tk-danger-600"),
+        },
       },
       fontFamily: {
         display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
@@ -43,7 +83,7 @@ export default {
         card: "16px", // Softer, rounder cards
       },
       boxShadow: {
-        card: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)", // Soft ambient shadow
+        card: "0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -1px rgb(0 0 0 / 0.03)",
       },
     },
   },

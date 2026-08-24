@@ -13,6 +13,19 @@
     />
   </head>
   <body>
+    <script>
+      // Aplica o tema salvo (ou o do sistema) antes do React montar,
+      // evitando o "flash" de Light Mode ao carregar em Dark Mode.
+      (function () {
+        try {
+          var stored = localStorage.getItem("tekidu-theme");
+          var dark =
+            stored === "dark" ||
+            (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

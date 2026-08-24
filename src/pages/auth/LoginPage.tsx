@@ -3,9 +3,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FirebaseError } from "firebase/app";
 import { useAuth } from "@/contexts/AuthContext";
 import { resolveLoginKey } from "@/services/users/userService";
+import { Moon, Sun } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // Mapeia códigos de erro do Firebase Auth para mensagens em português,
 // sem revelar se o problema foi o e-mail ou a senha (boa prática de
@@ -32,6 +34,7 @@ type LoginMode = "normal" | "firstAccess";
 
 export function LoginPage() {
   const { signIn } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -147,7 +150,16 @@ export function LoginPage() {
       </div>
 
       {/* Login Side */}
-      <div className="flex w-full flex-col justify-center px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 xl:px-24">
+      <div className="relative flex w-full flex-col justify-center px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 xl:px-24">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+          title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+          className="absolute right-4 top-4 rounded-full border border-line bg-surface p-2.5 text-ink-500 shadow-sm transition-colors hover:bg-ink-100 hover:text-ink-700 sm:right-6 sm:top-6"
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           <div className="lg:hidden mb-8 text-center flex flex-col items-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-ink-700 text-surface shadow-sm mb-4">
