@@ -43,6 +43,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Busca users/{uid} e devolve o UserProfile (ou null, se o documento
+  // não existir). Extraída para ser reaproveitada tanto pelo listener
+  // onAuthStateChanged (sessão restaurada/logout) quanto por signIn
+  // (login explícito) — ver comentário em signIn abaixo sobre por que
+  // isto é necessário.
+  async function fetchProfile(uid: string): Promise<UserProfile | null> {
+    const snapshot = await getDoc(doc(db, "users", uid));
+    return snapshot.exists() ? (snapshot.data() as UserProfile) : null;
+  }
+
   useEffect(() => {
     // onAuthStateChanged é o único listener "verdadeiro" de sessão do
     // Firebase: ele dispara no carregamento inicial da página (restaurando
@@ -53,18 +63,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (user) {
         // O UID do Firebase Authentication é usado como o próprio ID do
         // documento em "users", então a busca do perfil é direta e não
-        // exige nenhuma query — apenas leitura por ID.
-        const snapshot = await getDoc(doc(db, "users", user.uid));
-
-        if (snapshot.exists()) {
-          setProfile(snapshot.data() as UserProfile);
-        } else {
-          // Autenticado no Firebase Auth, mas sem documento em Firestore.
-          // Isso é um estado inconsistente (ver seção "Authentication +
-          // Firestore" da explicação) — tratamos como perfil ausente em
-          // vez de travar a aplicação.
-          setProfile(null);
-        }
+        // exige nenhuma query — apenas leitura por ID. Autenticado no
+        // Firebase Auth mas sem documento em Firestore é um estado
+        // inconsistente (ver seção "Authentication + Firestore" da
+        // explicação) — tratamos como perfil ausente em vez de travar
+        // a aplicação (fetchProfile já devolve null nesse caso).
+        setProfile(await fetchProfile(user.uid));
       } else {
         setProfile(null);
       }
@@ -76,9 +80,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signIn(email: string, password: string) {
-    await signInWithEmailAndPassword(auth, email, password);
-    // Não precisamos setar estado aqui: onAuthStateChanged dispara
-    // automaticamente após o login e atualiza firebaseUser + profile.
+    // CORREÇÃO — condição de corrida entre login e ProtectedRoute:
+    // antes, esta função só esperava `signInWithEmailAndPassword`
+    // resolver e confiava que `onAuthStateChanged` (acima) atualizaria
+    // `profile` "em algum momento". O problema é que `LoginPage`
+    // navega para a rota protegida IMEDIATAMENTE após `signIn`
+    // resolver — e `onAuthStateChanged` dispara de forma assíncrona e
+    // independente, então o `getDoc` do perfil frequentemente ainda
+    // não tinha voltado quando `ProtectedRoute` já estava renderizando
+    // com `profile == null`, mandando o usuário para "/sem-perfil"
+    // mesmo com credenciais corretas (`loading` também não ajuda aqui:
+    // ele só é `true` na primeira checagem de sessão da página, nunca
+    // é resetado em um novo login).
+    //
+    // Agora `signIn` busca o perfil e atualiza o estado ANTES de
+    // resolver, garantindo que `profile` já está disponível no
+    // contexto no instante em que `LoginPage` chama `navigate()`. O
+    // listener `onAuthStateChanged` acima ainda dispara em paralelo
+    // (é inevitável, é o próprio SDK reagindo à mudança de sessão) e
+    // refaz a mesma leitura — redundante, porém inofensivo, já que o
+    // resultado é idêntico.
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    setFirebaseUser(credential.user);
+    setProfile(await fetchProfile(credential.user.uid));
   }
 
   async function signOut() {
