@@ -53,7 +53,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const redirectTo = (location.state as { from?: Location })?.from?.pathname ?? "/";
+  const redirectTo = (location.state as { from?: Location })?.from?.pathname ?? "/dashboard";
 
   function switchMode(next: LoginMode) {
     setMode(next);
@@ -114,106 +114,148 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <span className="font-display text-2xl font-semibold text-ink-700">Tekidu</span>
-          <p className="mt-1 text-sm text-ink-400">Plataforma de gestão escolar</p>
+    <div className="flex min-h-screen bg-paper font-sans">
+      {/* Branding Side (Desktop) */}
+      <div className="hidden w-1/2 flex-col justify-between bg-ink-900 p-12 text-surface lg:flex relative overflow-hidden">
+        {/* Background elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-ink-700/20 blur-3xl"></div>
+          <div className="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-ink-800/30 blur-3xl"></div>
         </div>
 
-        <Card className="p-6">
-          <div className="mb-6 flex gap-1 rounded-full bg-ink-50 p-1">
-            <button
-              type="button"
-              onClick={() => switchMode("normal")}
-              className={`flex-1 rounded-full py-1.5 text-sm font-medium transition-colors ${
-                mode === "normal" ? "bg-surface text-ink900 shadow-sm" : "text-ink-500"
-              }`}
-            >
-              Entrar
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode("firstAccess")}
-              className={`flex-1 rounded-full py-1.5 text-sm font-medium transition-colors ${
-                mode === "firstAccess" ? "bg-surface text-ink900 shadow-sm" : "text-ink-500"
-              }`}
-            >
-              Primeiro acesso
-            </button>
+        <div className="relative z-10">
+          <Link to="/" className="flex items-center gap-3 w-fit hover:opacity-80 transition-opacity">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface text-ink-900 shadow-sm">
+              <span className="font-bold text-xl">T</span>
+            </div>
+            <span className="font-display text-2xl font-bold tracking-tight">Tekidu</span>
+          </Link>
+        </div>
+
+        <div className="relative z-10 max-w-md">
+          <h1 className="font-display text-4xl font-bold leading-tight mb-6">
+            Gestão escolar inteligente e simplificada.
+          </h1>
+          <p className="text-lg text-ink-300">
+            Acompanhe o desenvolvimento dos estudantes, gerencie turmas e avaliações com uma experiência projetada para toda a comunidade escolar.
+          </p>
+        </div>
+
+        <div className="relative z-10 text-sm text-ink-400">
+          &copy; {new Date().getFullYear()} Tekidu. Todos os direitos reservados.
+        </div>
+      </div>
+
+      {/* Login Side */}
+      <div className="flex w-full flex-col justify-center px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 xl:px-24">
+        <div className="mx-auto w-full max-w-sm lg:max-w-md">
+          <div className="lg:hidden mb-8 text-center flex flex-col items-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-ink-700 text-surface shadow-sm mb-4">
+              <span className="font-bold text-2xl">T</span>
+            </div>
+            <span className="font-display text-2xl font-bold text-ink900">Tekidu</span>
+            <p className="mt-2 text-sm text-ink-500">Acesse a plataforma</p>
           </div>
 
-          {mode === "normal" ? (
-            <form onSubmit={handleNormalSubmit} className="flex flex-col gap-4" noValidate>
-              <Input
-                label="E-mail"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <Input
-                label="Senha"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+          <div className="mb-8 hidden lg:block">
+            <h2 className="text-3xl font-display font-bold text-ink900">Bem-vindo(a)</h2>
+            <p className="mt-2 text-base text-ink-500">Insira suas credenciais para acessar sua conta.</p>
+          </div>
 
-              {error && (
-                <p role="alert" className="text-sm text-danger">
-                  {error}
-                </p>
-              )}
-
-              <Button type="submit" loading={loading} className="mt-2 w-full">
+          <Card className="p-6 sm:p-8 shadow-card border-line border">
+            <div className="mb-6 flex gap-1 rounded-full bg-ink-50 p-1 border border-line/50">
+              <button
+                type="button"
+                onClick={() => switchMode("normal")}
+                className={`flex-1 rounded-full py-2 text-sm font-medium transition-all ${
+                  mode === "normal" ? "bg-surface text-ink900 shadow-sm ring-1 ring-black/5" : "text-ink-500 hover:text-ink-700"
+                }`}
+              >
                 Entrar
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleFirstAccessSubmit} className="flex flex-col gap-4" noValidate>
-              <p className="text-xs text-ink-500">
-                Use a matrícula (aluno) ou a chave de acesso (professor) e a
-                senha temporária que você recebeu por e-mail.
-              </p>
-              <Input
-                label="Matrícula ou chave de acesso"
-                type="text"
-                required
-                value={loginKeyInput}
-                onChange={(e) => setLoginKeyInput(e.target.value)}
-              />
-              <Input
-                label="Senha temporária"
-                type="password"
-                required
-                value={tempPassword}
-                onChange={(e) => setTempPassword(e.target.value)}
-              />
+              </button>
+              <button
+                type="button"
+                onClick={() => switchMode("firstAccess")}
+                className={`flex-1 rounded-full py-2 text-sm font-medium transition-all ${
+                  mode === "firstAccess" ? "bg-surface text-ink900 shadow-sm ring-1 ring-black/5" : "text-ink-500 hover:text-ink-700"
+                }`}
+              >
+                Primeiro acesso
+              </button>
+            </div>
 
-              {error && (
-                <p role="alert" className="text-sm text-danger">
-                  {error}
+            {mode === "normal" ? (
+              <form onSubmit={handleNormalSubmit} className="flex flex-col gap-4" noValidate>
+                <Input
+                  label="E-mail"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <Input
+                  label="Senha"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+
+                {error && (
+                  <p role="alert" className="text-sm text-danger font-medium">
+                    {error}
+                  </p>
+                )}
+
+                <Button type="submit" loading={loading} className="mt-4 w-full py-3">
+                  Entrar
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleFirstAccessSubmit} className="flex flex-col gap-4" noValidate>
+                <p className="text-sm text-ink-500 mb-2">
+                  Use a matrícula (aluno) ou a chave de acesso (professor) e a
+                  senha temporária que você recebeu por e-mail.
                 </p>
-              )}
+                <Input
+                  label="Matrícula ou chave de acesso"
+                  type="text"
+                  required
+                  value={loginKeyInput}
+                  onChange={(e) => setLoginKeyInput(e.target.value)}
+                />
+                <Input
+                  label="Senha temporária"
+                  type="password"
+                  required
+                  value={tempPassword}
+                  onChange={(e) => setTempPassword(e.target.value)}
+                />
 
-              <Button type="submit" loading={loading} className="mt-2 w-full">
-                Continuar
-              </Button>
-            </form>
-          )}
+                {error && (
+                  <p role="alert" className="text-sm text-danger font-medium">
+                    {error}
+                  </p>
+                )}
 
-          <div className="mt-4 text-center">
-            <Link
-              to="/esqueci-a-senha"
-              className="text-sm text-ink-500 hover:text-ink-700 hover:underline"
-            >
-              Esqueci minha senha
-            </Link>
-          </div>
-        </Card>
+                <Button type="submit" loading={loading} className="mt-4 w-full py-3">
+                  Continuar
+                </Button>
+              </form>
+            )}
+
+            <div className="mt-6 text-center">
+              <Link
+                to="/esqueci-a-senha"
+                className="text-sm font-medium text-ink-600 hover:text-ink-900 transition-colors"
+              >
+                Esqueci minha senha
+              </Link>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );

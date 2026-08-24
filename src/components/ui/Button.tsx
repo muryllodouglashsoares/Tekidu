@@ -2,8 +2,8 @@ import { type ButtonHTMLAttributes, forwardRef } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost";
-  /** "md" (padrão, inalterado) ou "sm" para contextos compactos como toolbars de ações em lote. */
-  size?: "md" | "sm";
+  /** "md" (padrão, inalterado), "sm" para contextos compactos como toolbars de ações em lote, ou "lg" para CTAs em landing pages. */
+  size?: "md" | "sm" | "lg";
   loading?: boolean;
 }
 
@@ -12,6 +12,7 @@ const base =
   "transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
 
 const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {
+  lg: "px-8 py-3.5 text-base",
   md: "px-5 py-2.5",
   sm: "px-3.5 py-1.5 text-xs",
 };

@@ -30,7 +30,7 @@ interface NavItem {
 // e "Acadêmico"). Itens marcados com `soon` levam a uma tela de
 // "em desenvolvimento" em vez de 404 — ver PlaceholderPage.
 const principalNav: NavItem[] = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   // Alunos/Turmas/Disciplinas: visão de STAFF (escola inteira, com
   // edição) — restrita a admin. Antes também aparecia para "teacher",
   // mas essa visão foi retirada do professor: agora ele usa
@@ -109,7 +109,7 @@ function NavGroup({
         <NavLink
           key={item.to}
           to={item.to}
-          end={item.to === "/"}
+          end={item.to === "/" || item.to === "/dashboard"}
           className={({ isActive }) =>
             `flex items-center justify-between rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
               isActive

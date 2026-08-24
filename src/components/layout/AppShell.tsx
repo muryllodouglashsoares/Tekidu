@@ -6,7 +6,7 @@ import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
 const TITLES: Record<string, string> = {
-  "/": "Dashboard",
+  "/dashboard": "Dashboard",
   "/alunos": "Alunos",
   "/turmas": "Turmas",
   "/disciplinas": "Disciplinas",

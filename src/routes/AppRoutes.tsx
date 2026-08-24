@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
+import { LandingPage } from "@/pages/LandingPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { FirstAccessPage } from "@/pages/auth/FirstAccessPage";
@@ -25,7 +26,7 @@ import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { StatusPage } from "@/pages/StatusPage";
 
 /**
- * Rota "/": Dashboard para todas as roles.
+ * Rota "/dashboard": Dashboard para todas as roles.
  *
  * HISTÓRICO: esta função redirecionava alunos para "/meu-boletim"
  * porque, quando foi escrita, `DashboardPage` ainda buscava
@@ -47,6 +48,7 @@ function HomeRoute() {
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/esqueci-a-senha" element={<ForgotPasswordPage />} />
 
@@ -94,7 +96,7 @@ export function AppRoutes() {
         <Route path="/primeiro-acesso" element={<FirstAccessPage />} />
 
         <Route element={<AppShell />}>
-          <Route path="/" element={<HomeRoute />} />
+          <Route path="/dashboard" element={<HomeRoute />} />
 
           {/* Alunos/Turmas/Disciplinas: visão de STAFF com edição —
               restrita a admin (decisão tomada após a Etapa 4: agora que
