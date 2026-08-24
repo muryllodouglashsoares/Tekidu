@@ -9,7 +9,7 @@ interface TeacherFormModalProps {
   /** Quando informado, o formulário edita este professor; caso contrário, cria um novo. */
   teacher?: UserProfile | null;
   onClose: () => void;
-  onSubmitCreate: (data: { name: string; email: string; password: string }) => Promise<void>;
+  onSubmitCreate: (data: { name: string; email: string }) => Promise<void>;
   onSubmitUpdate: (data: { name: string; active: boolean }) => Promise<void>;
 }
 
@@ -21,7 +21,6 @@ export function TeacherFormModal({
 }: TeacherFormModalProps) {
   const [name, setName] = useState(teacher?.name ?? "");
   const [email, setEmail] = useState(teacher?.email ?? "");
-  const [password, setPassword] = useState("");
   const [active, setActive] = useState(teacher?.active ?? true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -45,19 +44,16 @@ export function TeacherFormModal({
           setSaving(false);
           return;
         }
-        if (password.length < 6) {
-          setError("A senha provisória deve ter pelo menos 6 caracteres.");
-          setSaving(false);
-          return;
-        }
-        await onSubmitCreate({ name: name.trim(), email: email.trim(), password });
+        await onSubmitCreate({ name: name.trim(), email: email.trim() });
       }
       onClose();
-    } catch {
+    } catch (err) {
       setError(
         teacher
           ? "Não foi possível salvar as alterações. Tente novamente."
-          : "Não foi possível cadastrar o professor. Verifique o e-mail e tente novamente."
+          : err instanceof Error
+            ? err.message
+            : "Não foi possível cadastrar o professor. Verifique o e-mail e tente novamente."
       );
     } finally {
       setSaving(false);
@@ -89,21 +85,12 @@ export function TeacherFormModal({
         )}
 
         {!teacher && (
-          <>
-            <Input
-              label="Senha provisória"
-              type="text"
-              required
-              minLength={6}
-              placeholder="Mínimo de 6 caracteres"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <p className="-mt-2.5 text-xs text-ink-400">
-              Compartilhe essa senha com o professor. Ele poderá trocá-la depois pela
-              opção "Esqueci minha senha" na tela de login.
-            </p>
-          </>
+          <p className="-mt-2.5 rounded-card bg-ink-50 px-3 py-2.5 text-xs text-ink-500">
+            Uma chave de acesso e uma senha temporária serão geradas
+            automaticamente e enviadas para este e-mail. No primeiro
+            acesso, o professor será solicitado a definir sua própria
+            senha.
+          </p>
         )}
 
         {teacher && (

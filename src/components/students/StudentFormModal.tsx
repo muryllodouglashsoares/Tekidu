@@ -45,10 +45,6 @@ export function StudentFormModal({
         }
       : emptyForm
   );
-  // Senha provisória da conta de login do aluno — só existe no
-  // cadastro (Tarefa 2, Fase 1 pós-auditoria V8), mesma UX de
-  // `TeacherFormModal`. Uma edição nunca recria a conta de Auth.
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -68,24 +64,22 @@ export function StudentFormModal({
       setError("A média deve estar entre 0 e 10.");
       return;
     }
-    if (!student && password.length < 6) {
-      setError("A senha provisória deve ter pelo menos 6 caracteres.");
-      return;
-    }
 
     setSaving(true);
     try {
       if (student) {
         await onSubmitUpdate(form);
       } else {
-        await onSubmitCreate({ ...form, password });
+        await onSubmitCreate(form);
       }
       onClose();
-    } catch {
+    } catch (err) {
       setError(
         student
           ? "Não foi possível salvar as alterações. Tente novamente."
-          : "Não foi possível cadastrar o aluno. Verifique o e-mail e tente novamente."
+          : err instanceof Error
+            ? err.message
+            : "Não foi possível cadastrar o aluno. Verifique o e-mail e tente novamente."
       );
     } finally {
       setSaving(false);
@@ -116,21 +110,12 @@ export function StudentFormModal({
         )}
 
         {!student && (
-          <>
-            <Input
-              label="Senha provisória"
-              type="text"
-              required
-              minLength={6}
-              placeholder="Mínimo de 6 caracteres"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <p className="-mt-2.5 text-xs text-ink-400">
-              Compartilhe essa senha com o aluno. Ele poderá trocá-la depois pela
-              opção "Esqueci minha senha" na tela de login.
-            </p>
-          </>
+          <p className="-mt-2.5 rounded-card bg-ink-50 px-3 py-2.5 text-xs text-ink-500">
+            Uma senha temporária será gerada automaticamente e enviada
+            para este e-mail. No primeiro acesso, o aluno usará a
+            matrícula abaixo + essa senha, e será solicitado a definir
+            sua própria senha.
+          </p>
         )}
 
         <div className="grid grid-cols-2 gap-4">

@@ -82,6 +82,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    // Etapa 9e (auditoria de logout — cenário de laboratório de
+    // informática/computador compartilhado): limpamos `firebaseUser`/
+    // `profile` no contexto IMEDIATAMENTE, antes mesmo de aguardar
+    // `firebaseSignOut` resolver. Sem isto, existe uma janela — por
+    // menor que seja — entre chamar `firebaseSignOut` e o listener
+    // `onAuthStateChanged` disparar de volta, durante a qual `profile`
+    // ainda aponta para o usuário que acabou de sair. Como todo
+    // componente que assina dados "do usuário logado" (ex.:
+    // `NotificationCenter`, cujos listeners em tempo real dependem de
+    // `profile` no `useEffect`) reage a essa mudança de estado — não a
+    // `onAuthStateChanged` diretamente — zerar aqui é o que garante
+    // que o cleanup desses listeners (unsubscribe) e o redirecionamento
+    // de `ProtectedRoute` para `/login` acontecem no mesmo instante do
+    // clique em "Sair", sem depender do round-trip assíncrono do
+    // Firebase, e sem deixar dado do usuário anterior visível na tela
+    // por um instante.
+    setProfile(null);
+    setFirebaseUser(null);
     await firebaseSignOut(auth);
   }
 

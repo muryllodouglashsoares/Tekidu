@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -11,6 +11,7 @@ import {
   BarChart3,
   LineChart,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { RoleBadge } from "@/components/ui/RoleBadge";
@@ -131,7 +132,8 @@ function NavGroup({
 }
 
 export function Sidebar() {
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const initials = (profile?.name ?? "?")
     .split(" ")
@@ -139,6 +141,15 @@ export function Sidebar() {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
+
+  // Etapa 9e (auditoria de logout): antes desta mudança não existia
+  // NENHUM jeito de sair de dentro do app — `AuthContext.signOut` só
+  // era chamado a partir de `StatusPage` (rotas de erro como
+  // "/sem-perfil"), inalcançáveis por um usuário com sessão normal.
+  async function handleSignOut() {
+    await signOut();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col bg-surface border-r border-line px-4 py-6">
@@ -185,6 +196,15 @@ export function Sidebar() {
             )}
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="mt-2 flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium text-ink-500 transition-colors hover:bg-danger/10 hover:text-danger"
+        >
+          <LogOut className="h-5 w-5" strokeWidth={2} />
+          Sair
+        </button>
       </div>
     </aside>
   );

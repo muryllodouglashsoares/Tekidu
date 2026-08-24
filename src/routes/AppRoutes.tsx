@@ -3,6 +3,7 @@ import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
+import { FirstAccessPage } from "@/pages/auth/FirstAccessPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
 import { StudentsPage } from "@/pages/students/StudentsPage";
 import { StudentProfilePage } from "@/pages/students/StudentProfilePage";
@@ -84,6 +85,14 @@ export function AppRoutes() {
           Todas compartilham o AppShell (sidebar + topo), preservando a
           navegação do protótipo do Figma. */}
       <Route element={<ProtectedRoute />}>
+        {/* Etapa 9 — ciclo de vida de conta estilo SUAP: "/primeiro-acesso"
+            fica FORA do AppShell de propósito (sem sidebar/topo) — é um
+            passo bloqueante antes de "entrar" no sistema, não mais uma
+            tela do dashboard. `ProtectedRoute` (acima) já garante que
+            nenhuma outra rota é alcançável enquanto
+            `profile.mustSetPassword === true`. */}
+        <Route path="/primeiro-acesso" element={<FirstAccessPage />} />
+
         <Route element={<AppShell />}>
           <Route path="/" element={<HomeRoute />} />
 

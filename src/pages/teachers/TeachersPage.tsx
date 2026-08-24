@@ -113,7 +113,7 @@ export function TeachersPage() {
   const selection = useRowSelection<UserProfile>((t) => t.uid);
   const pageSelectionState = selection.visibleSelectionState(pageItems);
 
-  async function handleCreate(data: { name: string; email: string; password: string }) {
+  async function handleCreate(data: { name: string; email: string }) {
     if (!profile) return;
     await createTeacher(data, { id: profile.uid, name: profile.name });
     await loadTeachers();

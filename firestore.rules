@@ -193,7 +193,67 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']) &&
         request.resource.data.name is string &&
         request.resource.data.name.size() > 0;
+      // EXTENSÃO (Etapa 9 — ciclo de vida de conta estilo SUAP): permite
+      // que o PRÓPRIO usuário conclua o primeiro acesso
+      // (`userService.completeFirstAccess`, chamado por
+      // `FirstAccessPage` DEPOIS que a senha definitiva já foi
+      // aplicada no Firebase Authentication). Propositalmente estreita
+      // nos dois sentidos:
+      // - só mexe nos 4 campos do fluxo (`hasOnly`), nunca em
+      //   role/active/email/uid/name — mesmo espírito da regra de
+      //   auto-edição de nome acima;
+      // - só permite a transição TRUE → FALSE (nunca o usuário setar
+      //   `mustSetPassword: true` para si mesmo, o que reabriria o
+      //   "modo primeiro acesso" arbitrariamente).
+      allow update: if isSignedIn() && request.auth.uid == userId &&
+        resource.data.mustSetPassword == true &&
+        request.resource.data.mustSetPassword == false &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+          ['mustSetPassword', 'loginKey', 'tempPasswordSetAt', 'tempCredentialsExpireAt']
+        );
       allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------
+    // loginKeys/{loginKey}
+    //
+    // Coleção auxiliar do ciclo de vida de conta estilo SUAP (Etapa 9).
+    // Existe SÓ para resolver "matrícula/chave → e-mail" ANTES do
+    // login — nesse momento o usuário ainda não está autenticado, então
+    // nenhuma leitura normal de `users/{uid}` (que exige
+    // `isSignedIn()`) está disponível.
+    //
+    // O ID do documento É a própria matrícula/chave — nunca uma query.
+    // Isso é o que permite liberar um `get` totalmente anônimo sem
+    // nunca abrir `list`: quem não sabe a chave exata não consegue
+    // descobrir nenhuma outra (diferente de uma coleção com `list`
+    // liberado, que permitiria varrer todas as contas pendentes de
+    // primeiro acesso). Documento contém só `uid`, `email`, `role` e
+    // `expiresAt` — nunca a senha temporária (que só existe no
+    // Firebase Authentication e no corpo do e-mail, nunca em texto
+    // puro no Firestore).
+    //
+    // CRIAÇÃO: espelha exatamente a mesma regra de `users` acima —
+    // teacher só por admin, student por qualquer staff ativo — porque
+    // é sempre criado JUNTO com o `users/{uid}` correspondente, pela
+    // mesma chamada (`userService.createTeacher`/
+    // `studentService.createStudent`).
+    // ATUALIZAÇÃO: nunca — o documento é criado uma vez e só apagado
+    // (uso único), nunca editado.
+    // EXCLUSÃO: o PRÓPRIO usuário, DEPOIS de autenticado com a senha
+    // temporária, apaga sua própria chave ao concluir o primeiro
+    // acesso (`completeFirstAccess`) — só quem já provou ser o dono da
+    // conta (`resource.data.uid == request.auth.uid`) pode apagá-la.
+    // Um admin ativo também pode apagar, para limpeza manual de chaves
+    // órfãs/expiradas.
+    // ---------------------------------------------------------------
+    match /loginKeys/{loginKey} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if (isActiveAdmin() && request.resource.data.role == 'teacher') ||
+        (isActiveStaff() && request.resource.data.role == 'student');
+      allow update: if false;
+      allow delete: if (isSignedIn() && resource.data.uid == request.auth.uid) || isActiveAdmin();
     }
 
     // ---------------------------------------------------------------
