@@ -73,11 +73,26 @@ export default {
           500: cssVar("--tk-danger-500"),
           600: cssVar("--tk-danger-600"),
         },
+        // Roxo — usado SOMENTE na Landing Page, para diferenciar o
+        // perfil "Professor" dos outros dois perfis (Administrador =
+        // azul, Aluno = verde). Não faz parte da identidade principal
+        // do Tekidu nem deve ser usado na aplicação interna.
+        violet: {
+          DEFAULT: cssVar("--tk-violet-500"),
+          400: cssVar("--tk-violet-400"),
+          500: cssVar("--tk-violet-500"),
+          600: cssVar("--tk-violet-600"),
+        },
       },
       fontFamily: {
         display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["'IBM Plex Mono'", "ui-monospace", "monospace"],
+        // Display forte — usado só na Landing Page (headlines). Uma
+        // grotesk bem encorpada, sem serifa e sem itálico: o oposto do
+        // efeito "elegante/editorial" de escritório de advocacia.
+        // O resto da plataforma continua 100% Inter.
+        heading: ["'Space Grotesk'", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       borderRadius: {
         card: "16px", // Softer, rounder cards
