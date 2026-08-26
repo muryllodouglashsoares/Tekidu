@@ -55,12 +55,12 @@ export function ClassMultiSelect({
             className={`flex cursor-pointer items-start gap-2.5 rounded-card border px-3.5 py-2.5 text-sm transition-colors ${
               checked
                 ? "border-ink-700 bg-ink-50"
-                : "border-line bg-white hover:bg-ink-50/60"
+                : "border-line bg-surface hover:bg-ink-50/60"
             }`}
           >
             <span
               className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                checked ? "border-ink-700 bg-ink-700 text-white" : "border-line bg-white"
+                checked ? "border-ink-700 bg-ink-700 text-white" : "border-line bg-surface"
               }`}
               aria-hidden="true"
             >

@@ -26,7 +26,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           id={selectId}
           ref={ref}
           aria-invalid={!!error}
-          className={`rounded-card border bg-white px-3.5 py-2.5 text-sm text-ink900
+          className={`rounded-card border bg-surface px-3.5 py-2.5 text-sm text-ink900
             outline-none transition-colors
             ${error ? "border-danger" : "border-line focus:border-ink-400"}
             ${className}`}
