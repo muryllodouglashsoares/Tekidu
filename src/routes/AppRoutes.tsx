@@ -1,7 +1,7 @@
+import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
-import { LandingPage } from "@/pages/LandingPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { FirstAccessPage } from "@/pages/auth/FirstAccessPage";
@@ -24,6 +24,14 @@ import { MyAttendancePage } from "@/pages/studentPortal/MyAttendancePage";
 import { MyPerformancePage } from "@/pages/studentPortal/MyPerformancePage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { StatusPage } from "@/pages/StatusPage";
+
+// A Landing Page é a única tela que usa framer-motion (camada de
+// animação). Carregá-la sob demanda mantém a dependência fora do
+// bundle principal do app — quem nunca visita "/" (ex.: acesso direto
+// a "/login") não paga esse peso extra no download inicial.
+const LandingPage = lazy(() =>
+  import("@/pages/LandingPage").then((m) => ({ default: m.LandingPage }))
+);
 
 /**
  * Rota "/dashboard": Dashboard para todas as roles.
@@ -48,7 +56,14 @@ function HomeRoute() {
 export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/"
+        element={
+          <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+            <LandingPage />
+          </Suspense>
+        }
+      />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/esqueci-a-senha" element={<ForgotPasswordPage />} />
 

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { DottedDivider, Reveal, TrajectoryMark } from "./LandingPrimitives";
+import { useCountUp } from "./motion";
 
 export function ClosingCtaSection() {
   return (
@@ -13,7 +14,7 @@ export function ClosingCtaSection() {
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <Reveal className="flex items-center justify-center gap-3">
           <span className="h-px w-10 bg-line" aria-hidden="true" />
-          <TrajectoryMark className="h-4 w-4 text-success" />
+          <TrajectoryMark className="h-4 w-4 text-success" animate />
           <span className="h-px w-10 bg-line" aria-hidden="true" />
         </Reveal>
 
@@ -33,19 +34,19 @@ export function ClosingCtaSection() {
         <Reveal delay={240}>
           <Link
             to="/login"
-            className="mt-8 inline-flex items-center gap-2 rounded-full bg-success px-8 py-3.5 text-sm font-semibold uppercase tracking-widest text-white shadow-sm transition-transform hover:scale-[1.02]"
+            className="group mt-8 inline-flex items-center gap-2 rounded-full bg-success px-8 py-3.5 text-sm font-semibold uppercase tracking-widest text-white shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]"
           >
             Entrar na plataforma
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
         </Reveal>
 
         <Reveal delay={300} className="mx-auto mt-14 flex max-w-sm items-center justify-center gap-8">
-          <ClosingStat value="248" label="Alunos" />
+          <ClosingStat value={248} label="Alunos" />
           <div className="h-8 w-px bg-line" aria-hidden="true" />
-          <ClosingStat value="14" label="Turmas" />
+          <ClosingStat value={14} label="Turmas" />
           <div className="h-8 w-px bg-line" aria-hidden="true" />
-          <ClosingStat value="8" label="Disciplinas" />
+          <ClosingStat value={8} label="Disciplinas" />
         </Reveal>
       </div>
 
@@ -56,10 +57,13 @@ export function ClosingCtaSection() {
   );
 }
 
-function ClosingStat({ value, label }: { value: string; label: string }) {
+function ClosingStat({ value, label }: { value: number; label: string }) {
+  const { ref, formatted } = useCountUp(value);
   return (
     <div className="text-center">
-      <p className="font-mono text-2xl font-semibold tabular text-ink900">{value}</p>
+      <p className="font-mono text-2xl font-semibold tabular text-ink900">
+        <span ref={ref}>{formatted}</span>
+      </p>
       <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-ink-400">{label}</p>
     </div>
   );

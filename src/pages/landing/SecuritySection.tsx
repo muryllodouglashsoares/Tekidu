@@ -1,5 +1,7 @@
 import { Fingerprint, KeyRound, ShieldCheck, Database } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Reveal, SectionEyebrow } from "./LandingPrimitives";
+import { EASE_OUT, VIEWPORT_ONCE } from "./motion";
 
 const BULLETS = ["Autenticação por perfil", "Auditoria de acessos", "Dados isolados por instituição", "Permissões granulares"];
 
@@ -10,7 +12,15 @@ const LAYERS = [
   { icon: Database, title: "Dados", detail: "Informação protegida e auditada", layer: "Camada 4" },
 ];
 
+/**
+ * Camadas de segurança em pilha, com um trilho vertical que se
+ * desenha atrás dos cartões (mesmo motivo de "trajetória/progresso"
+ * do resto da página, aplicado à ideia de "camadas empilhadas") e um
+ * leve levantar no hover de cada cartão.
+ */
 export function SecuritySection() {
+  const reducedMotion = useReducedMotion();
+
   return (
     <section id="seguranca" className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
       <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
@@ -41,22 +51,37 @@ export function SecuritySection() {
           </Reveal>
         </div>
 
-        <div className="space-y-3">
+        <div className="relative space-y-3 pl-5">
+          <motion.span
+            aria-hidden="true"
+            className="absolute left-0 top-2 h-[calc(100%-16px)] w-px bg-line"
+            initial={reducedMotion ? undefined : { scaleY: 0 }}
+            whileInView={reducedMotion ? undefined : { scaleY: 1 }}
+            viewport={VIEWPORT_ONCE}
+            transition={{ duration: 1, ease: EASE_OUT, delay: 0.1 }}
+            style={{ transformOrigin: "top" }}
+          />
           {LAYERS.map((layer, i) => (
-            <Reveal key={layer.title} delay={i * 90}>
-              <div className="flex items-center gap-4 rounded-2xl border border-line bg-surface p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success">
-                  <layer.icon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-ink900">{layer.title}</p>
-                  <p className="text-sm text-ink-500">{layer.detail}</p>
-                </div>
-                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-ink-400">
-                  {layer.layer}
-                </span>
+            <motion.div
+              key={layer.title}
+              initial={reducedMotion ? undefined : { opacity: 0, y: 20 }}
+              whileInView={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+              viewport={VIEWPORT_ONCE}
+              whileHover={reducedMotion ? undefined : { y: -3 }}
+              transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.15 + i * 0.1 }}
+              className="flex items-center gap-4 rounded-2xl border border-line bg-surface p-4 shadow-sm"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success/10 text-success">
+                <layer.icon className="h-5 w-5" />
               </div>
-            </Reveal>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-widest text-ink900">{layer.title}</p>
+                <p className="text-sm text-ink-500">{layer.detail}</p>
+              </div>
+              <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-ink-400">
+                {layer.layer}
+              </span>
+            </motion.div>
           ))}
         </div>
       </div>

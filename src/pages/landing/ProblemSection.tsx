@@ -1,4 +1,6 @@
+import { motion, useReducedMotion } from "framer-motion";
 import { Reveal, SectionEyebrow } from "./LandingPrimitives";
+import { EASE_OUT, VIEWPORT_ONCE } from "./motion";
 
 const BULLETS = [
   "Informações acadêmicas sem conexão",
@@ -28,9 +30,13 @@ const LINKS: Array<[number, number]> = [
 /**
  * "O problema": mesma linguagem visual do Hero (pontos, linhas), mas
  * aqui desconectada e neutra/apagada — o oposto da trajetória verde,
- * contínua, do restante da página.
+ * contínua, do restante da página. As linhas pontilhadas se desenham
+ * depois dos cartões aparecerem, e cada cartão reage com um leve
+ * "tremor" no hover — reforçando a sensação de dado solto/instável.
  */
 export function ProblemSection() {
+  const reducedMotion = useReducedMotion();
+
   return (
     <section id="problema" className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
       <div className="grid items-center gap-16 lg:grid-cols-2">
@@ -61,13 +67,13 @@ export function ProblemSection() {
           </Reveal>
         </div>
 
-        <Reveal delay={200} className="relative h-[360px] sm:h-[420px]">
+        <div className="relative h-[360px] sm:h-[420px]">
           <svg viewBox="0 0 400 400" className="absolute inset-0 h-full w-full" aria-hidden="true">
             {LINKS.map(([a, b], i) => {
               const from = FRAGMENTS[a];
               const to = FRAGMENTS[b];
               return (
-                <line
+                <motion.line
                   key={i}
                   x1={`${parseFloat(from.left) + 10}%`}
                   y1={`${parseFloat(from.top) + 10}%`}
@@ -76,23 +82,32 @@ export function ProblemSection() {
                   stroke="rgb(var(--tk-line))"
                   strokeWidth="1"
                   strokeDasharray="3 6"
+                  initial={reducedMotion ? undefined : { pathLength: 0, opacity: 0 }}
+                  whileInView={reducedMotion ? undefined : { pathLength: 1, opacity: 1 }}
+                  viewport={VIEWPORT_ONCE}
+                  transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.4 + i * 0.12 }}
                 />
               );
             })}
           </svg>
 
-          {FRAGMENTS.map((f) => (
-            <div
+          {FRAGMENTS.map((f, i) => (
+            <motion.div
               key={f.label}
+              initial={reducedMotion ? undefined : { opacity: 0, y: 16 }}
+              whileInView={reducedMotion ? undefined : { opacity: 0.8, y: 0 }}
+              whileHover={reducedMotion ? undefined : { x: [0, -2, 2, -1, 0], transition: { duration: 0.35 } }}
+              viewport={VIEWPORT_ONCE}
+              transition={{ duration: 0.5, ease: EASE_OUT, delay: i * 0.08 }}
               className="absolute w-32 rounded-xl border border-line bg-surface/70 p-3 text-left opacity-80 shadow-sm backdrop-blur-sm sm:w-36"
               style={{ top: f.top, left: f.left }}
             >
               <p className="text-[9px] font-semibold uppercase tracking-widest text-ink-400">{f.label}</p>
               <p className="mt-1 font-mono text-lg font-semibold tabular text-ink-500">{f.value}</p>
               <p className="text-[10px] text-ink-400">{f.hint}</p>
-            </div>
+            </motion.div>
           ))}
-        </Reveal>
+        </div>
       </div>
     </section>
   );

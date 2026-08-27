@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Reveal, SectionEyebrow } from "./LandingPrimitives";
+import { EASE_OUT } from "./motion";
 
 type PersonaKey = "administrador" | "professor" | "aluno";
 
@@ -40,10 +42,17 @@ const CONTENT: Record<
   },
 };
 
+/**
+ * Troca de perfil como microinteração de verdade: a pílula ativa
+ * desliza entre as abas (framer-motion `layoutId`, sem recalcular
+ * layout/paint fora da própria pílula) e o painel de conteúdo faz um
+ * crossfade curto — com altura mínima reservada para não gerar CLS.
+ */
 export function PersonasSection() {
   const [active, setActive] = useState<PersonaKey>("administrador");
   const accent = ACCENT[active];
   const content = CONTENT[active];
+  const reducedMotion = useReducedMotion();
 
   return (
     <section id="perfis" className="mx-auto max-w-6xl px-4 py-24 text-center sm:px-6">
@@ -62,33 +71,60 @@ export function PersonasSection() {
             key={tab.key}
             type="button"
             onClick={() => setActive(tab.key)}
-            className={`rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
-              active === tab.key ? ACCENT[tab.key].tab : "text-ink-500 hover:text-ink900"
-            }`}
+            className="relative rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-widest transition-colors"
           >
-            {tab.label}
+            {active === tab.key && (
+              <motion.span
+                layoutId="personaTabIndicator"
+                className={`absolute inset-0 rounded-full ${ACCENT[tab.key].tab}`}
+                transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 32 }}
+              />
+            )}
+            <span className={`relative z-10 ${active === tab.key ? "text-white" : "text-ink-500 hover:text-ink900"}`}>
+              {tab.label}
+            </span>
           </button>
         ))}
       </Reveal>
 
       <div className="mt-14 grid gap-10 text-left lg:grid-cols-2 lg:items-center">
-        <div>
-          <h3 className={`font-heading text-4xl font-bold transition-colors duration-300 ${accent.text}`}>{content.title}</h3>
-          <p className="mt-2 text-lg font-medium text-ink-500">{content.tagline}</p>
-          <p className="mt-6 max-w-md text-base text-ink-500">{content.description}</p>
-          <a
-            href="#seguranca"
-            className={`mt-8 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest transition-colors ${accent.text}`}
-          >
-            Conhecer experiência
-            <ArrowRight className="h-3.5 w-3.5" />
-          </a>
+        <div className="min-h-[260px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={active}
+              initial={reducedMotion ? undefined : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reducedMotion ? undefined : { opacity: 0, y: -10 }}
+              transition={{ duration: 0.25, ease: EASE_OUT }}
+            >
+              <h3 className={`font-heading text-4xl font-bold ${accent.text}`}>{content.title}</h3>
+              <p className="mt-2 text-lg font-medium text-ink-500">{content.tagline}</p>
+              <p className="mt-6 max-w-md text-base text-ink-500">{content.description}</p>
+              <a
+                href="#seguranca"
+                className={`group mt-8 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest ${accent.text}`}
+              >
+                Conhecer experiência
+                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+              </a>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
-        <div className={`rounded-2xl border border-line bg-surface p-6 shadow-sm ring-1 ${accent.ring} sm:p-8`}>
-          {active === "administrador" && <AdministradorCard />}
-          {active === "professor" && <ProfessorCard />}
-          {active === "aluno" && <AlunoCard />}
+        <div className={`min-h-[280px] rounded-2xl border border-line bg-surface p-6 shadow-sm ring-1 ${accent.ring} sm:p-8`}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={active}
+              initial={reducedMotion ? undefined : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={reducedMotion ? undefined : { opacity: 0 }}
+              transition={{ duration: 0.25, ease: EASE_OUT }}
+            >
+              {active === "administrador" && <AdministradorCard />}
+              {active === "professor" && <ProfessorCard />}
+              {active === "aluno" && <AlunoCard />}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
     </section>
@@ -164,18 +200,24 @@ function AlunoCard() {
     { label: "Física", value: 9.1 },
     { label: "História", value: 7.8 },
   ];
+  const reducedMotion = useReducedMotion();
   return (
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-400">Meu desempenho — João Silva</p>
       <ul className="mt-5 space-y-4">
-        {subjects.map((s) => (
+        {subjects.map((s, i) => (
           <li key={s.label}>
             <div className="flex items-center justify-between text-sm">
               <span className="text-ink-600">{s.label}</span>
               <span className="font-mono font-semibold tabular text-ink900">{s.value.toFixed(1)}</span>
             </div>
-            <div className="mt-1.5 h-1.5 rounded-full bg-ink-100">
-              <div className="h-full rounded-full bg-success" style={{ width: `${(s.value / 10) * 100}%` }} />
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink-100">
+              <motion.div
+                className="h-full origin-left rounded-full bg-success"
+                initial={reducedMotion ? { scaleX: s.value / 10 } : { scaleX: 0 }}
+                animate={{ scaleX: s.value / 10 }}
+                transition={{ duration: 0.6, ease: EASE_OUT, delay: 0.1 + i * 0.08 }}
+              />
             </div>
           </li>
         ))}

@@ -181,37 +181,27 @@
 
 /* ==========================================================================
    LANDING PAGE — microinterações
-   Usadas só pelas seções de src/pages/landing/*. Baseadas em transform +
-   opacity (sem bibliotecas de animação) e desativadas por completo quando
-   o usuário pede menos movimento no sistema operacional.
+   A cascata de entrada, o path-drawing da trajetória, o scroll-story e
+   o count-up das seções de src/pages/landing/* são feitos com
+   framer-motion (ver src/pages/landing/motion.ts), carregado sob
+   demanda só na rota "/" (ver src/routes/AppRoutes.tsx). O que resta
+   aqui é só o que funciona melhor como CSS puro: hover em cartões e o
+   `prefers-reduced-motion` de segurança, para qualquer elemento que
+   ainda use transições via classe Tailwind (ex.: `transition-transform`
+   nos CTAs).
    ========================================================================== */
-@layer utilities {
-  .reveal {
-    opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-    transition-delay: var(--reveal-delay, 0ms);
-  }
-  .reveal-visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .reveal-line {
-    stroke-dasharray: var(--line-length, 1000);
-    stroke-dashoffset: var(--line-length, 1000);
-    transition: stroke-dashoffset 1.4s cubic-bezier(0.16, 1, 0.3, 1);
-    transition-delay: var(--reveal-delay, 0ms);
-  }
-  .reveal-line.reveal-visible {
-    stroke-dashoffset: 0;
-  }
+html,
+body {
+  overflow-x: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reveal,
-  .reveal-line {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-    transform: none !important;
+    scroll-behavior: auto !important;
   }
 }
