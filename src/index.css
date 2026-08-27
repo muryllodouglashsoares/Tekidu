@@ -195,6 +195,25 @@ body {
   overflow-x: hidden;
 }
 
+/* Usados por TrajectoryPreview (painel de marca do Login) — CSS puro,
+   sem framer-motion, para não puxar a dependência da landing para o
+   bundle principal do app. Rodam uma única vez no mount (forwards). */
+@keyframes tk-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes tk-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -204,4 +223,7 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  /* tk-draw/tk-pop usam `forwards`/`backwards` para fixar o estado
+     final — zerar a duração já é suficiente para pular direto para lá,
+     sem precisar de uma regra dedicada por animação. */
 }
