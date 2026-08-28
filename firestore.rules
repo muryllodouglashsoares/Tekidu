@@ -296,9 +296,23 @@ service cloud.firestore {
     //
     // Mesma política de acesso de `students`: admin/teacher ativos
     // podem ler/criar/editar; apenas admin pode excluir.
+    // FECHAMENTO DO GAP (item pendente registrado em
+    // `src/routes/AppRoutes.tsx`, "NOTA DE SEGURANÇA (a aprofundar na
+    // Etapa 7)"): até aqui, CREATE/UPDATE eram liberados para qualquer
+    // `isActiveStaff()` (admin OU teacher) — só a rota/UX
+    // (`ProtectedRoute allowedRoles={["admin"]}` em "/turmas") impedia
+    // um professor de editar turmas pela tela; nada impedia a mesma
+    // escrita via chamada direta ao Firestore, fora da UI. Restrito
+    // agora a `isActiveAdmin()`, alinhando a Rule com a Route: nenhuma
+    // tela do Portal do Professor cria/edita turma hoje (confirmado —
+    // `classService.ts` só é chamado a partir de `ClassesPage`, rota
+    // "/turmas", já restrita a `allowedRoles={["admin"]}`). Professor
+    // mantém apenas LEITURA (necessária para os seletores de turma em
+    // Notas/Frequência/Disciplinas).
     // ---------------------------------------------------------------
     match /classes/{classId} {
-      allow read, create, update: if isActiveStaff();
+      allow read: if isActiveStaff();
+      allow create, update: if isActiveAdmin();
       allow delete: if isActiveAdmin();
     }
 
@@ -336,12 +350,26 @@ service cloud.firestore {
     // reatribuir `teacherId` para si mesmo em qualquer disciplina para
     // ganhar acesso de escrita a ela. Admins continuam podendo
     // reatribuir o professor responsável normalmente.
+    //
+    // FECHAMENTO DO GAP (item pendente registrado em
+    // `src/routes/AppRoutes.tsx`, "NOTA DE SEGURANÇA (a aprofundar na
+    // Etapa 7)"): a trava de `teacherId` acima impedia só UM campo —
+    // um professor ainda podia editar `classIds`/nome/qualquer outro
+    // campo de uma disciplina da qual ele nem é o dono, via chamada
+    // direta ao Firestore (a UI nunca expunha isso, mas a Rule
+    // permitia). Confirmado que o Portal do Professor não tem nenhuma
+    // tela de edição de disciplina (`DisciplineFormModal` só é
+    // renderizado a partir de `DisciplinesPage`, rota "/disciplinas",
+    // já restrita a `allowedRoles={["admin"]}`) — por isso CREATE e
+    // UPDATE foram simplificados para `isActiveAdmin()`-only, e a
+    // trava específica de `teacherId` acima deixou de ser necessária
+    // (mantida comentada só como histórico do item 13). Professor
+    // mantém apenas LEITURA (necessária para os seletores de
+    // disciplina em Notas/Frequência e para o Portal do Professor).
     // ---------------------------------------------------------------
     match /disciplines/{disciplineId} {
       allow read: if isActiveStaff() || isActiveStudent();
-      allow create: if isActiveStaff();
-      allow update: if isActiveAdmin() ||
-        (isActiveStaff() && request.resource.data.teacherId == resource.data.teacherId);
+      allow create, update: if isActiveAdmin();
       allow delete: if isActiveAdmin();
     }
 

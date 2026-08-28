@@ -25,5 +25,11 @@ export default defineConfig({
   },
   test: {
     include: ["src/**/*.test.ts"],
+    // Os testes de Security Rules (`*.rules.test.ts`) precisam do
+    // Firestore Emulator rodando (ver `vitest.rules.config.ts` +
+    // `npm run test:rules`) — não fazem sentido no `npm test` comum
+    // (que deve continuar rápido e sem dependência externa), por isso
+    // ficam explicitamente fora deste `include`.
+    exclude: ["src/**/*.rules.test.ts", "node_modules/**"],
   },
 });
