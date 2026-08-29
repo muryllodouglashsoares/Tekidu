@@ -116,6 +116,18 @@ const ReportsPage = lazy(() =>
   import("@/pages/reports/ReportsPage").then((m) => ({ default: m.ReportsPage }))
 );
 
+// Calendário Acadêmico: acessível a QUALQUER role autenticada (mesmo
+// critério de "/configuracoes" logo abaixo — é uma agenda pessoal, não
+// uma tela de administração), por isso não participa de nenhum dos
+// grupos de code-splitting por role acima. Ainda assim vira lazy() com
+// seu próprio Suspense (ver rota "/calendario"), já que não é a
+// primeira tela vista após o login (esse lugar é do Dashboard).
+const AcademicCalendarPage = lazy(() =>
+  import("@/pages/calendar/AcademicCalendarPage").then((m) => ({
+    default: m.AcademicCalendarPage,
+  }))
+);
+
 // Fallback usado dentro do AppShell (sidebar/topo já montados pelo
 // pai — ver `AppShell.tsx`, que renderiza <Outlet /> dentro de
 // <main>). Diferente do fallback da Landing Page
@@ -354,6 +366,22 @@ export function AppRoutes() {
               <Route path="/meu-desempenho" element={<MyPerformancePage />} />
             </Route>
           </Route>
+
+          {/* Calendário Acadêmico: sem restrição de `roles` (ver
+              justificativa acima, junto do lazy()) — qualquer perfil
+              autenticado e com conta ativa (já garantido por
+              `ProtectedRoute` no nível superior) acessa sua própria
+              agenda. Nunca cria uma estrutura de navegação paralela: a
+              rota entra no MESMO `<AppShell />` de todas as outras,
+              acessível pelo item "Calendário" da Sidebar. */}
+          <Route
+            path="/calendario"
+            element={
+              <Suspense fallback={dashboardPageFallback}>
+                <AcademicCalendarPage />
+              </Suspense>
+            }
+          />
 
           <Route path="/configuracoes" element={<SettingsPage />} />
         </Route>

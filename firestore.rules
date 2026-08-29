@@ -611,6 +611,48 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------------------------------------------------------------
+    // academicEvents/{eventId} — Calendário Acadêmico.
+    //
+    // Agenda PESSOAL do usuário logado (qualquer role — admin, teacher
+    // ou student): cada evento pertence a um único `ownerId`, e só o
+    // dono pode ler, criar, editar ou excluir os próprios eventos.
+    // Mesmo espírito de "isolamento por dono" de `notifications`
+    // (recipientUid), mas aqui o mesmo uid que POSSUI o dado também é
+    // quem ESCREVE (diferente de notificações, em que staff cria para
+    // outra pessoa) — por isso create/update/delete exigem
+    // simultaneamente `isSignedIn()` E `ownerId == request.auth.uid`,
+    // sem depender de `isActiveStaff()`/`isActiveStudent()`: um
+    // estudante também precisa poder criar seus próprios lembretes.
+    //
+    // Um usuário nunca consegue ler, editar ou excluir o evento de
+    // outro (item 10 do briefing) — tanto a query quanto o `get`
+    // direto são negados pela regra `resource.data.ownerId ==
+    // request.auth.uid` quando o documento pertence a outra pessoa.
+    //
+    // `disciplineId`/`classId` (reservados para evolução futura — ver
+    // `types/academicEvent.ts`) não são validados aqui ainda: nenhuma
+    // tela os preenche nesta fase, então não há payload real para
+    // restringir. Quando a associação Turma→Disciplina→Evento for
+    // implementada de fato, esta regra deve ganhar a mesma checagem de
+    // propriedade já usada em `isOwnDiscipline`.
+    // ---------------------------------------------------------------
+    match /academicEvents/{eventId} {
+      allow read: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() &&
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.date is string;
+      allow update: if isSignedIn() &&
+        resource.data.ownerId == request.auth.uid &&
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.date is string;
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
     // Nenhuma outra coleção existe ainda. Por padrão, o Firestore nega
     // tudo que não tem uma regra explícita — não é necessário (nem
     // recomendado) adicionar um "match /{document=**}" de bloqueio,

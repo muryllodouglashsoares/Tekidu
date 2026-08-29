@@ -1,4 +1,5 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -15,7 +16,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { RoleBadge } from "@/components/ui/RoleBadge";
+import { CalendarMiniWidget } from "@/components/calendar/CalendarMiniWidget";
 import type { UserRole } from "@/types/user";
+
+const CALENDAR_WIDGET_COLLAPSED_KEY = "tekidu-sidebar-calendar-collapsed";
 
 interface NavItem {
   to: string;
@@ -134,6 +138,23 @@ function NavGroup({
 export function Sidebar() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Persistência simples do estado colapsado/expandido do mini-calendário
+  // — mesmo padrão de armazenamento local já usado por `ThemeContext`
+  // (chave dedicada em localStorage, lida uma única vez na montagem).
+  const [calendarCollapsed, setCalendarCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(CALENDAR_WIDGET_COLLAPSED_KEY) === "true";
+  });
+
+  function toggleCalendarCollapsed() {
+    setCalendarCollapsed((prev) => {
+      const next = !prev;
+      window.localStorage.setItem(CALENDAR_WIDGET_COLLAPSED_KEY, String(next));
+      return next;
+    });
+  }
 
   const initials = (profile?.name ?? "?")
     .split(" ")
@@ -164,6 +185,12 @@ export function Sidebar() {
         <NavGroup title="Principal" items={principalNav} currentRole={profile?.role} />
         <NavGroup title="Minhas Turmas" items={minhasTurmasNav} currentRole={profile?.role} />
         <NavGroup title="Acadêmico" items={academicoNav} currentRole={profile?.role} />
+
+        <CalendarMiniWidget
+          collapsed={calendarCollapsed}
+          onToggleCollapsed={toggleCalendarCollapsed}
+          isRouteActive={location.pathname.startsWith("/calendario")}
+        />
       </nav>
 
       <div className="mt-4 flex flex-col gap-2 pt-4 px-2">

@@ -12,6 +12,7 @@ import {
   FileText,
   BarChart3,
   Settings,
+  CalendarDays,
   CornerDownLeft,
   ArrowUp,
   ArrowDown,
@@ -45,6 +46,9 @@ const NAV_ACTIONS: NavAction[] = [
   { id: "nav-boletim", label: "Ir para Boletim", icon: FileText, to: "/boletim", roles: ["admin", "teacher"] },
   { id: "nav-meu-boletim", label: "Ir para Meu Boletim", icon: FileText, to: "/meu-boletim", roles: ["student"] },
   { id: "nav-relatorios", label: "Ir para Relatórios", icon: BarChart3, to: "/relatorios", roles: ["admin", "teacher"] },
+  // Sem `roles`: agenda pessoal, acessível a qualquer perfil (mesmo
+  // critério de "Configurações" logo abaixo — ver Sidebar.tsx/AppRoutes.tsx).
+  { id: "nav-calendario", label: "Ir para Calendário", icon: CalendarDays, to: "/calendario" },
   { id: "nav-configuracoes", label: "Abrir Configurações", icon: Settings, to: "/configuracoes" },
 ];
 
