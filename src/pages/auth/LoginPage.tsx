@@ -120,22 +120,28 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen bg-paper font-sans">
-      {/* Painel de marca (desktop) */}
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-ink-900 p-12 text-surface lg:flex">
+      {/* Painel de marca (desktop) — SEMPRE escuro/azul-marinho, em
+          QUALQUER tema do app (comportamento intencional, "mantido do
+          design anterior"). Por isso usa cores fixas (não os tokens
+          `ink-700/800/900`/`ink-300/400`/`surface`), que no dark mode
+          são recalibrados para funcionar como texto/acento sobre fundo
+          escuro — aplicados ao FUNDO deste painel, invertiam o
+          contraste (fundo claro + texto escuro, ilegível). */}
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-[#1c2b63] p-12 text-white lg:flex">
         {/* Fundo — glow sutil, mantido do design anterior */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -right-[10%] -top-[20%] h-[70%] w-[70%] rounded-full bg-ink-700/20 blur-3xl" />
-          <div className="absolute -bottom-[20%] -left-[10%] h-[60%] w-[60%] rounded-full bg-ink-800/30 blur-3xl" />
+          <div className="absolute -right-[10%] -top-[20%] h-[70%] w-[70%] rounded-full bg-[#3b5fcf]/20 blur-3xl" />
+          <div className="absolute -bottom-[20%] -left-[10%] h-[60%] w-[60%] rounded-full bg-[#2f4ba8]/30 blur-3xl" />
         </div>
 
         <div className="relative z-10 flex items-center justify-between">
           <Link to="/" className="flex w-fit items-center gap-3 transition-opacity hover:opacity-80">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface text-ink-900 shadow-sm">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#1c2b63] shadow-sm">
               <BrandMark className="h-5 w-5" />
             </div>
             <span className="font-display text-2xl font-bold tracking-tight">Tekidu</span>
           </Link>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-ink-300">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-[#cbd5e1]">
             <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
             Dados protegidos · LGPD
           </span>
@@ -145,7 +151,7 @@ export function LoginPage() {
           <h1 className="mb-6 font-display text-4xl font-bold leading-tight">
             Gestão escolar inteligente e simplificada.
           </h1>
-          <p className="text-lg text-ink-300">
+          <p className="text-lg text-[#cbd5e1]">
             Acompanhe o desenvolvimento dos estudantes, gerencie turmas e avaliações com uma experiência
             projetada para toda a comunidade escolar.
           </p>
@@ -154,7 +160,7 @@ export function LoginPage() {
               Landing Page, com um card de contexto ancorado nela. */}
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-widest text-ink-400">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#94a3b8]">
                 Evolução do aluno · exemplo
               </p>
               <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-1 text-[10px] font-semibold text-success">
@@ -165,19 +171,19 @@ export function LoginPage() {
           </div>
 
           <div className="mt-8 flex items-start gap-3 border-l-2 border-success/50 pl-4">
-            <p className="text-sm italic text-ink-300">
+            <p className="text-sm italic text-[#cbd5e1]">
               &ldquo;Passamos a enxergar a trajetória de cada turma em minutos, não em planilhas soltas.&rdquo;
             </p>
           </div>
         </div>
 
-        <div className="relative z-10 flex items-center justify-between text-sm text-ink-400">
+        <div className="relative z-10 flex items-center justify-between text-sm text-[#94a3b8]">
           <span>&copy; {new Date().getFullYear()} Tekidu. Todos os direitos reservados.</span>
           <span className="flex items-center gap-4">
-            <a href="mailto:suporte@tekidu.com.br" className="hover:text-ink-200 transition-colors">
+            <a href="mailto:suporte@tekidu.com.br" className="transition-colors hover:text-[#e2e8f0]">
               Suporte
             </a>
-            <a href="#" className="hover:text-ink-200 transition-colors">
+            <a href="#" className="transition-colors hover:text-[#e2e8f0]">
               Privacidade
             </a>
           </span>
