@@ -5,9 +5,16 @@ interface ModalProps {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  /** "md" (padrão, inalterado) ou "lg" para conteúdo que precisa de mais largura de leitura (ex.: detalhe de um aviso). */
+  size?: "md" | "lg";
 }
 
-export function Modal({ title, onClose, children }: ModalProps) {
+const SIZE_CLASS: Record<NonNullable<ModalProps["size"]>, string> = {
+  md: "max-w-md",
+  lg: "max-w-2xl",
+};
+
+export function Modal({ title, onClose, children, size = "md" }: ModalProps) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -27,7 +34,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-card border border-line bg-surface p-6 shadow-card"
+        className={`relative z-10 max-h-[90vh] w-full ${SIZE_CLASS[size]} overflow-y-auto rounded-card border border-line bg-surface p-6 shadow-card`}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold text-ink900">{title}</h2>

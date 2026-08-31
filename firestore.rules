@@ -653,6 +653,64 @@ service cloud.firestore {
       allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
 
+    // ---------------------------------------------------------------
+    // announcements/{announcementId} — Portal de Avisos.
+    //
+    // Canal central de comunicação institucional (admin) e acadêmica
+    // (teacher), consultado em leitura por todas as roles — ver
+    // `services/announcements/announcementService.ts` e
+    // `types/announcement.ts`.
+    //
+    // LEITURA:
+    // - admin: irrestrita (publicados, rascunhos, expirados).
+    // - teacher: avisos PUBLICADOS destinados a "all"/"teachers", OU
+    //   qualquer aviso do PRÓPRIO autor (publicado ou rascunho) — isto
+    //   é o que permite ao professor ver seus próprios rascunhos sem
+    //   abrir uma condição geral de "staff lê tudo".
+    // - student: apenas avisos PUBLICADOS destinados a "all"/"students".
+    //   Nunca alcança rascunhos nem avisos destinados só a professores.
+    //
+    // CRIAÇÃO: restrita a admin/teacher ativos. `createdBy` e
+    // `authorRole` no payload precisam corresponder exatamente ao
+    // usuário autenticado — o cliente nunca pode criar um aviso em
+    // nome de outra pessoa nem se declarar com uma role diferente da
+    // que tem em `users/{uid}`. Um professor só pode criar com
+    // `pinned == false` (fixar é exclusivo do admin, mesma regra da
+    // interface em `AnnouncementFormModal`).
+    //
+    // ATUALIZAÇÃO: admin edita qualquer aviso; professor só edita
+    // quando `resource.data.createdBy == request.auth.uid` — e não
+    // pode alterar a própria autoria (`createdBy`/`authorRole`) nem
+    // fixar o aviso no payload de update.
+    //
+    // EXCLUSÃO: mesma regra de autoria da atualização.
+    // ---------------------------------------------------------------
+    match /announcements/{announcementId} {
+      allow read: if isActiveAdmin() ||
+        (isActiveStaff() && (
+          (resource.data.published == true &&
+            (resource.data.audience == 'all' || resource.data.audience == 'teachers')) ||
+          resource.data.createdBy == request.auth.uid
+        )) ||
+        (isActiveStudent() && resource.data.published == true &&
+          (resource.data.audience == 'all' || resource.data.audience == 'students'));
+
+      allow create: if isActiveStaff() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.authorRole == callerProfile().role &&
+        (callerProfile().role == 'admin' || request.resource.data.pinned == false);
+
+      allow update: if isActiveAdmin() ||
+        (isActiveStaff() &&
+          resource.data.createdBy == request.auth.uid &&
+          request.resource.data.createdBy == resource.data.createdBy &&
+          request.resource.data.authorRole == resource.data.authorRole &&
+          request.resource.data.pinned == false);
+
+      allow delete: if isActiveAdmin() ||
+        (isActiveStaff() && resource.data.createdBy == request.auth.uid);
+    }
+
     // Nenhuma outra coleção existe ainda. Por padrão, o Firestore nega
     // tudo que não tem uma regra explícita — não é necessário (nem
     // recomendado) adicionar um "match /{document=**}" de bloqueio,

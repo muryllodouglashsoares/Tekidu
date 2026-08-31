@@ -22,6 +22,7 @@ import { ErrorState } from "@/components/layout/ErrorState";
 import { Button } from "@/components/ui/Button";
 import { SituationBadge } from "@/components/notes/SituationBadge";
 import { AcademicStatusBadge } from "@/components/boletim/AcademicStatusBadge";
+import { RecentAnnouncementsCard } from "@/components/announcements/RecentAnnouncementsCard";
 import { getClasses } from "@/services/classes/classService";
 import { getStudents, getStudentByUid } from "@/services/students/studentService";
 import { getStudentBoletim, type StudentBoletim } from "@/services/boletim/boletimService";
@@ -344,6 +345,8 @@ function AdminDashboard() {
             )}
           </div>
         </Card>
+
+        <RecentAnnouncementsCard />
       </div>
     </div>
   );
@@ -505,6 +508,8 @@ function TeacherDashboard() {
           </div>
         </Card>
       )}
+
+      <RecentAnnouncementsCard />
 
       <div>
         <h3 className="font-display text-lg font-bold text-ink900 mb-4 px-1">Suas turmas e disciplinas</h3>
@@ -693,10 +698,18 @@ function StudentDashboard() {
         </div>
       </div>
 
-      <div className="w-full lg:w-[320px] flex-shrink-0">
+      <div className="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-6">
+        {/* Renomeado de "Avisos recentes" para "Notificações recentes":
+            este card sempre mostrou `notifications` (nota lançada,
+            avaliação criada...) — eventos individuais endereçados a
+            este aluno, não os avisos institucionais/acadêmicos do
+            Portal de Avisos (ver distinção na seção 6 do briefing do
+            Portal). Manter o rótulo antigo aqui, agora que o Portal
+            de Avisos existe de fato em "/avisos", confundiria os dois
+            conceitos. */}
         <Card className="p-6 border-line shadow-sm bg-surface">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-display text-base font-bold text-ink900">Avisos recentes</h3>
+            <h3 className="font-display text-base font-bold text-ink900">Notificações recentes</h3>
             <div className="h-8 w-8 rounded-full bg-ink-50 flex items-center justify-center text-ink-500">
               <Bell className="h-4 w-4" />
             </div>
@@ -717,11 +730,13 @@ function StudentDashboard() {
             {notifications.length === 0 && (
               <div className="text-center py-8">
                 <CheckCircle2 className="h-10 w-10 text-success/40 mx-auto mb-3" />
-                <p className="text-sm font-medium text-ink-600">Nenhum aviso.</p>
+                <p className="text-sm font-medium text-ink-600">Nenhuma notificação.</p>
               </div>
             )}
           </div>
         </Card>
+
+        <RecentAnnouncementsCard />
       </div>
     </div>
   );

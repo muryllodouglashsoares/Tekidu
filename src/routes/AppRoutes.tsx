@@ -128,6 +128,17 @@ const AcademicCalendarPage = lazy(() =>
   }))
 );
 
+// Portal de Avisos: acessível a QUALQUER role autenticada (mesmo
+// critério de "/calendario" acima — admin/teacher/student consultam o
+// mesmo Portal, cada um vendo o subconjunto de avisos permitido pela
+// Security Rule), por isso também fica fora dos grupos de
+// code-splitting por role.
+const AnnouncementsPage = lazy(() =>
+  import("@/pages/announcements/AnnouncementsPage").then((m) => ({
+    default: m.AnnouncementsPage,
+  }))
+);
+
 // Fallback usado dentro do AppShell (sidebar/topo já montados pelo
 // pai — ver `AppShell.tsx`, que renderiza <Outlet /> dentro de
 // <main>). Diferente do fallback da Landing Page
@@ -379,6 +390,19 @@ export function AppRoutes() {
             element={
               <Suspense fallback={dashboardPageFallback}>
                 <AcademicCalendarPage />
+              </Suspense>
+            }
+          />
+
+          {/* Portal de Avisos: sem restrição de `roles` (mesmo critério
+              de "/calendario" acima) — a Security Rule/service já
+              escopam o que cada perfil pode ver dentro da própria
+              tela (ver `announcementService.getAnnouncementsForRole`). */}
+          <Route
+            path="/avisos"
+            element={
+              <Suspense fallback={dashboardPageFallback}>
+                <AnnouncementsPage />
               </Suspense>
             }
           />

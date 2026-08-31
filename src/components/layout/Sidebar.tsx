@@ -11,6 +11,7 @@ import {
   FileText,
   BarChart3,
   LineChart,
+  Megaphone,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -35,6 +36,11 @@ interface NavItem {
 // "em desenvolvimento" em vez de 404 — ver PlaceholderPage.
 const principalNav: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  // Avisos: acessível a QUALQUER role (sem `roles`, mesmo critério do
+  // Dashboard) — o Portal de Avisos escopa o conteúdo por perfil
+  // internamente (ver AnnouncementsPage/announcementService), não pela
+  // visibilidade do item de navegação.
+  { to: "/avisos", label: "Avisos", icon: Megaphone },
   // Alunos/Turmas/Disciplinas: visão de STAFF (escola inteira, com
   // edição) — restrita a admin. Antes também aparecia para "teacher",
   // mas essa visão foi retirada do professor: agora ele usa

@@ -31,6 +31,12 @@
  * - `class_deleted`: exclusão de turma (`classService.deleteClass`).
  * - `discipline_deleted`: exclusão de disciplina
  *   (`disciplineService.deleteDiscipline`).
+ * - `announcement_deleted`: exclusão de um aviso do Portal de Avisos
+ *   (`announcementService.deleteAnnouncement`) — mesmo racional de
+ *   `class_deleted`/`discipline_deleted` (só a exclusão, ação
+ *   destrutiva e irreversível, é auditada; criar/editar/publicar um
+ *   aviso não gera log, para não sobrecarregar a trilha com eventos de
+ *   baixo risco). `before` guarda o título do aviso excluído.
  */
 export type AuditEventType =
   | "grade_updated"
@@ -40,7 +46,8 @@ export type AuditEventType =
   | "teacher_created"
   | "teacher_status_changed"
   | "class_deleted"
-  | "discipline_deleted";
+  | "discipline_deleted"
+  | "announcement_deleted";
 
 /**
  * Rótulo legível para cada tipo de evento — usado pela aba "Histórico"
@@ -57,6 +64,7 @@ export const AUDIT_EVENT_LABEL: Record<AuditEventType, string> = {
   teacher_status_changed: "Status do professor alterado",
   class_deleted: "Turma excluída",
   discipline_deleted: "Disciplina excluída",
+  announcement_deleted: "Aviso excluído",
 };
 
 export interface AuditLog {
