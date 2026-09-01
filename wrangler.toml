@@ -1,9 +1,11 @@
-# Usado só para desenvolvimento local (`npm run dev:functions`, que roda
-# `wrangler pages dev`). NÃO tem pages_build_output_dir de propósito: essa
-# chave faz o Cloudflare Pages trocar o comando de deploy do build remoto
-# para `wrangler deploy` (Workers), que quebra com Wrangler 3.x — o output
-# directory de produção continua sendo configurado só no dashboard do
-# Cloudflare Pages (Settings → Builds → Build output directory: dist).
+# name deve bater com o nome exato do projeto no Cloudflare Pages
+# (visível na URL: dash.cloudflare.com/.../pages/view/<name>).
+#
+# pages_build_output_dir é o que faz o Cloudflare (com Wrangler v4+) tratar
+# isto como um projeto Pages de verdade: deploy automático via "wrangler
+# deploy" servindo os arquivos de dist/ + as Pages Functions em functions/.
+# Requer Wrangler v4 (ver package.json) — em v3 essa chave quebra o deploy.
 name = "tekidu"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
