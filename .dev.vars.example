@@ -1,0 +1,8 @@
+# Copie para ".dev.vars" (NÃO commitar) para rodar `npm run dev:functions`
+# localmente. São as mesmas 4 variáveis configuradas em produção no
+# Cloudflare Pages (Settings → Environment variables) — ver CLOUDINARY_SETUP.md.
+
+FIREBASE_PROJECT_ID=
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=

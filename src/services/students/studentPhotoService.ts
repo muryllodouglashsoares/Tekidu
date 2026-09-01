@@ -134,8 +134,26 @@ async function currentIdToken(): Promise<string> {
   return user.getIdToken();
 }
 
+/**
+ * Mensagem exibida quando a resposta de `/api/student-photo/*` não é JSON
+ * (Content-Type diferente de `application/json`). Isso acontece quando a
+ * Pages Function não está sendo servida de verdade — ex.: rodando só
+ * `vite` (sem `wrangler pages dev`) ou publicado em um host que ignora a
+ * pasta `functions/` — e a requisição cai no fallback de SPA, que devolve
+ * `index.html` (HTML) com status 200 em vez do JSON esperado.
+ */
+const API_UNAVAILABLE_MESSAGE =
+  "A API de foto (/api/student-photo) não respondeu com JSON — ela não está sendo servida neste ambiente. " +
+  "Rode `npm run dev:functions` (Cloudflare Pages Functions) em vez de `npm run dev`, ou confira o deploy. " +
+  "Veja CLOUDINARY_SETUP.md.";
+
+function isJsonResponse(response: Response): boolean {
+  return (response.headers.get("content-type") ?? "").includes("application/json");
+}
+
 /** Extrai a mensagem de erro do corpo JSON da Pages Function, com fallback genérico. */
 async function extractErrorMessage(response: Response, fallback: string): Promise<string> {
+  if (!isJsonResponse(response)) return API_UNAVAILABLE_MESSAGE;
   try {
     const body = (await response.json()) as { error?: string };
     return body.error ?? fallback;
@@ -153,6 +171,9 @@ async function requestSignedUpload(studentId: string, idToken: string): Promise<
 
   if (!response.ok) {
     throw new Error(await extractErrorMessage(response, "Não foi possível autorizar o upload. Tente novamente."));
+  }
+  if (!isJsonResponse(response)) {
+    throw new Error(API_UNAVAILABLE_MESSAGE);
   }
 
   return (await response.json()) as SignedUploadParams;
