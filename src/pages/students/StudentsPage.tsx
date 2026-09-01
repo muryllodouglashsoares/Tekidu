@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/layout/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { StudentFormModal } from "@/components/students/StudentFormModal";
 import { StudentStatusBadge } from "@/components/students/StudentStatusBadge";
+import { StudentAvatar } from "@/components/students/StudentAvatar";
 import { SortableTh } from "@/components/table/SortableTh";
 import { Pagination } from "@/components/table/Pagination";
 import { FilterSummary } from "@/components/table/FilterSummary";
@@ -192,14 +193,6 @@ export function StudentsPage() {
     );
   }
 
-  function initials(name: string) {
-    return name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase())
-      .join("");
-  }
 
   return (
     <div>
@@ -396,9 +389,8 @@ export function StudentsPage() {
                           onClick={() => navigate(`/alunos/${student.id}`)}
                           className="flex items-center gap-3 text-left hover:underline"
                         >
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-semibold text-ink-700">
-                            {initials(student.name)}
-                          </span>
+                          <StudentAvatar name={student.name} photoURL={student.photoURL} photoUpdatedAt={student.photoUpdatedAt} />
+
                           <span className="min-w-0">
                             <span className="block truncate font-medium text-ink900">{student.name}</span>
                             <span className="block truncate text-xs text-ink-400">{student.email}</span>

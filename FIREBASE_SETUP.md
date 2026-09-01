@@ -199,3 +199,30 @@ correspondente em `firestore.rules`. Republique as regras:
 ```bash
 firebase deploy --only firestore:rules
 ```
+
+## Foto de perfil oficial do aluno — Firebase Storage
+
+Este recurso introduz o primeiro uso de **Firebase Storage** no projeto
+(até aqui, só Firestore era usado). São necessários dois passos manuais
+que não podem ser aplicados só por código:
+
+### 1. Ativar o Storage no projeto
+
+No [Firebase Console](https://console.firebase.google.com/) → projeto
+`tekidu-26c0f` → **Storage** → **Vamos começar**, se ainda não tiver sido
+ativado. Isso cria o bucket referenciado por `VITE_FIREBASE_STORAGE_BUCKET`
+(já presente em `.env.local`).
+
+### 2. Publicar `storage.rules`
+
+As regras vivem em `storage.rules` (raiz do projeto) e restringem a
+foto do aluno (`student-photos/{studentId}/photo.jpg`) a: leitura por
+staff ou pelo próprio aluno; escrita/exclusão só por admin. Publique com:
+
+```bash
+firebase deploy --only storage
+```
+
+Sem este passo, o bucket fica com a regra padrão do Firebase (nega
+tudo), e o upload/leitura da foto falha com `storage/unauthorized`
+mesmo para o admin.

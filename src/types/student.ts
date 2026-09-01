@@ -56,6 +56,30 @@ export interface Student {
   status: StudentStatus;
   average: number | null;
   uid: string | null;
+  /**
+   * URL pública da foto de perfil OFICIAL do aluno (Cloudinary,
+   * `public_id` `tekidu/student-photos/{studentId}` — ver
+   * `services/students/studentPhotoService.ts`). `null` = aluno ainda
+   * sem foto cadastrada (estado válido e esperado).
+   *
+   * REGRA DE AUTORIDADE (segurança, não só UI): só o ADMIN pode alterar
+   * este campo. A Firestore Security Rule de `students/{studentId}`
+   * (`firestore.rules`) bloqueia qualquer `update` que toque
+   * `photoURL`/`photoUpdatedAt` vindo de quem não é admin ativo — o
+   * mesmo vale para o objeto correspondente no Cloudinary, verificado
+   * pela Cloudflare Pages Function (`functions/api/student-photo`)
+   * antes de assinar qualquer upload. Nunca grave este campo a partir
+   * do formulário genérico de aluno (`StudentFormModal`/`updateStudent`);
+   * use sempre `uploadStudentPhoto`/`removeStudentPhoto`.
+   */
+  photoURL: string | null;
+  /**
+   * Timestamp da última alteração de foto. Existe só para permitir
+   * cache-busting determinístico no `<img>` (o token de download do
+   * Storage nem sempre muda ao sobrescrever o mesmo caminho) — não tem
+   * uso além disso. `null` = nunca teve foto alterada.
+   */
+  photoUpdatedAt: unknown; // Firestore Timestamp | null
   createdAt: unknown; // Firestore Timestamp
   updatedAt: unknown; // Firestore Timestamp
 }

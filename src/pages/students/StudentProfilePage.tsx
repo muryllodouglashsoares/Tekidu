@@ -18,6 +18,7 @@ import { TableSkeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { StudentStatusBadge } from "@/components/students/StudentStatusBadge";
+import { StudentPhotoPanel } from "@/components/students/StudentPhotoPanel";
 import { AcademicStatusBadge } from "@/components/boletim/AcademicStatusBadge";
 import { SituationBadge } from "@/components/notes/SituationBadge";
 import { AttendanceStatusBadge } from "@/components/attendance/AttendanceStatusBadge";
@@ -235,14 +236,14 @@ export function StudentProfilePage() {
       <Card className="mb-6 p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-ink-100 text-lg font-semibold text-ink-700">
-              {student.name
-                .split(" ")
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((p) => p[0]?.toUpperCase())
-                .join("")}
-            </span>
+            {profile && (
+              <StudentPhotoPanel
+                student={student}
+                canEdit={profile.role === "admin"}
+                actor={{ uid: profile.uid, name: profile.name }}
+                onChanged={loadStudent}
+              />
+            )}
             <div>
               <h2 className="font-display text-xl font-semibold text-ink900">{student.name}</h2>
               <p className="text-sm text-ink-500">{student.email}</p>

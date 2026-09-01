@@ -8,6 +8,7 @@ import { TableSkeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { SituationBadge } from "@/components/notes/SituationBadge";
+import { StudentAvatar } from "@/components/students/StudentAvatar";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
   getTeacherStudentsOverview,
@@ -159,7 +160,16 @@ export function MyStudentsPage() {
               <tbody>
                 {filtered.map((row) => (
                   <tr key={row.student.id} className="border-b border-line last:border-0 hover:bg-ink-50/50">
-                    <td className="px-4 py-3 font-medium text-ink900">{row.student.name}</td>
+                    <td className="px-4 py-3 font-medium text-ink900">
+                      <span className="flex items-center gap-3">
+                        <StudentAvatar
+                          name={row.student.name}
+                          photoURL={row.student.photoURL}
+                          photoUpdatedAt={row.student.photoUpdatedAt}
+                        />
+                        {row.student.name}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-ink-600">{row.schoolClass.name}</td>
                     <td className="px-4 py-3 text-ink-600">
                       {row.average === null ? (

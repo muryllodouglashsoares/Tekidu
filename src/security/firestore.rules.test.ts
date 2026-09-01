@@ -41,6 +41,10 @@ const OTHER_TEACHER_UID = "other-teacher-uid";
 
 const CLASS_ID = "class-1";
 const DISCIPLINE_ID = "discipline-1";
+const STUDENT_UID = "student-uid";
+const OTHER_STUDENT_UID = "other-student-uid";
+const STUDENT_ID = "student-1";
+const OTHER_STUDENT_ID = "student-2";
 
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
@@ -87,6 +91,38 @@ beforeEach(async () => {
       name: "Matemática",
       classIds: [CLASS_ID],
       teacherId: TEACHER_UID,
+    });
+    await db.doc(`users/${STUDENT_UID}`).set({
+      role: "student",
+      active: true,
+      name: "Aluno de Teste",
+    });
+    await db.doc(`users/${OTHER_STUDENT_UID}`).set({
+      role: "student",
+      active: true,
+      name: "Outro Aluno de Teste",
+    });
+    await db.doc(`students/${STUDENT_ID}`).set({
+      name: "Aluno de Teste",
+      email: "aluno@tekidu.test",
+      registrationNumber: "0001",
+      classId: CLASS_ID,
+      status: "active",
+      average: null,
+      uid: STUDENT_UID,
+      photoURL: null,
+      photoUpdatedAt: null,
+    });
+    await db.doc(`students/${OTHER_STUDENT_ID}`).set({
+      name: "Outro Aluno de Teste",
+      email: "outro-aluno@tekidu.test",
+      registrationNumber: "0002",
+      classId: CLASS_ID,
+      status: "active",
+      average: null,
+      uid: OTHER_STUDENT_UID,
+      photoURL: null,
+      photoUpdatedAt: null,
     });
   });
 });
@@ -201,6 +237,96 @@ describe("disciplines/{disciplineId} — gap de create/update por teacher", () =
     );
     await assertSucceeds(
       adminDb.doc(`disciplines/${DISCIPLINE_ID}`).update({ classIds: [] })
+    );
+  });
+});
+
+describe("students/{studentId} — foto de perfil oficial restrita a admin", () => {
+  it("continua permitindo que um professor edite campos normais do aluno (regressão)", async () => {
+    const teacherDb = testEnv
+      .authenticatedContext(TEACHER_UID, { role: "teacher" })
+      .firestore();
+
+    await assertSucceeds(
+      teacherDb.doc(`students/${STUDENT_ID}`).update({ status: "recovery" })
+    );
+  });
+
+  it("nega que um professor altere a foto do aluno diretamente no Firestore", async () => {
+    const teacherDb = testEnv
+      .authenticatedContext(TEACHER_UID, { role: "teacher" })
+      .firestore();
+
+    await assertFails(
+      teacherDb.doc(`students/${STUDENT_ID}`).update({ photoURL: "https://example.com/fake.jpg" })
+    );
+  });
+
+  it("nega que um professor altere a foto junto de outros campos na mesma escrita", async () => {
+    const teacherDb = testEnv
+      .authenticatedContext(TEACHER_UID, { role: "teacher" })
+      .firestore();
+
+    await assertFails(
+      teacherDb.doc(`students/${STUDENT_ID}`).update({
+        status: "recovery",
+        photoURL: "https://example.com/fake.jpg",
+      })
+    );
+  });
+
+  it("permite que um admin altere a foto do aluno", async () => {
+    const adminDb = testEnv
+      .authenticatedContext(ADMIN_UID, { role: "admin" })
+      .firestore();
+
+    await assertSucceeds(
+      adminDb.doc(`students/${STUDENT_ID}`).update({
+        photoURL: "https://example.com/real.jpg",
+        photoUpdatedAt: new Date(),
+      })
+    );
+  });
+
+  it("nega que o próprio aluno altere a própria foto (bypass da UI)", async () => {
+    const studentDb = testEnv
+      .authenticatedContext(STUDENT_UID, { role: "student" })
+      .firestore();
+
+    await assertFails(
+      studentDb.doc(`students/${STUDENT_ID}`).update({ photoURL: "https://example.com/self.jpg" })
+    );
+  });
+
+  it("nega que um aluno altere a foto de outro aluno", async () => {
+    const studentDb = testEnv
+      .authenticatedContext(STUDENT_UID, { role: "student" })
+      .firestore();
+
+    await assertFails(
+      studentDb
+        .doc(`students/${OTHER_STUDENT_ID}`)
+        .update({ photoURL: "https://example.com/other.jpg" })
+    );
+  });
+
+  it("nega criar um aluno já com foto, mesmo por um admin", async () => {
+    const adminDb = testEnv
+      .authenticatedContext(ADMIN_UID, { role: "admin" })
+      .firestore();
+
+    await assertFails(
+      adminDb.doc("students/student-created-with-photo").set({
+        name: "Aluno Novo",
+        email: "novo@tekidu.test",
+        registrationNumber: "0003",
+        classId: null,
+        status: "active",
+        average: null,
+        uid: null,
+        photoURL: "https://example.com/sneaky.jpg",
+        photoUpdatedAt: null,
+      })
     );
   });
 });
