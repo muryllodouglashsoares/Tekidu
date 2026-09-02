@@ -21,6 +21,7 @@ const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
@@ -37,12 +38,6 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-// Foto de perfil oficial do aluno (ver studentPhotoService.ts) usa
-// Cloudinary (plano Free, sem cartão), não Firebase Storage — feito
-// para não exigir plano pago/billing só por causa de fotos. A
-// proteção de escrita fica na Pages Function
-// (functions/api/student-photo), que valida o ID Token e a role de
-// admin direto no Firestore antes de assinar qualquer upload.
 
 // Persistência explícita em localStorage: a sessão sobrevive ao fechar
 // a aba/navegador. É o comportamento padrão do SDK, mas deixamos

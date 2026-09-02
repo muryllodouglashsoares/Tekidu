@@ -18,7 +18,6 @@ import { fetchSignInMethodsForEmail } from "firebase/auth";
 import { auth, createStaffAuthAccount, db } from "@/lib/firebase";
 import { sendFirstAccessEmail } from "@/services/email/emailService";
 import { generateTempPassword, TEMP_CREDENTIALS_TTL_MS } from "@/lib/credentials";
-import { deleteStudentPhotoObject } from "@/services/students/studentPhotoService";
 import type { Student, StudentInput } from "@/types/student";
 
 const studentsCollection = collection(db, "students");
@@ -47,11 +46,6 @@ function toStudent(id: string, data: Record<string, unknown>): Student {
     // (Tarefa 2) — `?? null` trata a ausência do campo exatamente
     // como o estado "sem conta vinculada ainda", sem exigir migração.
     uid: (data.uid as string | null) ?? null,
-    // Ausentes em documentos cadastrados antes deste recurso — `?? null`
-    // trata a ausência exatamente como "sem foto", sem exigir migração
-    // (mesmo racional já usado acima para `uid`).
-    photoURL: (data.photoURL as string | null) ?? null,
-    photoUpdatedAt: data.photoUpdatedAt ?? null,
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   };
@@ -258,14 +252,6 @@ export async function updateStudent(id: string, data: StudentInput): Promise<voi
   });
 }
 
-/**
- * Exclui o aluno. Também tenta remover a foto oficial no Storage,
- * caso exista (best-effort — ver `deleteStudentPhotoObject` em
- * `studentPhotoService.ts`: falha nessa limpeza nunca deve impedir a
- * exclusão do cadastro em si, só evita deixar o arquivo órfão no
- * bucket).
- */
 export async function deleteStudent(id: string): Promise<void> {
-  await deleteStudentPhotoObject(id);
   await deleteDoc(doc(db, "students", id));
 }

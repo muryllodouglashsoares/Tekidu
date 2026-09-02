@@ -278,33 +278,10 @@ service cloud.firestore {
     //   O aluno nunca escreve no próprio registro por aqui.
     // - EXCLUSÃO: restrita a admin, para evitar que um professor
     //   remova permanentemente o cadastro de um aluno por engano.
-    //
-    // FOTO DE PERFIL OFICIAL (`photoURL`/`photoUpdatedAt` — ver
-    // `types/student.ts`, `studentPhotoService.ts`): regra de
-    // autoridade própria, mais restrita que a escrita geral acima.
-    // Somente ADMIN pode alterar a foto — um professor continua
-    // podendo editar os demais campos do aluno (nome, turma, situação,
-    // média), mas nunca a foto, mesmo chamando o Firestore diretamente
-    // (não confiar só na UI, que já esconde os controles de foto do
-    // professor — `StudentPhotoPanel`). `photoFieldsUnchanged()` é o
-    // que permite que a `allow update` de staff abaixo continue
-    // funcionando para toda edição NORMAL do formulário (que nunca
-    // toca esses dois campos) sem abrir uma exceção geral para foto.
-    function photoFieldsUnchanged() {
-      return request.resource.data.get('photoURL', null) == resource.data.get('photoURL', null) &&
-        request.resource.data.get('photoUpdatedAt', null) == resource.data.get('photoUpdatedAt', null);
-    }
+    // ---------------------------------------------------------------
     match /students/{studentId} {
       allow read: if isSignedIn() && (isActiveStaff() || resource.data.uid == request.auth.uid);
-      // Criação nunca inclui foto (o cadastro de aluno não tem esse
-      // passo — ver `studentService.createStudent`); bloquear aqui
-      // fecha a possibilidade de já nascer com uma foto por uma
-      // chamada direta ao Firestore, fora da UI.
-      allow create: if isActiveStaff() &&
-        request.resource.data.get('photoURL', null) == null &&
-        request.resource.data.get('photoUpdatedAt', null) == null;
-      allow update: if isActiveStaff() && photoFieldsUnchanged();
-      allow update: if isActiveAdmin();
+      allow create, update: if isActiveStaff();
       allow delete: if isActiveAdmin();
     }
 

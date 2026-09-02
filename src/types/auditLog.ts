@@ -37,14 +37,6 @@
  *   destrutiva e irreversível, é auditada; criar/editar/publicar um
  *   aviso não gera log, para não sobrecarregar a trilha com eventos de
  *   baixo risco). `before` guarda o título do aviso excluído.
- * - `student_photo_updated`: foto de perfil oficial do aluno
- *   adicionada, substituída ou removida
- *   (`studentPhotoService.uploadStudentPhoto`/`removeStudentPhoto`) —
- *   um único tipo para as três direções (mesmo padrão de
- *   `teacher_status_changed`), distinguido pelo texto em
- *   `before`/`after`. Auditado porque a foto é dado de identidade do
- *   aluno e sua alteração é uma ação restrita a admin — mesmo nível de
- *   sensibilidade de `teacher_status_changed`.
  */
 export type AuditEventType =
   | "grade_updated"
@@ -55,8 +47,7 @@ export type AuditEventType =
   | "teacher_status_changed"
   | "class_deleted"
   | "discipline_deleted"
-  | "announcement_deleted"
-  | "student_photo_updated";
+  | "announcement_deleted";
 
 /**
  * Rótulo legível para cada tipo de evento — usado pela aba "Histórico"
@@ -74,7 +65,6 @@ export const AUDIT_EVENT_LABEL: Record<AuditEventType, string> = {
   class_deleted: "Turma excluída",
   discipline_deleted: "Disciplina excluída",
   announcement_deleted: "Aviso excluído",
-  student_photo_updated: "Foto de perfil alterada",
 };
 
 export interface AuditLog {
