@@ -175,7 +175,7 @@ npm run dev
 
 ## Demonstração
 
-🚀 **[Acesse a demonstração da Tekidu](https://ifconnect.pages.dev)**
+🚀 **[Acesse a demonstração da Tekidu](https://tekidu.pages.dev)**
 
 ---
 
