@@ -23,6 +23,8 @@ import { Button } from "@/components/ui/Button";
 import { SituationBadge } from "@/components/notes/SituationBadge";
 import { AcademicStatusBadge } from "@/components/boletim/AcademicStatusBadge";
 import { RecentAnnouncementsCard } from "@/components/announcements/RecentAnnouncementsCard";
+import { MobileDataCard } from "@/components/mobile/MobileDataCard";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { getClasses } from "@/services/classes/classService";
 import { getStudents, getStudentByUid } from "@/services/students/studentService";
 import { getStudentBoletim, type StudentBoletim } from "@/services/boletim/boletimService";
@@ -80,6 +82,7 @@ export function DashboardPage() {
 function AdminDashboard() {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const isMobile = useIsMobile();
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [overview, setOverview] = useState<AcademicOverview | null>(null);
@@ -237,53 +240,96 @@ function AdminDashboard() {
           </div>
 
           <Card className="overflow-hidden border-line shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-ink-50 border-b border-line text-ink-500">
-                  <tr>
-                    <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Turma</th>
-                    <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Nome do aluno</th>
-                    <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Matrícula</th>
-                    <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Média</th>
-                    <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line bg-surface">
-                  {recentEnrollments.map((student) => {
-                    const studentOverview = overview?.students.find((o) => o.student.id === student.id);
-                    return (
-                      <tr key={student.id} className="hover:bg-ink-50/50 transition-colors">
-                        <td className="px-5 py-4 font-medium text-ink900">{classNameFor(student) || "—"}</td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-bold text-ink-700">
-                              {student.name.charAt(0).toUpperCase()}
+            {isMobile ? (
+              <div className="flex flex-col gap-2.5 p-3">
+                {recentEnrollments.map((student) => {
+                  const studentOverview = overview?.students.find((o) => o.student.id === student.id);
+                  return (
+                    <MobileDataCard
+                      key={student.id}
+                      onClick={() => navigate(`/alunos/${student.id}`)}
+                      leading={
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-bold text-ink-700">
+                          {student.name.charAt(0).toUpperCase()}
+                        </span>
+                      }
+                      title={student.name}
+                      subtitle={classNameFor(student) || "Sem turma"}
+                      meta={
+                        <>
+                          <span className="text-xs tabular text-ink-500">
+                            Média:{" "}
+                            {studentOverview?.average !== null && studentOverview?.average !== undefined
+                              ? studentOverview.average.toFixed(1)
+                              : "—"}
+                          </span>
+                          {studentOverview ? (
+                            <SituationBadge situation={studentOverview.situation} />
+                          ) : (
+                            <span className="text-xs text-ink-400">—</span>
+                          )}
+                        </>
+                      }
+                    />
+                  );
+                })}
+                {recentEnrollments.length === 0 && (
+                  <p className="py-8 text-center text-sm text-ink-500">Nenhum aluno cadastrado.</p>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-ink-50 border-b border-line text-ink-500">
+                    <tr>
+                      <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Turma</th>
+                      <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Nome do aluno</th>
+                      <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Matrícula</th>
+                      <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Média</th>
+                      <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line bg-surface">
+                    {recentEnrollments.map((student) => {
+                      const studentOverview = overview?.students.find((o) => o.student.id === student.id);
+                      return (
+                        <tr key={student.id} className="hover:bg-ink-50/50 transition-colors">
+                          <td className="px-5 py-4 font-medium text-ink900">{classNameFor(student) || "—"}</td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-bold text-ink-700">
+                                {student.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="font-medium text-ink900">{student.name}</span>
                             </div>
-                            <span className="font-medium text-ink900">{student.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-4 text-ink-500">{student.registrationNumber}</td>
-                        <td className="px-5 py-4 text-ink900 font-medium">
-                          {studentOverview?.average !== null && studentOverview?.average !== undefined
-                            ? studentOverview.average.toFixed(1)
-                            : "—"}
-                        </td>
-                        <td className="px-5 py-4">
-                          {studentOverview ? <SituationBadge situation={studentOverview.situation} /> : <span className="text-ink-400">—</span>}
+                          </td>
+                          <td className="px-5 py-4 text-ink-500">{student.registrationNumber}</td>
+                          <td className="px-5 py-4 text-ink900 font-medium">
+                            {studentOverview?.average !== null && studentOverview?.average !== undefined
+                              ? studentOverview.average.toFixed(1)
+                              : "—"}
+                          </td>
+                          <td className="px-5 py-4">
+                            {studentOverview ? (
+                              <SituationBadge situation={studentOverview.situation} />
+                            ) : (
+                              <span className="text-ink-400">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {recentEnrollments.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-5 py-8 text-center text-ink-500">
+                          Nenhum aluno cadastrado.
                         </td>
                       </tr>
-                    );
-                  })}
-                  {recentEnrollments.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-5 py-8 text-center text-ink-500">
-                        Nenhum aluno cadastrado.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Card>
         </div>
       </div>
@@ -648,7 +694,11 @@ function StudentDashboard() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Média + Frequência lado a lado mesmo em mobile — dois
+            indicadores numéricos compactos cabem bem numa linha (ver
+            "RESPONSIVIDADE DE GRIDS" no briefing); Situação, por ser um
+            badge textual, ocupa a linha inteira abaixo. */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <Card className="p-5">
             <p className="text-xs font-medium uppercase tracking-wide text-ink-400 mb-2">Média geral</p>
             <p className="font-display text-2xl font-bold text-ink900">
@@ -663,8 +713,8 @@ function StudentDashboard() {
                 : "—"}
             </p>
           </Card>
-          <Card className="p-5">
-            <p className="text-xs font-medium uppercase tracking-wide text-ink-400 mb-2">Situação</p>
+          <Card className="col-span-2 flex items-center justify-between p-5 sm:col-span-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Situação</p>
             {boletim ? <AcademicStatusBadge status={boletim.overallStatus} /> : <p className="text-ink-400">—</p>}
           </Card>
         </div>

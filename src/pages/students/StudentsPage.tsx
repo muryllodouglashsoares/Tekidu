@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Pencil, Trash2, BarChart3, Users } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, BarChart3, Users, SlidersHorizontal } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { Card } from "@/components/ui/Card";
@@ -21,6 +21,16 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useSort } from "@/hooks/useSort";
 import { usePagination } from "@/hooks/usePagination";
 import { useRowSelection } from "@/hooks/useRowSelection";
+import { useIsMobile } from "@/hooks/useMediaQuery";
+import { MobileDataCard } from "@/components/mobile/MobileDataCard";
+import { MobileFab } from "@/components/mobile/MobileFab";
+
+// lazy(): mesma justificativa de AppShell.tsx/NotificationCenter.tsx —
+// MobileSheet usa Framer Motion, carregado só quando o sheet de
+// filtros realmente abre (mobile), não no chunk desta página inteira.
+const MobileSheet = lazy(() =>
+  import("@/components/mobile/MobileSheet").then((m) => ({ default: m.MobileSheet }))
+);
 import {
   createStudent,
   deleteStudent,
@@ -41,6 +51,7 @@ export function StudentsPage() {
   const canManage = profile?.role === "admin" || profile?.role === "teacher";
   const navigate = useNavigate();
   const toast = useToast();
+  const isMobile = useIsMobile();
 
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -51,6 +62,7 @@ export function StudentsPage() {
   const search = useDebouncedValue(searchInput);
   const [classFilter, setClassFilter] = useState<string>(ALL);
   const [statusFilter, setStatusFilter] = useState<string>(ALL);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [editing, setEditing] = useState<Student | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -205,7 +217,7 @@ export function StudentsPage() {
     <div>
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="font-display text-xl font-semibold text-ink900">Alunos</h2>
+          <h2 className="hidden font-display text-xl font-semibold text-ink900 md:block">Alunos</h2>
           <p className="text-sm text-ink-500">
             {students.length} aluno{students.length === 1 ? "" : "s"} cadastrado
             {students.length === 1 ? "" : "s"}
@@ -214,6 +226,7 @@ export function StudentsPage() {
 
         {canManage && (
           <Button
+            className="hidden md:inline-flex"
             onClick={() => {
               setEditing(null);
               setShowForm(true);
@@ -236,7 +249,12 @@ export function StudentsPage() {
           />
         </Card>
 
-        <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
+        {/* Filtros — em telas ≥ lg, dois Selects lado a lado (comportamento
+            original). Em mobile, uma barra horizontal comprimida com dois
+            selects fica apertada (ver "FILTROS MOBILE" no briefing): um
+            único botão "Filtros" abre uma Bottom Sheet com os mesmos
+            controles em coluna. */}
+        <div className="hidden flex-wrap items-center gap-3 lg:flex lg:shrink-0">
           <div className="grid grid-cols-2 gap-3">
             <Select
               label="Filtrar por turma"
@@ -267,7 +285,56 @@ export function StudentsPage() {
           </div>
           <FilterSummary activeCount={activeFilterCount} onClear={clearFilters} />
         </div>
+
+        <div className="flex items-center gap-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-card border border-line bg-surface px-4 text-sm font-medium text-ink-600 shadow-sm"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filtros
+            {activeFilterCount > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-ink-700 px-1 text-[11px] font-semibold text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+          {activeFilterCount > 0 && <FilterSummary activeCount={activeFilterCount} onClear={clearFilters} />}
+        </div>
       </div>
+
+      <Suspense fallback={null}>
+        <MobileSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filtros">
+          <div className="flex flex-col gap-4 px-5 pb-6">
+            <Select label="Turma" value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
+              <option value={ALL}>Todas as turmas</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+            <Select label="Situação" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value={ALL}>Todas as situações</option>
+              {Object.entries(STUDENT_STATUS_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+            <div className="mt-2 flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={clearFilters}>
+                Limpar
+              </Button>
+              <Button className="flex-1" onClick={() => setFiltersOpen(false)}>
+                Aplicar filtros
+              </Button>
+            </div>
+          </div>
+        </MobileSheet>
+      </Suspense>
+
 
       {canManage && (
         <BulkActionsBar count={selection.count} onClear={selection.clear}>
@@ -296,13 +363,17 @@ export function StudentsPage() {
         </BulkActionsBar>
       )}
 
-      <Card className="overflow-hidden">
-        {loading ? (
+      {loading ? (
+        <Card className="overflow-hidden">
           <TableSkeleton columns={6} />
-        ) : error ? (
+        </Card>
+      ) : error ? (
+        <Card className="overflow-hidden">
           <ErrorState message={error} onRetry={loadData} />
-        ) : totalItems === 0 ? (
-          students.length === 0 ? (
+        </Card>
+      ) : totalItems === 0 ? (
+        <Card className="overflow-hidden">
+          {students.length === 0 ? (
             <EmptyState
               bare
               icon={Users}
@@ -327,140 +398,75 @@ export function StudentsPage() {
               title="Nenhum aluno encontrado"
               description="Não encontramos alunos para os filtros selecionados. Tente ajustá-los ou limpar a busca."
             />
-          )
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
-                    {canManage && (
-                      <th className="w-10 px-4 py-3">
-                        <RowCheckbox
-                          checked={pageSelectionState === "all"}
-                          indeterminate={pageSelectionState === "some"}
-                          onChange={() => selection.toggleAllVisible(pageItems)}
-                          label="Selecionar todos os alunos desta página"
-                        />
-                      </th>
-                    )}
-                    <SortableTh
-                      label="Aluno"
-                      active={sort.key === "name"}
-                      direction={sort.direction}
-                      onClick={() => toggleSort("name")}
-                    />
-                    <SortableTh
-                      label="Matrícula"
-                      active={sort.key === "registrationNumber"}
-                      direction={sort.direction}
-                      onClick={() => toggleSort("registrationNumber")}
-                    />
-                    <SortableTh
-                      label="Turma"
-                      active={sort.key === "class"}
-                      direction={sort.direction}
-                      onClick={() => toggleSort("class")}
-                    />
-                    <SortableTh
-                      label="Média"
-                      active={sort.key === "average"}
-                      direction={sort.direction}
-                      onClick={() => toggleSort("average")}
-                    />
-                    <SortableTh
-                      label="Situação"
-                      active={sort.key === "status"}
-                      direction={sort.direction}
-                      onClick={() => toggleSort("status")}
-                    />
-                    <th className="px-4 py-3 font-medium" />
-                    {canManage && <th className="px-4 py-3 font-medium" />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageItems.map((student) => (
-                    <tr key={student.id} className="border-b border-line last:border-0">
-                      {canManage && (
-                        <td className="px-4 py-3">
-                          <RowCheckbox
-                            checked={selection.isSelected(student)}
-                            onChange={() => selection.toggle(student)}
-                            label={`Selecionar ${student.name}`}
-                          />
-                        </td>
-                      )}
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/alunos/${student.id}`)}
-                          className="flex items-center gap-3 text-left hover:underline"
-                        >
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-semibold text-ink-700">
-                            {initials(student.name)}
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block truncate font-medium text-ink900">{student.name}</span>
-                            <span className="block truncate text-xs text-ink-400">{student.email}</span>
-                          </span>
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 tabular text-ink-600">
-                        {student.registrationNumber}
-                      </td>
-                      <td className="px-4 py-3 text-ink-600">
-                        {student.classId ? classNameById[student.classId] ?? "—" : "—"}
-                      </td>
-                      <td className="px-4 py-3 tabular text-ink-600">
-                        {student.average !== null ? student.average.toFixed(1) : "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StudentStatusBadge status={student.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            aria-label={`Ver relatório de desenvolvimento de ${student.name}`}
-                            title={
-                              student.classId ? "Ver relatório de desenvolvimento" : "Aluno sem turma vinculada"
-                            }
-                            disabled={!student.classId}
-                            className="rounded-card p-1.5 text-ink-400 hover:bg-ink-50 hover:text-ink-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
-                            onClick={() => navigate(`/relatorios?studentId=${student.id}&view=${student.classId}`)}
-                          >
-                            <BarChart3 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                      {canManage && (
-                        <td className="px-4 py-3">
-                          <div className="flex justify-end gap-1">
-                            <button
-                              aria-label={`Editar ${student.name}`}
-                              className="rounded-card p-1.5 text-ink-400 hover:bg-ink-50 hover:text-ink-700"
-                              onClick={() => {
-                                setEditing(student);
-                                setShowForm(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              aria-label={`Excluir ${student.name}`}
-                              className="rounded-card p-1.5 text-ink-400 hover:bg-danger/10 hover:text-danger"
-                              onClick={() => setDeleting(student)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          )}
+        </Card>
+      ) : isMobile ? (
+        // Cards no lugar de tabela em mobile (ver "MOBILE DATA CARDS" no
+        // briefing) — mesma fonte de dados/ordenação/paginação da tabela
+        // desktop, só muda a apresentação. Sem colunas de Matrícula/Turma
+        // visíveis simultaneamente: elas viram chips secundários dentro
+        // de cada card (progressive disclosure).
+        <div className="flex flex-col gap-2.5">
+          {pageItems.map((student) => (
+            <MobileDataCard
+              key={student.id}
+              onClick={() => navigate(`/alunos/${student.id}`)}
+              selection={
+                canManage ? (
+                  <RowCheckbox
+                    checked={selection.isSelected(student)}
+                    onChange={() => selection.toggle(student)}
+                    label={`Selecionar ${student.name}`}
+                  />
+                ) : undefined
+              }
+              leading={
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-semibold text-ink-700">
+                  {initials(student.name)}
+                </span>
+              }
+              title={student.name}
+              subtitle={student.classId ? classNameById[student.classId] ?? "Sem turma" : "Sem turma"}
+              meta={
+                <>
+                  <span className="text-xs tabular text-ink-500">
+                    Média: {student.average !== null ? student.average.toFixed(1) : "—"}
+                  </span>
+                  <StudentStatusBadge status={student.status} />
+                </>
+              }
+              actions={
+                canManage ? (
+                  <>
+                    <button
+                      type="button"
+                      aria-label={`Editar ${student.name}`}
+                      className="flex h-9 w-9 items-center justify-center rounded-card text-ink-400 active:bg-ink-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditing(student);
+                        setShowForm(true);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Excluir ${student.name}`}
+                      className="flex h-9 w-9 items-center justify-center rounded-card text-ink-400 active:bg-danger/10 active:text-danger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleting(student);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </>
+                ) : undefined
+              }
+            />
+          ))}
+          <div className="mt-1">
             <Pagination
               page={page}
               totalPages={totalPages}
@@ -469,9 +475,163 @@ export function StudentsPage() {
               onPageChange={setPage}
               onPageSizeChange={changePageSize}
             />
-          </>
-        )}
-      </Card>
+          </div>
+        </div>
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
+                  {canManage && (
+                    <th className="w-10 px-4 py-3">
+                      <RowCheckbox
+                        checked={pageSelectionState === "all"}
+                        indeterminate={pageSelectionState === "some"}
+                        onChange={() => selection.toggleAllVisible(pageItems)}
+                        label="Selecionar todos os alunos desta página"
+                      />
+                    </th>
+                  )}
+                  <SortableTh
+                    label="Aluno"
+                    active={sort.key === "name"}
+                    direction={sort.direction}
+                    onClick={() => toggleSort("name")}
+                  />
+                  <SortableTh
+                    label="Matrícula"
+                    active={sort.key === "registrationNumber"}
+                    direction={sort.direction}
+                    onClick={() => toggleSort("registrationNumber")}
+                  />
+                  <SortableTh
+                    label="Turma"
+                    active={sort.key === "class"}
+                    direction={sort.direction}
+                    onClick={() => toggleSort("class")}
+                  />
+                  <SortableTh
+                    label="Média"
+                    active={sort.key === "average"}
+                    direction={sort.direction}
+                    onClick={() => toggleSort("average")}
+                  />
+                  <SortableTh
+                    label="Situação"
+                    active={sort.key === "status"}
+                    direction={sort.direction}
+                    onClick={() => toggleSort("status")}
+                  />
+                  <th className="px-4 py-3 font-medium" />
+                  {canManage && <th className="px-4 py-3 font-medium" />}
+                </tr>
+              </thead>
+              <tbody>
+                {pageItems.map((student) => (
+                  <tr key={student.id} className="border-b border-line last:border-0">
+                    {canManage && (
+                      <td className="px-4 py-3">
+                        <RowCheckbox
+                          checked={selection.isSelected(student)}
+                          onChange={() => selection.toggle(student)}
+                          label={`Selecionar ${student.name}`}
+                        />
+                      </td>
+                    )}
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/alunos/${student.id}`)}
+                        className="flex items-center gap-3 text-left hover:underline"
+                      >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-semibold text-ink-700">
+                          {initials(student.name)}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-ink900">{student.name}</span>
+                          <span className="block truncate text-xs text-ink-400">{student.email}</span>
+                        </span>
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 tabular text-ink-600">
+                      {student.registrationNumber}
+                    </td>
+                    <td className="px-4 py-3 text-ink-600">
+                      {student.classId ? classNameById[student.classId] ?? "—" : "—"}
+                    </td>
+                    <td className="px-4 py-3 tabular text-ink-600">
+                      {student.average !== null ? student.average.toFixed(1) : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StudentStatusBadge status={student.status} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          aria-label={`Ver relatório de desenvolvimento de ${student.name}`}
+                          title={
+                            student.classId ? "Ver relatório de desenvolvimento" : "Aluno sem turma vinculada"
+                          }
+                          disabled={!student.classId}
+                          className="rounded-card p-1.5 text-ink-400 hover:bg-ink-50 hover:text-ink-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                          onClick={() => navigate(`/relatorios?studentId=${student.id}&view=${student.classId}`)}
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                    {canManage && (
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1">
+                          <button
+                            aria-label={`Editar ${student.name}`}
+                            className="rounded-card p-1.5 text-ink-400 hover:bg-ink-50 hover:text-ink-700"
+                            onClick={() => {
+                              setEditing(student);
+                              setShowForm(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            aria-label={`Excluir ${student.name}`}
+                            className="rounded-card p-1.5 text-ink-400 hover:bg-danger/10 hover:text-danger"
+                            onClick={() => setDeleting(student)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={changePageSize}
+          />
+        </Card>
+      )}
+
+      {canManage && (
+        <MobileFab
+          label="Novo aluno"
+          icon={<Plus className="h-6 w-6" />}
+          onClick={() => {
+            setEditing(null);
+            setShowForm(true);
+          }}
+        />
+      )}
+
 
       {showForm && (
         <StudentFormModal

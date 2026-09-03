@@ -195,6 +195,44 @@ body {
   overflow-x: hidden;
 }
 
+/* ==========================================================================
+   EXPERIÊNCIA MOBILE — safe areas e altura confiável de viewport
+   ==========================================================================
+   `--tk-bottom-nav-h` é a altura "de conteúdo" da Bottom Navigation
+   (sem contar a safe area) — usado tanto pela própria nav (para somar
+   a safe area no seu padding) quanto pelas páginas (para reservar
+   espaço no fim do scroll, via `.pb-bottom-nav` abaixo), evitando um
+   número mágico duplicado em dois arquivos.
+   ========================================================================== */
+@layer base {
+  :root {
+    --tk-bottom-nav-h: 64px;
+    --tk-safe-top: env(safe-area-inset-top, 0px);
+    --tk-safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@layer utilities {
+  /* Espaço reservado no fim do conteúdo rolável em mobile, para a
+     Bottom Navigation fixa nunca cobrir o último item. */
+  .pb-bottom-nav {
+    padding-bottom: calc(var(--tk-bottom-nav-h) + var(--tk-safe-bottom) + 1rem);
+  }
+  .pt-safe {
+    padding-top: var(--tk-safe-top);
+  }
+  .pb-safe {
+    padding-bottom: var(--tk-safe-bottom);
+  }
+  /* 100dvh com fallback para navegadores mobile sem suporte —
+     evita o "salto" de layout causado por 100vh + barra de UI do
+     navegador aparecendo/escondendo durante o scroll. */
+  .h-dvh-safe {
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
 /* Usados por TrajectoryPreview (painel de marca do Login) — CSS puro,
    sem framer-motion, para não puxar a dependência da landing para o
    bundle principal do app. Rodam uma única vez no mount (forwards). */

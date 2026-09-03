@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -12,6 +12,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import {
   markAllAsRead,
   markAsRead,
@@ -19,6 +20,15 @@ import {
   subscribeToUnreadCount,
 } from "@/services/notifications/notificationService";
 import type { Notification, NotificationType } from "@/types/notification";
+
+// lazy(): ver justificativa completa em NotificationMobileSheet.tsx —
+// mantém o Framer Motion fora do bundle principal, baixado só quando
+// este painel realmente abre em mobile.
+const NotificationMobileSheet = lazy(() =>
+  import("@/components/notifications/NotificationMobileSheet").then((m) => ({
+    default: m.NotificationMobileSheet,
+  }))
+);
 
 const ICON_BY_TYPE: Record<NotificationType, typeof Bell> = {
   grade_posted: ClipboardList,
@@ -72,6 +82,7 @@ function toDate(value: unknown): Date | null {
 export function NotificationCenter() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -109,7 +120,13 @@ export function NotificationCenter() {
     setRetryKey((k) => k + 1);
   }
 
+  // Em mobile o painel é uma MobileSheet portada para <body> (fora de
+  // `containerRef`) — ela já fecha sozinha ao tocar no backdrop, então
+  // este listener de "clique fora" (pensado para o popover ancorado de
+  // desktop) fica restrito a `!isMobile` para não fechar a sheet no
+  // instante em que qualquer toque dentro dela borbulha até o document.
   useEffect(() => {
+    if (isMobile) return undefined;
     function onClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
@@ -117,7 +134,7 @@ export function NotificationCenter() {
     }
     if (open) document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [open]);
+  }, [open, isMobile]);
 
   function toggleOpen() {
     setOpen((prev) => !prev);
@@ -144,6 +161,87 @@ export function NotificationCenter() {
 
   if (!profile) return null;
 
+  const markAllAction = unreadCount > 0 && (
+    <button
+      type="button"
+      onClick={handleMarkAllAsRead}
+      className="flex items-center gap-1 whitespace-nowrap text-xs font-medium text-ink-500 hover:text-ink-700"
+    >
+      <CheckCheck className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline">Marcar todas como lidas</span>
+    </button>
+  );
+
+  const list = (
+    <div className={isMobile ? "" : "max-h-96 overflow-y-auto"}>
+      {status === "loading" && (
+        <div className="space-y-3 p-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex gap-3">
+              <span className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-ink-100" />
+              <div className="flex-1 space-y-1.5">
+                <span className="block h-3 w-3/4 animate-pulse rounded bg-ink-100" />
+                <span className="block h-3 w-1/2 animate-pulse rounded bg-ink-100" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {status === "error" && (
+        <div className="p-6 text-center">
+          <p className="text-sm text-ink-500">Não foi possível carregar as notificações.</p>
+          <button
+            type="button"
+            onClick={retryList}
+            className="mt-2 text-sm font-medium text-ink-700 hover:underline"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+
+      {status === "ready" && notifications.length === 0 && (
+        <div className="flex flex-col items-center gap-2 p-8 text-center">
+          <Inbox className="h-6 w-6 text-ink-300" />
+          <p className="text-sm font-medium text-ink900">Nenhuma notificação</p>
+          <p className="text-xs text-ink-500">Você será avisado aqui sobre novidades importantes.</p>
+        </div>
+      )}
+
+      {status === "ready" &&
+        notifications.map((notification) => {
+          const Icon = ICON_BY_TYPE[notification.type] ?? Bell;
+          return (
+            <button
+              key={notification.id}
+              type="button"
+              onClick={() => handleItemClick(notification)}
+              className={`flex min-h-[44px] w-full items-start gap-3 border-b border-line px-4 py-3 text-left last:border-0 hover:bg-ink-50 active:bg-ink-50 ${
+                notification.read ? "" : "bg-ink-50/60"
+              }`}
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-ink-600">
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1.5">
+                  <span className="truncate text-sm font-medium text-ink900">{notification.title}</span>
+                  {!notification.read && (
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-ink-700" aria-hidden="true" />
+                  )}
+                </span>
+                <span className="mt-0.5 block text-xs text-ink-500">{notification.message}</span>
+                <span className="mt-1 block text-[11px] text-ink-400">
+                  {formatRelativeTime(notification.createdAt)}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+    </div>
+  );
+
   return (
     <div ref={containerRef} className="relative">
       <button
@@ -161,7 +259,11 @@ export function NotificationCenter() {
         )}
       </button>
 
-      {open && (
+      {/* Em desktop/tablet: painel ancorado ao sino (comportamento
+          original). Em smartphones, um pequeno popover fica
+          desconfortável (ver "NOTIFICAÇÕES MOBILE" no briefing) — vira
+          uma Bottom Sheet, mesmo padrão usado por "Mais" e filtros. */}
+      {!isMobile && open && (
         <div
           role="dialog"
           aria-label="Notificações"
@@ -169,86 +271,18 @@ export function NotificationCenter() {
         >
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <p className="font-display text-sm font-semibold text-ink900">Notificações</p>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={handleMarkAllAsRead}
-                className="flex items-center gap-1 text-xs font-medium text-ink-500 hover:text-ink-700"
-              >
-                <CheckCheck className="h-3.5 w-3.5" />
-                Marcar todas como lidas
-              </button>
-            )}
+            {markAllAction}
           </div>
-
-          <div className="max-h-96 overflow-y-auto">
-            {status === "loading" && (
-              <div className="space-y-3 p-4">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="flex gap-3">
-                    <span className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-ink-100" />
-                    <div className="flex-1 space-y-1.5">
-                      <span className="block h-3 w-3/4 animate-pulse rounded bg-ink-100" />
-                      <span className="block h-3 w-1/2 animate-pulse rounded bg-ink-100" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {status === "error" && (
-              <div className="p-6 text-center">
-                <p className="text-sm text-ink-500">Não foi possível carregar as notificações.</p>
-                <button
-                  type="button"
-                  onClick={retryList}
-                  className="mt-2 text-sm font-medium text-ink-700 hover:underline"
-                >
-                  Tentar novamente
-                </button>
-              </div>
-            )}
-
-            {status === "ready" && notifications.length === 0 && (
-              <div className="flex flex-col items-center gap-2 p-8 text-center">
-                <Inbox className="h-6 w-6 text-ink-300" />
-                <p className="text-sm font-medium text-ink900">Nenhuma notificação</p>
-                <p className="text-xs text-ink-500">Você será avisado aqui sobre novidades importantes.</p>
-              </div>
-            )}
-
-            {status === "ready" &&
-              notifications.map((notification) => {
-                const Icon = ICON_BY_TYPE[notification.type] ?? Bell;
-                return (
-                  <button
-                    key={notification.id}
-                    type="button"
-                    onClick={() => handleItemClick(notification)}
-                    className={`flex w-full items-start gap-3 border-b border-line px-4 py-3 text-left last:border-0 hover:bg-ink-50 ${
-                      notification.read ? "" : "bg-ink-50/60"
-                    }`}
-                  >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-ink-600">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-medium text-ink900">{notification.title}</span>
-                        {!notification.read && (
-                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-ink-700" aria-hidden="true" />
-                        )}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-ink-500">{notification.message}</span>
-                      <span className="mt-1 block text-[11px] text-ink-400">
-                        {formatRelativeTime(notification.createdAt)}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-          </div>
+          {list}
         </div>
+      )}
+
+      {isMobile && (
+        <Suspense fallback={null}>
+          <NotificationMobileSheet open={open} onClose={() => setOpen(false)} headerAction={markAllAction}>
+            {list}
+          </NotificationMobileSheet>
+        </Suspense>
       )}
     </div>
   );
