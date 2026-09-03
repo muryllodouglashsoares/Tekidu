@@ -21,7 +21,7 @@ Plataforma de gestão e acompanhamento acadêmico com experiências dedicadas pa
 
 <br />
 
-<a href="#sobre">Sobre</a> • <a href="#principais-funcionalidades">Funcionalidades</a> • <a href="#diferenciais-técnicos">Diferenciais</a> • <a href="#tecnologias">Tecnologias</a> • <a href="#instalação">Instalação</a> • <a href="https://ifconnect.pages.dev">Demo</a>
+<a href="#sobre">Sobre</a> • <a href="#principais-funcionalidades">Funcionalidades</a> • <a href="#capturas-de-tela">Capturas de tela</a> • <a href="#diferenciais-técnicos">Diferenciais</a> • <a href="#tecnologias">Tecnologias</a> • <a href="#instalação">Instalação</a> • <a href="https://ifconnect.pages.dev">Demo</a>
 
 </div>
 
@@ -52,6 +52,22 @@ A plataforma possui três experiências distintas, cada uma com permissões e te
 - **Command Palette** — navegação rápida por atalhos de teclado.
 - **UX mobile dedicada** — bottom navigation, sheets e FAB próprios para telas pequenas (não apenas CSS responsivo).
 - **Dark mode** — tema claro/escuro via tokens de design em CSS variables.
+
+---
+
+## Capturas de tela
+
+<div align="center">
+
+| Landing Page | Login | Dashboard |
+|---|---|---|
+| ![Landing Page](./docs/screenshots/landing-page.png) | ![Login](./docs/screenshots/login.png) | ![Dashboard](./docs/screenshots/dashboard.png) |
+
+| Boletim | Avisos | Meu Desempenho |
+|---|---|---|
+| ![Boletim](./docs/screenshots/boletim.png) | ![Avisos](./docs/screenshots/avisos.png) | ![Meu Desempenho](./docs/screenshots/meu-desempenho.png) |
+
+</div>
 
 ---
 
