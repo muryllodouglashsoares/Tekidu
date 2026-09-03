@@ -1,9 +1,5 @@
 <div align="center">
 
-<img src="./preview.png" alt="Tekidu Preview" width="100%" />
-
-<br />
-
 # 🎓 Tekidu
 
 ### Visualizando a evolução acadêmica.
