@@ -6,6 +6,7 @@ import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { AttendanceStatusBadge } from "@/components/attendance/AttendanceStatusBadge";
 import { useOwnStudent } from "@/hooks/useOwnStudent";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import {
   getStudentAttendanceOverview,
   type StudentAttendanceOverview,
@@ -21,6 +22,7 @@ import { describeFirebaseError } from "@/utils/firebaseError";
  * faltavam).
  */
 export function MyAttendancePage() {
+  const isMobile = useIsMobile();
   const { student, loading: loadingStudent, error: studentError, reload: loadStudent } =
     useOwnStudent("minha-frequencia:aluno");
 
@@ -118,6 +120,16 @@ export function MyAttendancePage() {
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Frequência geral</p>
           <p className="font-display text-3xl font-bold text-ink900">{overview.overallRate ?? "—"}%</p>
+          {overview.overallRate !== null && (
+            <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-ink-100">
+              <div
+                className={`h-full rounded-full ${
+                  overview.overallStatus === "critical" ? "bg-danger" : "bg-success"
+                }`}
+                style={{ width: `${Math.max(0, Math.min(100, overview.overallRate))}%` }}
+              />
+            </div>
+          )}
         </div>
         <div className="flex gap-6">
           <div>
@@ -140,34 +152,55 @@ export function MyAttendancePage() {
         <div className="border-b border-line px-4 py-3.5">
           <p className="font-medium text-ink900">Frequência por disciplina</p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-400">
-                <th className="px-4 py-3">Disciplina</th>
-                <th className="px-4 py-3">Presenças</th>
-                <th className="px-4 py-3">Faltas</th>
-                <th className="px-4 py-3">Aulas</th>
-                <th className="px-4 py-3">Frequência</th>
-                <th className="px-4 py-3">Situação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {overview.disciplines.map((row) => (
-                <tr key={row.discipline.id} className="border-b border-line last:border-0">
-                  <td className="px-4 py-3 font-medium text-ink900">{row.discipline.name}</td>
-                  <td className="px-4 py-3 text-ink-600">{row.present}</td>
-                  <td className="px-4 py-3 text-ink-600">{row.absent}</td>
-                  <td className="px-4 py-3 text-ink-600">{row.total}</td>
-                  <td className="px-4 py-3 text-ink-600">{row.rate === null ? "—" : `${row.rate}%`}</td>
-                  <td className="px-4 py-3">
-                    <AttendanceStatusBadge status={row.status} />
-                  </td>
+        {isMobile ? (
+          <div className="flex flex-col divide-y divide-line">
+            {overview.disciplines.map((row) => (
+              <div key={row.discipline.id} className="flex flex-col gap-1.5 px-4 py-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="truncate text-sm font-semibold text-ink900">{row.discipline.name}</p>
+                  <p className="shrink-0 font-display text-sm font-semibold text-ink900">
+                    {row.rate === null ? "—" : `${row.rate}%`}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-ink-500">
+                    {row.present} presenças · {row.absent} faltas · {row.total} aulas
+                  </span>
+                  <AttendanceStatusBadge status={row.status} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-400">
+                  <th className="px-4 py-3">Disciplina</th>
+                  <th className="px-4 py-3">Presenças</th>
+                  <th className="px-4 py-3">Faltas</th>
+                  <th className="px-4 py-3">Aulas</th>
+                  <th className="px-4 py-3">Frequência</th>
+                  <th className="px-4 py-3">Situação</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {overview.disciplines.map((row) => (
+                  <tr key={row.discipline.id} className="border-b border-line last:border-0">
+                    <td className="px-4 py-3 font-medium text-ink900">{row.discipline.name}</td>
+                    <td className="px-4 py-3 text-ink-600">{row.present}</td>
+                    <td className="px-4 py-3 text-ink-600">{row.absent}</td>
+                    <td className="px-4 py-3 text-ink-600">{row.total}</td>
+                    <td className="px-4 py-3 text-ink-600">{row.rate === null ? "—" : `${row.rate}%`}</td>
+                    <td className="px-4 py-3">
+                      <AttendanceStatusBadge status={row.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   );

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
+  ArrowLeft,
   LayoutDashboard,
   Users,
   School,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCommandPaletteData } from "@/components/command-palette/useCommandPaletteData";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import type { UserRole } from "@/types/user";
 
 interface NavAction {
@@ -67,6 +69,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { data, status, ensureLoaded } = useCommandPaletteData(profile?.role);
+  const isMobile = useIsMobile();
 
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -234,6 +237,83 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   const isLoadingEntities = term.length > 0 && status === "loading";
   const hasResults = allResults.length > 0;
+
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-[90] flex flex-col bg-surface">
+        <div className="flex shrink-0 items-center gap-2 border-b border-line px-3 pb-3 pt-safe">
+          <button
+            type="button"
+            aria-label="Fechar busca"
+            onClick={onClose}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card text-ink-500 active:bg-ink-100"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="flex min-h-[44px] flex-1 items-center gap-2 rounded-card border border-line bg-paper px-3">
+            <Search className="h-4 w-4 shrink-0 text-ink-400" aria-hidden="true" />
+            <input
+              ref={inputRef}
+              role="combobox"
+              aria-expanded={hasResults}
+              aria-controls="command-palette-results"
+              aria-autocomplete="list"
+              className="w-full bg-transparent text-base text-ink900 outline-none placeholder:text-ink-300"
+              placeholder="Buscar alunos, turmas, páginas..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {isLoadingEntities && (
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-ink-300" aria-hidden="true" />
+            )}
+          </div>
+        </div>
+
+        <div id="command-palette-results" className="flex-1 overflow-y-auto p-2 pb-safe">
+          {!hasResults && term && (
+            <div className="flex flex-col items-center gap-2 px-4 py-16 text-center">
+              <Search className="h-5 w-5 text-ink-300" aria-hidden="true" />
+              <p className="text-sm font-medium text-ink900">Nenhum resultado para "{query}"</p>
+              <p className="text-xs text-ink-500">Tente buscar por outro nome, matrícula ou página.</p>
+            </div>
+          )}
+
+          {!hasResults && !term && status === "loading" && (
+            <div className="flex items-center justify-center gap-2 px-4 py-16 text-sm text-ink-400">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Carregando busca...
+            </div>
+          )}
+
+          {grouped.map(([category, items]) => (
+            <div key={category} className="mb-1 last:mb-0">
+              <p className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-ink-400">
+                {category}
+              </p>
+              {items.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  onClick={item.onSelect}
+                  className="flex min-h-[52px] w-full items-center gap-3 rounded-card px-3 py-2.5 text-left text-sm text-ink-600 active:bg-ink-100"
+                >
+                  <item.icon className="h-4 w-4 shrink-0 text-ink-400" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 truncate">
+                    <span className="font-medium text-ink900">{item.label}</span>
+                    {item.sublabel && (
+                      <span className="block truncate text-xs text-ink-400">{item.sublabel}</span>
+                    )}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[90] flex items-start justify-center px-4 pt-[10vh]">

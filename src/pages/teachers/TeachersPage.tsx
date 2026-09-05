@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import { Plus, Search, Pencil, Power, GraduationCap } from "lucide-react";
+import { useEffect, useMemo, useState, Suspense, lazy } from "react";
+import { Plus, Search, Pencil, Power, GraduationCap, SlidersHorizontal } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
-import { TableSkeleton } from "@/components/ui/Skeleton";
+import { TableSkeleton, MobileCardListSkeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -20,6 +20,13 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useSort } from "@/hooks/useSort";
 import { usePagination } from "@/hooks/usePagination";
 import { useRowSelection } from "@/hooks/useRowSelection";
+import { useIsMobile } from "@/hooks/useMediaQuery";
+import { MobileDataCard } from "@/components/mobile/MobileDataCard";
+import { MobileFab } from "@/components/mobile/MobileFab";
+
+const MobileSheet = lazy(() =>
+  import("@/components/mobile/MobileSheet").then((m) => ({ default: m.MobileSheet }))
+);
 import { createTeacher, getAllTeachers, updateTeacherProfile } from "@/services/users/userService";
 import { getDisciplines } from "@/services/disciplines/disciplineService";
 import type { UserProfile } from "@/types/user";
@@ -33,6 +40,7 @@ type SortKey = "name" | "status";
 export function TeachersPage() {
   const { profile } = useAuth();
   const toast = useToast();
+  const isMobile = useIsMobile();
   const [teachers, setTeachers] = useState<UserProfile[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +50,7 @@ export function TeachersPage() {
   const search = useDebouncedValue(searchInput);
   const [disciplineFilter, setDisciplineFilter] = useState<string>(ALL);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(ALL);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [editing, setEditing] = useState<UserProfile | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -176,7 +185,7 @@ export function TeachersPage() {
     <div>
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="font-display text-xl font-semibold text-ink900">Professores</h2>
+          <h2 className="hidden font-display text-xl font-semibold text-ink900 md:block">Professores</h2>
           <p className="text-sm text-ink-500">
             {teachers.length} professor{teachers.length === 1 ? "" : "es"} cadastrado
             {teachers.length === 1 ? "" : "s"}
@@ -184,6 +193,7 @@ export function TeachersPage() {
         </div>
 
         <Button
+          className="hidden md:inline-flex"
           onClick={() => {
             setEditing(null);
             setShowForm(true);
@@ -205,7 +215,7 @@ export function TeachersPage() {
           />
         </Card>
 
-        <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
+        <div className="hidden flex-wrap items-center gap-3 lg:flex lg:shrink-0">
           <div className="grid grid-cols-2 gap-3">
             <Select
               label="Filtrar por disciplina"
@@ -233,7 +243,52 @@ export function TeachersPage() {
           </div>
           <FilterSummary activeCount={activeFilterCount} onClear={clearFilters} />
         </div>
+
+        <div className="flex items-center gap-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-card border border-line bg-surface px-4 text-sm font-medium text-ink-600 shadow-sm"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filtros
+            {activeFilterCount > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-ink-700 px-1 text-[11px] font-semibold text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+          {activeFilterCount > 0 && <FilterSummary activeCount={activeFilterCount} onClear={clearFilters} />}
+        </div>
       </div>
+
+      <Suspense fallback={null}>
+        <MobileSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filtros">
+          <div className="flex flex-col gap-4 px-5 pb-6">
+            <Select label="Disciplina" value={disciplineFilter} onChange={(e) => setDisciplineFilter(e.target.value)}>
+              <option value={ALL}>Todas as disciplinas</option>
+              {disciplines.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </Select>
+            <Select label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
+              <option value={ALL}>Todos os status</option>
+              <option value="active">Ativo</option>
+              <option value="inactive">Inativo</option>
+            </Select>
+            <div className="mt-2 flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={clearFilters}>
+                Limpar
+              </Button>
+              <Button className="flex-1" onClick={() => setFiltersOpen(false)}>
+                Aplicar filtros
+              </Button>
+            </div>
+          </div>
+        </MobileSheet>
+      </Suspense>
 
       <BulkActionsBar count={selection.count} onClear={selection.clear}>
         <Button size="sm" variant="secondary" onClick={() => setBulkAction("activate")}>
@@ -244,13 +299,13 @@ export function TeachersPage() {
         </Button>
       </BulkActionsBar>
 
-      <Card className="overflow-hidden">
-        {loading ? (
-          <TableSkeleton columns={3} />
-        ) : error ? (
-          <ErrorState message={error} onRetry={loadTeachers} />
-        ) : totalItems === 0 ? (
-          teachers.length === 0 ? (
+      {(loading || error || totalItems === 0) && (
+        <Card className="overflow-hidden">
+          {loading ? (
+            isMobile ? <MobileCardListSkeleton /> : <TableSkeleton columns={3} />
+          ) : error ? (
+            <ErrorState message={error} onRetry={loadTeachers} />
+          ) : teachers.length === 0 ? (
             <EmptyState
               bare
               icon={GraduationCap}
@@ -271,9 +326,74 @@ export function TeachersPage() {
               title="Nenhum professor encontrado"
               description="Não encontramos professores para os filtros selecionados. Tente ajustá-los ou limpar a busca."
             />
-          )
-        ) : (
-          <>
+          )}
+        </Card>
+      )}
+
+      {!loading && !error && totalItems > 0 && isMobile && (
+        <div className="flex flex-col gap-2.5">
+          {pageItems.map((teacher) => (
+            <MobileDataCard
+              key={teacher.uid}
+              selection={
+                <RowCheckbox
+                  checked={selection.isSelected(teacher)}
+                  onChange={() => selection.toggle(teacher)}
+                  label={`Selecionar ${teacher.name}`}
+                />
+              }
+              leading={
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-semibold text-ink-700">
+                  {initials(teacher.name)}
+                </span>
+              }
+              title={teacher.name}
+              subtitle={teacher.email}
+              meta={<TeacherStatusBadge active={teacher.active} />}
+              actions={
+                <>
+                  <button
+                    type="button"
+                    aria-label={`Editar ${teacher.name}`}
+                    className="flex h-9 w-9 items-center justify-center rounded-card text-ink-400 active:bg-ink-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditing(teacher);
+                      setShowForm(true);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={teacher.active ? `Desativar ${teacher.name}` : `Ativar ${teacher.name}`}
+                    className="flex h-9 w-9 items-center justify-center rounded-card text-ink-400 active:bg-danger/10 active:text-danger"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTogglingActive(teacher);
+                    }}
+                  >
+                    <Power className="h-4 w-4" />
+                  </button>
+                </>
+              }
+            />
+          ))}
+          <div className="mt-1">
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={changePageSize}
+            />
+          </div>
+        </div>
+      )}
+
+      {!loading && !error && totalItems > 0 && !isMobile && (
+        <Card className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -361,9 +481,17 @@ export function TeachersPage() {
               onPageChange={setPage}
               onPageSizeChange={changePageSize}
             />
-          </>
-        )}
-      </Card>
+        </Card>
+      )}
+
+      <MobileFab
+        label="Novo professor"
+        icon={<Plus className="h-6 w-6" />}
+        onClick={() => {
+          setEditing(null);
+          setShowForm(true);
+        }}
+      />
 
       {showForm && (
         <TeacherFormModal

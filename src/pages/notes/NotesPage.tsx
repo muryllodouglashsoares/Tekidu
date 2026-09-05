@@ -401,7 +401,7 @@ export function NotesPage() {
     <div>
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="font-display text-xl font-semibold text-ink900">Notas</h2>
+          <h2 className="hidden font-display text-xl font-semibold text-ink900 md:block">Notas</h2>
           <p className="text-sm text-ink-500">
             Lançamento e acompanhamento das avaliações acadêmicas
           </p>
@@ -525,7 +525,7 @@ export function NotesPage() {
           )}
 
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-line px-4 py-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3.5">
               <div className="min-w-0">
                 <p className="truncate font-medium text-ink900">{selectedDiscipline?.name}</p>
                 <p className="truncate text-xs text-ink-500">

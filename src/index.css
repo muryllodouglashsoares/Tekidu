@@ -251,6 +251,20 @@ body {
     transform: scale(1);
   }
 }
+/* Full-screen Modal em mobile (ver Modal.tsx) — entrada suave de baixo
+   para cima, mesmo princípio de "animação explica uma mudança de
+   estado" do briefing. Zerada por `prefers-reduced-motion` como as
+   demais, via a regra global abaixo. */
+@keyframes tk-sheet-up {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,

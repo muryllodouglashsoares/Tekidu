@@ -5,7 +5,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
-import { TableSkeleton } from "@/components/ui/Skeleton";
+import { AdaptiveTableSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { AttendanceFilters } from "@/components/attendance/AttendanceFilters";
@@ -476,7 +476,7 @@ export function AttendancePage() {
     <div>
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="font-display text-xl font-semibold text-ink900">Frequência</h2>
+          <h2 className="hidden font-display text-xl font-semibold text-ink900 md:block">Frequência</h2>
           <p className="text-sm text-ink-500">Registro e acompanhamento da frequência dos alunos</p>
         </div>
       </div>
@@ -907,7 +907,7 @@ function HistoryTab({
 
       {loading ? (
         <Card>
-          <TableSkeleton columns={6} />
+          <AdaptiveTableSkeleton columns={6} />
         </Card>
       ) : error ? (
         <Card>

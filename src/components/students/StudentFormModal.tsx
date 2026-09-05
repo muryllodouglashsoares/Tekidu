@@ -118,7 +118,7 @@ export function StudentFormModal({
           </p>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
             label="Matrícula"
             required
@@ -141,7 +141,7 @@ export function StudentFormModal({
             ))}
           </Select>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Select
             label="Situação"
             value={form.status}

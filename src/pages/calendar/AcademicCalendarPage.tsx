@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Plus, CalendarDays } from "lucide-react";
 import { Card } from "@/components/ui/Card";
@@ -66,6 +66,28 @@ export function AcademicCalendarPage() {
   }, []);
 
   const { month, year } = formatMonthYear(visibleMonth);
+
+  // Swipe horizontal para trocar de mês em mobile (ver "GESTOS" no
+  // briefing: só vale a pena quando melhora mesmo a UX — trocar de mês
+  // é uma ação repetida com frequência, então o gesto complementa os
+  // botões de seta sem escondê-los). Limiar de 48px evita disparo
+  // acidental durante o scroll vertical da página.
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.5) return;
+    if (deltaX > 0) goToPreviousMonth();
+    else goToNextMonth();
+  }
 
   function openNewEventDialog() {
     setEditingEvent(null);
@@ -144,7 +166,7 @@ export function AcademicCalendarPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Grid mensal */}
-        <Card className="overflow-hidden p-0 lg:col-span-2">
+        <Card className="overflow-hidden p-0 lg:col-span-2" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           {monthError ? (
             <div className="p-4">
               <ErrorState message={monthError} />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import type { Assessment } from "@/types/assessment";
 import { effectiveMaxScore, effectiveWeight } from "@/types/assessment";
 import type { Student } from "@/types/student";
@@ -11,6 +12,8 @@ import {
   type AcademicThresholds,
 } from "@/types/grade";
 import { SituationBadge } from "@/components/notes/SituationBadge";
+import { useIsMobile } from "@/hooks/useMediaQuery";
+import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 
 interface GradesTableProps {
   students: Student[];
@@ -24,13 +27,28 @@ interface GradesTableProps {
   thresholds?: AcademicThresholds;
 }
 
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
+}
+
 /**
- * Reproduz a edição direta na tabela mostrada no Figma ("Clique em uma
- * nota para editar"). Cada célula alterna entre exibição e um `<input>`
+ * Reproduz a edição direta na tabela mostrada no Figma (\"Clique em uma
+ * nota para editar\"). Cada célula alterna entre exibição e um `<input>`
  * nativo (não usa o componente `Input` do design system aqui de
  * propósito: `Input` sempre renderiza um `<label>` associado, o que não
  * cabe numa célula de tabela densa — a validação/estilo de erro segue a
  * mesma linguagem visual, só sem o wrapper de formulário).
+ *
+ * Em mobile, uma tabela de N avaliações por M alunos vira "planilha"
+ * inevitavelmente (ver "NOTAS MOBILE" no briefing: evitar essa
+ * aparência) — a mesma edição vira uma lista de alunos com
+ * progressive disclosure: card fechado mostra média/situação, expandir
+ * revela um input grande por avaliação, fácil de tocar.
  */
 export function GradesTable({
   students,
@@ -40,10 +58,13 @@ export function GradesTable({
   onSaveGrade,
   thresholds = DEFAULT_ACADEMIC_THRESHOLDS,
 }: GradesTableProps) {
+  const isMobile = useIsMobile();
+  const { trigger } = useHapticFeedback();
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
 
   function cellKey(studentId: string, assessmentId: string) {
     return `${studentId}__${assessmentId}`;
@@ -87,6 +108,7 @@ export function GradesTable({
     setSavingKey(key);
     try {
       await onSaveGrade(studentId, assessmentId, Math.round(value * 100) / 100);
+      trigger("light");
     } catch {
       // Erro já é exibido pelo chamador (banner acima da tabela).
     } finally {
@@ -106,6 +128,114 @@ export function GradesTable({
     return (
       <div className="p-8 text-center text-sm text-ink-500">
         Nenhum aluno vinculado a esta turma.
+      </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col divide-y divide-line">
+        {students.map((student) => {
+          const studentScores = assessments.map((a) => scores[student.id]?.[a.id] ?? null);
+          const average = calculateWeightedAverage(
+            assessments.map((a, i) => ({ score: studentScores[i], weight: effectiveWeight(a) }))
+          );
+          const situation = calculateSituation(studentScores, assessments.length, thresholds);
+          const expanded = expandedStudentId === student.id;
+
+          return (
+            <div key={student.id}>
+              <button
+                type="button"
+                onClick={() => setExpandedStudentId(expanded ? null : student.id)}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-ink-50"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-semibold text-ink-700">
+                  {initials(student.name)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-ink900">{student.name}</span>
+                  <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="text-xs tabular text-ink-500">
+                      Média: {average === null ? "—" : String(average).replace(".", ",")}
+                    </span>
+                    <SituationBadge situation={situation} />
+                  </span>
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-ink-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {expanded && (
+                <div className="flex flex-col gap-2.5 bg-ink-50/50 px-4 pb-4">
+                  {assessments.map((assessment) => {
+                    const key = cellKey(student.id, assessment.id);
+                    const value = scores[student.id]?.[assessment.id] ?? null;
+                    const isEditing = editingKey === key;
+                    const isSaving = savingKey === key;
+                    const hasError = errorKey === key;
+
+                    return (
+                      <div key={assessment.id} className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm text-ink-700">{assessment.name}</p>
+                          {((assessment.weight !== undefined && assessment.weight !== 1) ||
+                            (assessment.maxScore !== undefined && assessment.maxScore !== 10)) && (
+                            <p className="text-[11px] text-ink-400">
+                              peso {effectiveWeight(assessment)} · máx. {effectiveMaxScore(assessment)}
+                            </p>
+                          )}
+                        </div>
+                        {isEditing ? (
+                          <input
+                            autoFocus
+                            type="text"
+                            inputMode="decimal"
+                            value={draft}
+                            onChange={(e) => setDraft(e.target.value)}
+                            onBlur={() => commitEdit(student.id, assessment.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") e.currentTarget.blur();
+                              if (e.key === "Escape") {
+                                setEditingKey(null);
+                                setErrorKey(null);
+                              }
+                            }}
+                            className={`h-11 w-20 shrink-0 rounded-card border px-2 text-center text-base outline-none ${
+                              hasError ? "border-danger" : "border-ink-400"
+                            }`}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={!canEdit || isSaving}
+                            onClick={() => startEditing(student.id, assessment.id, value)}
+                            className={`flex h-11 w-20 shrink-0 items-center justify-center rounded-card text-base font-semibold transition-colors ${
+                              isSaving
+                                ? "animate-pulse bg-ink-100 text-ink-300"
+                                : value === null
+                                  ? "border border-dashed border-line text-ink-300"
+                                  : value < 6
+                                    ? "bg-danger/10 text-danger active:bg-danger/20"
+                                    : "bg-success/10 text-success active:bg-success/20"
+                            }`}
+                          >
+                            {value === null ? "—" : String(value).replace(".", ",")}
+                          </button>
+                        )}
+                        {hasError && <p className="shrink-0 text-[11px] text-danger">0 a {effectiveMaxScore(assessment)}</p>}
+                      </div>
+                    );
+                  })}
+                  {!canEdit && (
+                    <p className="pt-1 text-xs text-ink-400">Você não tem permissão para editar notas.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -149,12 +279,7 @@ export function GradesTable({
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2.5">
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-semibold text-ink-700">
-                      {student.name
-                        .split(" ")
-                        .filter(Boolean)
-                        .slice(0, 2)
-                        .map((p) => p[0]?.toUpperCase())
-                        .join("")}
+                      {initials(student.name)}
                     </span>
                     <span className="truncate font-medium text-ink900">{student.name}</span>
                   </div>

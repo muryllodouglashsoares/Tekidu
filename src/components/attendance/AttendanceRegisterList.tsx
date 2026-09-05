@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, X } from "lucide-react";
 import type { Student } from "@/types/student";
 import type { AttendanceRecordStatus } from "@/types/attendance";
+import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 
 interface AttendanceRegisterListProps {
   students: Student[];
@@ -27,6 +28,7 @@ export function AttendanceRegisterList({
   onMark,
 }: AttendanceRegisterListProps) {
   const [savingId, setSavingId] = useState<string | null>(null);
+  const { trigger } = useHapticFeedback();
 
   if (students.length === 0) {
     return (
@@ -38,6 +40,7 @@ export function AttendanceRegisterList({
 
   async function handleMark(studentId: string, status: AttendanceRecordStatus) {
     if (!canEdit) return;
+    trigger(status === "present" ? "success" : "warning");
     setSavingId(studentId);
     try {
       await onMark(studentId, status);
@@ -78,10 +81,10 @@ export function AttendanceRegisterList({
                 aria-pressed={current === "present"}
                 disabled={!canEdit || isSaving}
                 onClick={() => handleMark(student.id, "present")}
-                className={`inline-flex items-center gap-1.5 rounded-card border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-card border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:flex-initial ${
                   current === "present"
                     ? "border-success bg-success/10 text-success"
-                    : "border-line text-ink-600 hover:bg-ink-50"
+                    : "border-line text-ink-600 active:bg-ink-50 sm:hover:bg-ink-50"
                 }`}
               >
                 <Check className="h-4 w-4" aria-hidden="true" />
@@ -92,10 +95,10 @@ export function AttendanceRegisterList({
                 aria-pressed={current === "absent"}
                 disabled={!canEdit || isSaving}
                 onClick={() => handleMark(student.id, "absent")}
-                className={`inline-flex items-center gap-1.5 rounded-card border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-card border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:flex-initial ${
                   current === "absent"
                     ? "border-danger bg-danger/10 text-danger"
-                    : "border-line text-ink-600 hover:bg-ink-50"
+                    : "border-line text-ink-600 active:bg-ink-50 sm:hover:bg-ink-50"
                 }`}
               >
                 <X className="h-4 w-4" aria-hidden="true" />
@@ -103,7 +106,7 @@ export function AttendanceRegisterList({
               </button>
               {isSaving && (
                 <span
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-ink-200 border-t-ink-600"
+                  className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-ink-200 border-t-ink-600"
                   aria-hidden="true"
                 />
               )}

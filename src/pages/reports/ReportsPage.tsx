@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, School, Users } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { TableSkeleton, CardGridSkeleton } from "@/components/ui/Skeleton";
+import { AdaptiveTableSkeleton, CardGridSkeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
@@ -305,7 +305,7 @@ export function ReportsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="font-display text-xl font-semibold text-ink900">Relatórios de Desenvolvimento</h2>
+        <h2 className="hidden font-display text-xl font-semibold text-ink900 md:block">Relatórios de Desenvolvimento</h2>
         <p className="text-sm text-ink-500">Acompanhe a evolução acadêmica dos alunos</p>
       </div>
 
@@ -322,7 +322,7 @@ export function ReportsPage() {
       ) : selectedStudent && selectedStudentClass ? (
         reportLoading ? (
           <Card>
-            <TableSkeleton columns={5} />
+            <AdaptiveTableSkeleton columns={5} />
           </Card>
         ) : reportError ? (
           <Card>

@@ -139,7 +139,7 @@ export function SettingsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="font-display text-xl font-semibold text-ink900">Configurações</h2>
+        <h2 className="hidden font-display text-xl font-semibold text-ink900 md:block">Configurações</h2>
         <p className="text-sm text-ink-500">Gerencie suas informações e preferências de conta</p>
       </div>
 

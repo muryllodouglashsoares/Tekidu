@@ -6,7 +6,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
-import { TableSkeleton } from "@/components/ui/Skeleton";
+import { TableSkeleton, MobileCardListSkeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -365,7 +365,7 @@ export function StudentsPage() {
 
       {loading ? (
         <Card className="overflow-hidden">
-          <TableSkeleton columns={6} />
+          {isMobile ? <MobileCardListSkeleton /> : <TableSkeleton columns={6} />}
         </Card>
       ) : error ? (
         <Card className="overflow-hidden">

@@ -4,11 +4,13 @@ import { Search, Users, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
-import { TableSkeleton } from "@/components/ui/Skeleton";
+import { TableSkeleton, MobileCardListSkeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { SituationBadge } from "@/components/notes/SituationBadge";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useIsMobile } from "@/hooks/useMediaQuery";
+import { MobileDataCard } from "@/components/mobile/MobileDataCard";
 import {
   getTeacherStudentsOverview,
   type TeacherStudentOverview,
@@ -37,6 +39,7 @@ const ALL = "all";
 export function MyStudentsPage() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [students, setStudents] = useState<TeacherStudentOverview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +87,7 @@ export function MyStudentsPage() {
   if (loading) {
     return (
       <Card>
-        <TableSkeleton columns={5} />
+        {isMobile ? <MobileCardListSkeleton /> : <TableSkeleton columns={5} />}
       </Card>
     );
   }
@@ -143,6 +146,43 @@ export function MyStudentsPage() {
             description="Ajuste a busca ou o filtro de turma."
             bare
           />
+        ) : isMobile ? (
+          <div className="flex flex-col gap-2.5 p-3">
+            {filtered.map((row) => (
+              <MobileDataCard
+                key={row.student.id}
+                onClick={() => navigate(`/meus-alunos/${row.student.id}`)}
+                leading={
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-semibold text-ink-700">
+                    {row.student.name
+                      .split(" ")
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((p) => p[0]?.toUpperCase())
+                      .join("")}
+                  </span>
+                }
+                title={row.student.name}
+                subtitle={row.schoolClass.name}
+                meta={
+                  <>
+                    <span className="text-xs text-ink-500">
+                      {row.average === null ? "Sem notas" : `Média: ${row.average.toFixed(1)}`}
+                    </span>
+                    <span className="text-xs text-ink-500">
+                      {row.attendanceRate === null ? "Sem registros" : `Frequência: ${row.attendanceRate}%`}
+                    </span>
+                    <SituationBadge situation={row.situation} />
+                  </>
+                }
+                actions={
+                  <span className="flex h-9 w-9 items-center justify-center rounded-card text-ink-400">
+                    <Eye className="h-4 w-4" />
+                  </span>
+                }
+              />
+            ))}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

@@ -1,3 +1,5 @@
+import { useIsMobile } from "@/hooks/useMediaQuery";
+
 /**
  * Bloco base de skeleton (placeholder animado). Usado para compor
  * layouts de carregamento que antecipam a estrutura real da página
@@ -70,4 +72,42 @@ export function CardGridSkeleton({ count = 4 }: { count?: number }) {
       ))}
     </div>
   );
+}
+
+/**
+ * Skeleton para a lista de `MobileDataCard` (ver "SKELETON LOADING"
+ * no briefing mobile: "os skeletons devem representar a estrutura
+ * real" — uma tabela larga de N colunas não é a estrutura real em
+ * mobile, já que essas telas viram cards; usar `TableSkeleton` ali
+ * criaria um flash de layout errado no meio de um segundo). Reproduz
+ * a silhueta de `MobileDataCard`: avatar circular, título, subtítulo
+ * e uma linha de metadados.
+ */
+export function MobileCardListSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div role="status" aria-label="Carregando dados" className="flex flex-col gap-2.5 p-3">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 rounded-card border border-line bg-surface p-3">
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-3.5 w-2/3" />
+            <Skeleton className="h-3 w-1/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Wrapper de conveniência: escolhe automaticamente entre
+ * `MobileCardListSkeleton` (mobile) e `TableSkeleton` (desktop) sem
+ * exigir que cada tela repita `isMobile ? ... : ...` — usado nos
+ * pontos de carregamento cujo conteúdo final vira cards em mobile
+ * (Boletim, Frequência, Relatórios, Perfil do aluno). Evita duplicar
+ * a mesma checagem em vários componentes/telas diferentes.
+ */
+export function AdaptiveTableSkeleton({ columns = 5, rows }: { columns?: number; rows?: number }) {
+  const isMobile = useIsMobile();
+  return isMobile ? <MobileCardListSkeleton rows={rows} /> : <TableSkeleton columns={columns} rows={rows} />;
 }

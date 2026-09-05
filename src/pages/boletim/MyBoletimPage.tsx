@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FileQuestion, UserX } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
-import { TableSkeleton } from "@/components/ui/Skeleton";
+import { AdaptiveTableSkeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { BoletimSummary } from "@/components/boletim/BoletimSummary";
@@ -66,13 +66,13 @@ export function MyBoletimPage() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="font-display text-xl font-semibold text-ink900">Meu Boletim</h2>
+        <h2 className="hidden font-display text-xl font-semibold text-ink900 md:block">Meu Boletim</h2>
         <p className="text-sm text-ink-500">Acompanhe suas notas e sua frequência</p>
       </div>
 
       {loadingStudent ? (
         <Card>
-          <TableSkeleton columns={5} />
+          <AdaptiveTableSkeleton columns={5} />
         </Card>
       ) : studentError ? (
         <Card>
@@ -115,7 +115,7 @@ export function MyBoletimPage() {
 
           {boletimLoading ? (
             <Card>
-              <TableSkeleton columns={5} />
+              <AdaptiveTableSkeleton columns={5} />
             </Card>
           ) : boletimError ? (
             <Card>

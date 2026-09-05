@@ -1,3 +1,4 @@
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import type { AttendanceSession } from "@/types/attendance";
 
 export interface AttendanceHistoryRow {
@@ -17,13 +18,45 @@ interface AttendanceHistoryTableProps {
  * Reproduz a tabela da aba "Histórico" do protótipo do Figma: uma linha
  * por aula registrada (não por aluno), com Data, Aula, Turma,
  * Disciplina, Presentes, Ausentes e Frequência da aula — filtrável por
- * turma/disciplina em `AttendancePage`.
+ * turma/disciplina em `AttendancePage`. Em mobile, 7 colunas viram um
+ * card por aula (ver "MOBILE DATA CARDS" no briefing).
  */
 export function AttendanceHistoryTable({ rows }: AttendanceHistoryTableProps) {
+  const isMobile = useIsMobile();
+
   if (rows.length === 0) {
     return (
       <div className="p-8 text-center text-sm text-ink-500">
         Nenhuma aula registrada ainda.
+      </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col divide-y divide-line">
+        {rows.map(({ session, className, disciplineName, present, absent, rate }) => (
+          <div key={session.id} className="flex flex-col gap-1.5 px-4 py-3.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-ink900">
+                  {formatDate(session.date)} · {session.label}
+                </p>
+                <p className="truncate text-xs text-ink-500">
+                  {className} · {disciplineName}
+                </p>
+              </div>
+              <RateBadge rate={rate} />
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <span className="font-medium text-success">{present} presentes</span>
+              <span className="font-medium text-danger">{absent} ausentes</span>
+            </div>
+          </div>
+        ))}
+        <p className="px-4 py-2.5 text-xs text-ink-400">
+          {rows.length} registro{rows.length === 1 ? "" : "s"}
+        </p>
       </div>
     );
   }
@@ -71,7 +104,7 @@ function RateBadge({ rate }: { rate: number | null }) {
   }
   const tone = rate >= 90 ? "bg-success/10 text-success" : rate >= 75 ? "bg-honors-400/20 text-honors-600" : "bg-danger/10 text-danger";
   return (
-    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>
+    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>
       {String(rate).replace(".", ",")}%
     </span>
   );

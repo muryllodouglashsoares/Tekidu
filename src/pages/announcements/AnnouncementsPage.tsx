@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Megaphone, Plus, Search, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState, Suspense, lazy } from "react";
+import { Megaphone, Plus, Search, Sparkles, SlidersHorizontal } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { Card } from "@/components/ui/Card";
@@ -11,6 +11,11 @@ import { ErrorState } from "@/components/layout/ErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { FilterSummary } from "@/components/table/FilterSummary";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { MobileFab } from "@/components/mobile/MobileFab";
+
+const MobileSheet = lazy(() =>
+  import("@/components/mobile/MobileSheet").then((m) => ({ default: m.MobileSheet }))
+);
 import { AnnouncementCard, type AnnouncementCardAction } from "@/components/announcements/AnnouncementCard";
 import { AnnouncementDetailModal } from "@/components/announcements/AnnouncementDetailModal";
 import { AnnouncementFormModal } from "@/components/announcements/AnnouncementFormModal";
@@ -57,6 +62,7 @@ export function AnnouncementsPage() {
   const [priorityFilter, setPriorityFilter] = useState<string>(ALL);
   const [adminTab, setAdminTab] = useState<AdminTab>("all");
   const [teacherTab, setTeacherTab] = useState<TeacherTab>("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Announcement | null>(null);
@@ -249,13 +255,13 @@ export function AnnouncementsPage() {
     <div>
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="font-display text-xl font-semibold text-ink900">Avisos</h2>
+          <h2 className="hidden font-display text-xl font-semibold text-ink900 md:block">Avisos</h2>
           <p className="text-sm text-ink-500">
             Fique por dentro das informações importantes da comunidade acadêmica.
           </p>
         </div>
         {canManage && (
-          <Button onClick={openCreate}>
+          <Button className="hidden md:inline-flex" onClick={openCreate}>
             <Plus className="h-4 w-4" />
             Novo aviso
           </Button>
@@ -321,7 +327,7 @@ export function AnnouncementsPage() {
           />
         </Card>
 
-        <div className="flex flex-wrap items-center gap-3 lg:shrink-0">
+        <div className="hidden flex-wrap items-center gap-3 lg:flex lg:shrink-0">
           <div className="grid grid-cols-2 gap-3">
             <Select
               label="Filtrar por categoria"
@@ -352,7 +358,55 @@ export function AnnouncementsPage() {
           </div>
           <FilterSummary activeCount={activeFilterCount} onClear={clearFilters} />
         </div>
+
+        <div className="flex items-center gap-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            className="flex min-h-[44px] shrink-0 items-center gap-2 rounded-card border border-line bg-surface px-4 text-sm font-medium text-ink-600 shadow-sm"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filtros
+            {activeFilterCount > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-ink-700 px-1 text-[11px] font-semibold text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+          {activeFilterCount > 0 && <FilterSummary activeCount={activeFilterCount} onClear={clearFilters} />}
+        </div>
       </div>
+
+      <Suspense fallback={null}>
+        <MobileSheet open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filtros">
+          <div className="flex flex-col gap-4 px-5 pb-6">
+            <Select label="Categoria" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+              <option value={ALL}>Todas as categorias</option>
+              {categoryOptions.map((value) => (
+                <option key={value} value={value}>
+                  {ANNOUNCEMENT_CATEGORY_LABELS[value]}
+                </option>
+              ))}
+            </Select>
+            <Select label="Prioridade" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
+              <option value={ALL}>Todas as prioridades</option>
+              {priorityOptions.map((value) => (
+                <option key={value} value={value}>
+                  {ANNOUNCEMENT_PRIORITY_LABELS[value]}
+                </option>
+              ))}
+            </Select>
+            <div className="mt-2 flex gap-3">
+              <Button variant="secondary" className="flex-1" onClick={clearFilters}>
+                Limpar
+              </Button>
+              <Button className="flex-1" onClick={() => setFiltersOpen(false)}>
+                Aplicar filtros
+              </Button>
+            </div>
+          </div>
+        </MobileSheet>
+      </Suspense>
 
       <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">Todos os avisos</h3>
 
@@ -392,6 +446,10 @@ export function AnnouncementsPage() {
             />
           ))}
         </div>
+      )}
+
+      {canManage && (
+        <MobileFab label="Novo aviso" icon={<Plus className="h-6 w-6" />} onClick={openCreate} />
       )}
 
       {showForm && (
@@ -439,13 +497,13 @@ function Tabs<T extends string>({
   options: { value: T; label: string }[];
 }) {
   return (
-    <div className="mb-4 flex flex-wrap gap-2 border-b border-line pb-3">
+    <div className="mb-4 flex gap-2 overflow-x-auto border-b border-line pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
-          className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+          className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
             value === option.value
               ? "bg-ink-100 text-ink-700"
               : "text-ink-500 hover:bg-ink-50 hover:text-ink-900"
