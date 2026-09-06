@@ -11,6 +11,7 @@ import { BoletimStudentTable } from "@/components/boletim/BoletimStudentTable";
 import { BoletimFilters } from "@/components/boletim/BoletimFilters";
 import { BoletimSummary } from "@/components/boletim/BoletimSummary";
 import { BoletimTable } from "@/components/boletim/BoletimTable";
+import { BoletimPdfDownloadButton } from "@/components/boletim/BoletimPdfDownloadButton";
 import { getClasses, getStudentCountsByClassId } from "@/services/classes/classService";
 import { getDisciplines } from "@/services/disciplines/disciplineService";
 import { getStudents } from "@/services/students/studentService";
@@ -345,7 +346,19 @@ function BoletimView({
   return (
     <div>
       <Card className="mb-6 p-5">
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-400">Identificação do aluno</p>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Identificação do aluno</p>
+          {boletim.disciplines.length > 0 && (
+            <BoletimPdfDownloadButton
+              student={student}
+              classId={schoolClass.id}
+              schoolClass={schoolClass}
+              schoolYear={Number(schoolYear)}
+              period={period}
+              boletim={boletim}
+            />
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
           <Field label="Nome" value={student.name} />
           <Field label="Matrícula" value={student.registrationNumber || "—"} />

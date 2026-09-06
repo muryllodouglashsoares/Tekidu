@@ -12,6 +12,7 @@
     "test:rules": "firebase emulators:exec --only firestore \"vitest run --config vitest.rules.config.ts\""
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.9.0",
     "firebase": "^11.0.2",
     "framer-motion": "^11.18.2",
     "lucide-react": "^1.31.0",

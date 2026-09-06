@@ -7,6 +7,7 @@ import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { BoletimSummary } from "@/components/boletim/BoletimSummary";
 import { BoletimTable } from "@/components/boletim/BoletimTable";
+import { BoletimPdfDownloadButton } from "@/components/boletim/BoletimPdfDownloadButton";
 import { useOwnStudent } from "@/hooks/useOwnStudent";
 import { getStudentBoletim, type StudentBoletim } from "@/services/boletim/boletimService";
 import { BOLETIM_PERIOD_LABEL, type BoletimPeriod } from "@/types/boletim";
@@ -92,25 +93,40 @@ export function MyBoletimPage() {
         />
       ) : (
         <>
-          <Card className="mb-6 flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-end">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <Field label="Nome" value={student.name} />
-              <Field label="Matrícula" value={student.registrationNumber || "—"} />
-              <Field label="Ano letivo" value={String(schoolYear)} />
+          <Card className="mb-6 flex flex-col gap-4 p-5">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                <Field label="Nome" value={student.name} />
+                <Field label="Matrícula" value={student.registrationNumber || "—"} />
+                <Field label="Ano letivo" value={String(schoolYear)} />
+              </div>
+              <div className="w-full sm:w-52">
+                <Select
+                  label="Filtrar por período"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value as BoletimPeriod)}
+                >
+                  {Object.entries(BOLETIM_PERIOD_LABEL).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </div>
-            <div className="w-full sm:w-52">
-              <Select
-                label="Filtrar por período"
-                value={period}
-                onChange={(e) => setPeriod(e.target.value as BoletimPeriod)}
-              >
-                {Object.entries(BOLETIM_PERIOD_LABEL).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-            </div>
+
+            {boletim && boletim.disciplines.length > 0 && (
+              <div className="flex justify-end border-t border-line pt-4">
+                <BoletimPdfDownloadButton
+                  student={student}
+                  classId={student.classId}
+                  schoolClass={null}
+                  schoolYear={schoolYear}
+                  period={period}
+                  boletim={boletim}
+                />
+              </div>
+            )}
           </Card>
 
           {boletimLoading ? (
