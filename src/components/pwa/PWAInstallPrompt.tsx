@@ -103,5 +103,22 @@ export function PWAInstallPrompt() {
     );
   }
 
-  return null;
+  // Nenhum dos três cenários acima se aplica: o navegador não disparou
+  // `beforeinstallprompt` (Chrome/Edge com critérios de instalabilidade
+  // não atendidos, ou navegador sem suporte, como Firefox/Safari
+  // desktop). Mostrar essa explicação — em vez de simplesmente não
+  // renderizar nada — evita que pareça um bug quando na verdade é uma
+  // limitação conhecida da plataforma.
+  return (
+    <Card className="p-5">
+      <h3 className="mb-1 flex items-center gap-2 font-display text-base font-semibold text-ink900">
+        <Smartphone className="h-4 w-4 text-ink-500" aria-hidden="true" />
+        Aplicativo
+      </h3>
+      <p className="text-sm text-ink-500">
+        A instalação como aplicativo não está disponível neste navegador. Tente pelo Chrome ou
+        Edge (Android/desktop) ou, no iPhone/iPad, pelo Safari.
+      </p>
+    </Card>
+  );
 }

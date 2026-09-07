@@ -2,6 +2,30 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Captura `beforeinstallprompt` o mais cedo possível — antes até
+      // do bundle React carregar. O Chrome pode disparar esse evento
+      // assim que valida manifest + Service Worker, o que às vezes
+      // acontece antes do hook `usePWAInstall` montar e anexar seu
+      // próprio listener (o bundle principal é grande o suficiente
+      // para essa corrida ser real, não teórica). Como o evento só é
+      // disparado uma única vez por carregamento de página, perder
+      // essa primeira captura significa nunca mais recuperá-lo nessa
+      // sessão — por isso ele é guardado aqui, fora do React, e o
+      // hook só precisa ler o que já foi guardado.
+      (function () {
+        window.__tkInstallPrompt = null;
+        window.addEventListener("beforeinstallprompt", function (event) {
+          event.preventDefault();
+          window.__tkInstallPrompt = event;
+          window.dispatchEvent(new CustomEvent("tk:beforeinstallprompt"));
+        });
+        window.addEventListener("appinstalled", function () {
+          window.__tkInstallPrompt = null;
+          window.dispatchEvent(new CustomEvent("tk:appinstalled"));
+        });
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -10,6 +34,7 @@
     <!-- PWA instalada no iOS: Safari não lê o Web App Manifest para
          estes comportamentos, exige as meta tags legadas abaixo. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Tekidu" />
     <title>Tekidu — Gestão Escolar</title>
