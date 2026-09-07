@@ -3,6 +3,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppRoutes } from "@/routes/AppRoutes";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
+import { PWAUpdatePrompt } from "@/components/pwa/PWAUpdatePrompt";
 
 export default function App() {
   return (
@@ -15,6 +17,13 @@ export default function App() {
               telas protegidas quanto no login (ex.: falha ao entrar). */}
           <ToastProvider>
             <AppRoutes />
+            {/* Overlays globais da PWA — fora de qualquer rota
+                específica de propósito (ver ETAPA 8 do prompt PWA:
+                "não coloque lógica de PWA dentro de páginas
+                específicas"), então funcionam tanto nas rotas
+                protegidas quanto na Landing Page/Login. */}
+            <OfflineIndicator />
+            <PWAUpdatePrompt />
           </ToastProvider>
         </AuthProvider>
       </BrowserRouter>

@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { RoleBadge } from "@/components/ui/RoleBadge";
+import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateOwnName } from "@/services/users/userService";
 import { getAcademicSettings, saveAcademicSettings } from "@/services/academicSettings/academicSettingsService";
@@ -297,6 +298,13 @@ export function SettingsPage() {
             )}
           </Card>
         )}
+
+        {/* Aplicativo (instalação da PWA) — contextual, dentro de
+            Configurações, nunca um popup automático ao abrir o app
+            (ver ETAPA 9 do prompt PWA). O próprio componente decide o
+            que mostrar (instalar/já instalado/instrução iOS) ou não
+            renderiza nada se a instalação não for suportada. */}
+        <PWAInstallPrompt />
 
         {/* Preferências */}
         <Card className="p-5">
