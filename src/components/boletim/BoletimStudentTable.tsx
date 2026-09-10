@@ -56,12 +56,15 @@ export function BoletimStudentTable({ students, onSelectStudent }: BoletimStuden
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
+        <caption className="sr-only">Lista de alunos da turma com matrícula e situação</caption>
         <thead>
           <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
-            <th className="px-4 py-3 font-medium">Aluno</th>
-            <th className="px-4 py-3 font-medium">Matrícula</th>
-            <th className="px-4 py-3 font-medium">Situação</th>
-            <th className="px-4 py-3 font-medium" />
+            <th scope="col" className="px-4 py-3 font-medium">Aluno</th>
+            <th scope="col" className="px-4 py-3 font-medium">Matrícula</th>
+            <th scope="col" className="px-4 py-3 font-medium">Situação</th>
+            <th scope="col" className="px-4 py-3 font-medium">
+              <span className="sr-only">Ações</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -71,7 +74,7 @@ export function BoletimStudentTable({ students, onSelectStudent }: BoletimStuden
               onClick={() => onSelectStudent(student)}
               className="cursor-pointer border-b border-line last:border-0 hover:bg-ink-50"
             >
-              <td className="px-4 py-3 font-medium text-ink900">{student.name}</td>
+              <th scope="row" className="px-4 py-3 text-left font-medium text-ink900">{student.name}</th>
               <td className="px-4 py-3 tabular text-ink-600">{student.registrationNumber || "—"}</td>
               <td className="px-4 py-3">
                 <StudentStatusBadge status={student.status} />

@@ -14,12 +14,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       <div className="flex flex-col gap-1.5">
         <label htmlFor={inputId} className="text-sm font-medium text-ink-700">
           {label}
+          {props.required && (
+            <span aria-hidden="true" className="ml-0.5 text-danger">
+              *
+            </span>
+          )}
         </label>
         <input
           id={inputId}
           ref={ref}
           aria-invalid={!!error}
           aria-describedby={error ? `${inputId}-error` : undefined}
+          aria-required={props.required || undefined}
           className={`rounded-card border bg-surface px-3.5 py-2.5 text-sm text-ink900
             placeholder:text-ink-300 outline-none transition-colors
             ${error ? "border-danger" : "border-line focus:border-ink-400"}
@@ -27,7 +33,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {error && (
-          <span id={`${inputId}-error`} className="text-xs text-danger">
+          <span id={`${inputId}-error`} role="alert" className="text-xs text-danger">
             {error}
           </span>
         )}

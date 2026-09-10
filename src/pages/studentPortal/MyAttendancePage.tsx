@@ -174,20 +174,21 @@ export function MyAttendancePage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
+              <caption className="sr-only">Minha frequência por disciplina</caption>
               <thead>
                 <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-400">
-                  <th className="px-4 py-3">Disciplina</th>
-                  <th className="px-4 py-3">Presenças</th>
-                  <th className="px-4 py-3">Faltas</th>
-                  <th className="px-4 py-3">Aulas</th>
-                  <th className="px-4 py-3">Frequência</th>
-                  <th className="px-4 py-3">Situação</th>
+                  <th scope="col" className="px-4 py-3">Disciplina</th>
+                  <th scope="col" className="px-4 py-3">Presenças</th>
+                  <th scope="col" className="px-4 py-3">Faltas</th>
+                  <th scope="col" className="px-4 py-3">Aulas</th>
+                  <th scope="col" className="px-4 py-3">Frequência</th>
+                  <th scope="col" className="px-4 py-3">Situação</th>
                 </tr>
               </thead>
               <tbody>
                 {overview.disciplines.map((row) => (
                   <tr key={row.discipline.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3 font-medium text-ink900">{row.discipline.name}</td>
+                    <th scope="row" className="px-4 py-3 text-left font-medium text-ink900">{row.discipline.name}</th>
                     <td className="px-4 py-3 text-ink-600">{row.present}</td>
                     <td className="px-4 py-3 text-ink-600">{row.absent}</td>
                     <td className="px-4 py-3 text-ink-600">{row.total}</td>

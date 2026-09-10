@@ -21,11 +21,18 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           className={hideLabel ? "sr-only" : "text-sm font-medium text-ink-700"}
         >
           {label}
+          {props.required && (
+            <span aria-hidden="true" className="ml-0.5 text-danger">
+              *
+            </span>
+          )}
         </label>
         <select
           id={selectId}
           ref={ref}
           aria-invalid={!!error}
+          aria-describedby={error ? `${selectId}-error` : undefined}
+          aria-required={props.required || undefined}
           className={`rounded-card border bg-surface px-3.5 py-2.5 text-sm text-ink900
             outline-none transition-colors
             ${error ? "border-danger" : "border-line focus:border-ink-400"}
@@ -34,7 +41,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         >
           {children}
         </select>
-        {error && <span className="text-xs text-danger">{error}</span>}
+        {error && (
+          <span id={`${selectId}-error`} role="alert" className="text-xs text-danger">
+            {error}
+          </span>
+        )}
       </div>
     );
   }

@@ -1,4 +1,4 @@
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, Accessibility } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +47,7 @@ function resolveMeta(pathname: string): RouteMeta {
 
 interface MobileHeaderProps {
   onOpenSearch: () => void;
+  onOpenAccessibility: () => void;
 }
 
 /**
@@ -57,7 +58,7 @@ interface MobileHeaderProps {
  * nível (a navegação principal já é a Bottom Navigation, então este
  * cabeçalho nunca mais precisa abrir uma sidebar).
  */
-export function MobileHeader({ onOpenSearch }: MobileHeaderProps) {
+export function MobileHeader({ onOpenSearch, onOpenAccessibility }: MobileHeaderProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -96,6 +97,14 @@ export function MobileHeader({ onOpenSearch }: MobileHeaderProps) {
           className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink-500 shadow-sm hover:text-ink-700"
         >
           <Search className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={onOpenAccessibility}
+          aria-label="Abrir configurações de acessibilidade"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink-500 shadow-sm hover:text-ink-700"
+        >
+          <Accessibility className="h-4 w-4" />
         </button>
         <NotificationCenter />
       </div>

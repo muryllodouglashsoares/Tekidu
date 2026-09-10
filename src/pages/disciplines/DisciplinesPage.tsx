@@ -592,10 +592,11 @@ export function DisciplinesPage() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
+              <caption className="sr-only">Disciplinas cadastradas, com professor, turmas e status</caption>
               <thead>
                 <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
                   {canManage && (
-                    <th className="w-10 px-4 py-3">
+                    <th scope="col" className="w-10 px-4 py-3">
                       <RowCheckbox
                         checked={pageSelectionState === "all"}
                         indeterminate={pageSelectionState === "some"}
@@ -609,7 +610,9 @@ export function DisciplinesPage() {
                   <SortableTh label="Turmas" active={sort.key === "classes"} direction={sort.direction} onClick={() => toggleSort("classes")} />
                   <SortableTh label="Carga horária" active={sort.key === "workload"} direction={sort.direction} onClick={() => toggleSort("workload")} />
                   <SortableTh label="Status" active={sort.key === "status"} direction={sort.direction} onClick={() => toggleSort("status")} />
-                  <th className="px-4 py-3 font-medium" />
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    <span className="sr-only">Ações</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

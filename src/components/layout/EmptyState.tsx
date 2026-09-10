@@ -30,7 +30,7 @@ export function EmptyState({ icon: Icon, title, description, action, bare }: Emp
   const content = (
     <div className="flex flex-col items-center gap-3 p-10 text-center">
       <span className="flex h-12 w-12 items-center justify-center rounded-card bg-ink-50 text-ink-400">
-        <Icon className="h-5 w-5" />
+        <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
       <div>
         <p className="font-display text-base font-semibold text-ink900">{title}</p>

@@ -55,19 +55,20 @@ export function BoletimTable({ rows }: BoletimTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
+        <caption className="sr-only">Boletim por disciplina: média, frequência e situação</caption>
         <thead>
           <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
-            <th className="px-4 py-3 font-medium">Disciplina</th>
-            <th className="px-4 py-3 font-medium">Professor</th>
-            <th className="px-4 py-3 font-medium">Média</th>
-            <th className="px-4 py-3 font-medium">Frequência</th>
-            <th className="px-4 py-3 font-medium">Situação</th>
+            <th scope="col" className="px-4 py-3 font-medium">Disciplina</th>
+            <th scope="col" className="px-4 py-3 font-medium">Professor</th>
+            <th scope="col" className="px-4 py-3 font-medium">Média</th>
+            <th scope="col" className="px-4 py-3 font-medium">Frequência</th>
+            <th scope="col" className="px-4 py-3 font-medium">Situação</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.discipline.id} className="border-b border-line last:border-0">
-              <td className="px-4 py-3 font-medium text-ink900">{row.discipline.name}</td>
+              <th scope="row" className="px-4 py-3 text-left font-medium text-ink900">{row.discipline.name}</th>
               <td className="px-4 py-3 text-ink-600">{row.discipline.teacherName || "—"}</td>
               <td className="px-4 py-3 tabular text-ink-600">
                 {row.average === null ? "—" : row.average.toFixed(1)}

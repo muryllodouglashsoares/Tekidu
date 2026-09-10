@@ -2,12 +2,14 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
 import { AppRoutes } from "@/routes/AppRoutes";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { PWAUpdatePrompt } from "@/components/pwa/PWAUpdatePrompt";
 
 export default function App() {
   return (
+    <AccessibilityProvider>
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
@@ -28,5 +30,6 @@ export default function App() {
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
+    </AccessibilityProvider>
   );
 }

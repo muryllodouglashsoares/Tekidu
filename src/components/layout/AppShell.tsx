@@ -1,9 +1,11 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { Search, Moon, Sun } from "lucide-react";
+import { Search, Moon, Sun, Accessibility } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { SkipLink } from "@/components/accessibility/SkipLink";
+import { AccessibilityPanel } from "@/components/accessibility/AccessibilityPanel";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
@@ -59,6 +61,7 @@ export function AppShell() {
   const isMobile = useIsMobile();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [accessibilityOpen, setAccessibilityOpen] = useState(false);
 
   // Fase 2 — Command Palette: Ctrl+K (Windows/Linux) e Cmd+K (Mac)
   // abrem a busca global de qualquer lugar dentro das rotas protegidas.
@@ -85,6 +88,11 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen bg-paper">
+      {/* Skip link (item 11 do briefing de acessibilidade): primeiro
+          elemento focável da página, permite pular Sidebar/Header
+          diretamente para o conteúdo principal. */}
+      <SkipLink />
+
       {/* Sidebar — navegação principal em desktop/tablet. Em mobile a
           navegação estrutural passa a ser a Bottom Navigation (ver
           MobileBottomNav abaixo) — não existe mais drawer duplicando a
@@ -95,7 +103,10 @@ export function AppShell() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {isMobile ? (
-          <MobileHeader onOpenSearch={() => setPaletteOpen(true)} />
+          <MobileHeader
+            onOpenSearch={() => setPaletteOpen(true)}
+            onOpenAccessibility={() => setAccessibilityOpen(true)}
+          />
         ) : (
           <header className="flex items-center justify-between px-8 pb-2 pt-6">
             <h1 className="font-display text-xl font-bold text-ink900">
@@ -131,15 +142,33 @@ export function AppShell() {
               >
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
+              <button
+                type="button"
+                onClick={() => setAccessibilityOpen(true)}
+                aria-label="Abrir configurações de acessibilidade"
+                title="Acessibilidade"
+                className="rounded-full border border-line bg-surface p-2.5 text-ink-500 shadow-sm transition-colors hover:bg-ink-100 hover:text-ink-700"
+              >
+                <Accessibility className="h-4 w-4" />
+              </button>
               <NotificationCenter />
             </div>
           </header>
         )}
 
-        <main className={`flex-1 px-4 py-4 md:px-8 md:py-6 ${isMobile ? "pb-bottom-nav" : ""}`}>
+        {/* `id="main-content"` é o alvo do skip link; `tabIndex={-1}`
+            permite receber foco programaticamente sem entrar na ordem
+            normal de Tab. */}
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className={`flex-1 px-4 py-4 outline-none md:px-8 md:py-6 ${isMobile ? "pb-bottom-nav" : ""}`}
+        >
           <Outlet />
         </main>
       </div>
+
+      {accessibilityOpen && <AccessibilityPanel onClose={() => setAccessibilityOpen(false)} />}
 
       {isMobile && profile && (
         <>

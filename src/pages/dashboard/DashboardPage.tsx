@@ -280,13 +280,14 @@ function AdminDashboard() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm whitespace-nowrap">
+                  <caption className="sr-only">Alunos matriculados recentemente</caption>
                   <thead className="bg-ink-50 border-b border-line text-ink-500">
                     <tr>
-                      <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Turma</th>
-                      <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Nome do aluno</th>
-                      <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Matrícula</th>
-                      <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Média</th>
-                      <th className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Status</th>
+                      <th scope="col" className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Turma</th>
+                      <th scope="col" className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Nome do aluno</th>
+                      <th scope="col" className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Matrícula</th>
+                      <th scope="col" className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Média</th>
+                      <th scope="col" className="px-5 py-4 font-semibold text-xs uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line bg-surface">

@@ -518,10 +518,11 @@ export function ClassesPage() {
         <Card className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
+                <caption className="sr-only">Turmas cadastradas, com série, turno, alunos e status</caption>
                 <thead>
                   <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
                     {canManage && (
-                      <th className="w-10 px-4 py-3">
+                      <th scope="col" className="w-10 px-4 py-3">
                         <RowCheckbox
                           checked={pageSelectionState === "all"}
                           indeterminate={pageSelectionState === "some"}
@@ -536,7 +537,9 @@ export function ClassesPage() {
                     <SortableTh label="Turno" active={sort.key === "shift"} direction={sort.direction} onClick={() => toggleSort("shift")} />
                     <SortableTh label="Alunos" active={sort.key === "students"} direction={sort.direction} onClick={() => toggleSort("students")} />
                     <SortableTh label="Status" active={sort.key === "status"} direction={sort.direction} onClick={() => toggleSort("status")} />
-                    <th className="px-4 py-3 font-medium" />
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      <span className="sr-only">Ações</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

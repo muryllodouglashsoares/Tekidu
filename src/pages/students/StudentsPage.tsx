@@ -481,10 +481,11 @@ export function StudentsPage() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
+              <caption className="sr-only">Alunos cadastrados, com turma, média e situação</caption>
               <thead>
                 <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
                   {canManage && (
-                    <th className="w-10 px-4 py-3">
+                    <th scope="col" className="w-10 px-4 py-3">
                       <RowCheckbox
                         checked={pageSelectionState === "all"}
                         indeterminate={pageSelectionState === "some"}
@@ -523,8 +524,14 @@ export function StudentsPage() {
                     direction={sort.direction}
                     onClick={() => toggleSort("status")}
                   />
-                  <th className="px-4 py-3 font-medium" />
-                  {canManage && <th className="px-4 py-3 font-medium" />}
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    <span className="sr-only">Ações</span>
+                  </th>
+                  {canManage && (
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      <span className="sr-only">Seleção rápida</span>
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>

@@ -2,6 +2,7 @@ import { type ReactNode, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface MobileSheetProps {
   open: boolean;
@@ -34,6 +35,10 @@ export function MobileSheet({
   variant = "auto",
   headerAction,
 }: MobileSheetProps) {
+  // Mesmo gerenciamento de foco do Modal (foco preso + restaurado ao
+  // fechar) — ver src/hooks/useFocusTrap.ts.
+  const dialogRef = useFocusTrap<HTMLDivElement>(open);
+
   useEffect(() => {
     if (!open) return;
     function onKeyDown(e: KeyboardEvent) {
@@ -61,10 +66,12 @@ export function MobileSheet({
             transition={{ duration: 0.15 }}
           />
           <motion.div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className={`relative z-10 flex w-full flex-col overflow-hidden rounded-t-card border-t border-line bg-surface shadow-card ${
+            tabIndex={-1}
+            className={`relative z-10 flex w-full flex-col overflow-hidden rounded-t-card border-t border-line bg-surface shadow-card outline-none ${
               variant === "full" ? "h-[92dvh]" : "max-h-[85dvh]"
             }`}
             initial={{ y: "100%" }}

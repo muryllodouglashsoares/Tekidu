@@ -65,70 +65,123 @@ export function DevelopmentLineChart({
   const tickCount = 4;
   const tickValues = Array.from({ length: tickCount + 1 }, (_, i) => min + ((max - min) / tickCount) * i);
 
+  // Alternativa textual ao gráfico (item 21 do briefing de
+  // acessibilidade): um leitor de tela não deve receber apenas
+  // "gráfico" — aqui ele recebe a primeira nota, a última nota e a
+  // variação, e pode expandir uma tabela com todos os pontos.
+  const first = validPoints[0];
+  const last = validPoints[validPoints.length - 1];
+  const variation = first.value !== 0 ? ((last.value - first.value) / Math.abs(first.value)) * 100 : null;
+  const summary =
+    validPoints.length > 1
+      ? `Início: ${first.value.toFixed(1)} em ${first.label}. Atual: ${last.value.toFixed(1)} em ${last.label}.${
+          variation !== null ? ` Variação de ${variation >= 0 ? "+" : ""}${variation.toFixed(1)}%.` : ""
+        }`
+      : `Valor único: ${first.value.toFixed(1)} em ${first.label}.`;
+
   return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      className="w-full"
-      role="img"
-      aria-label="Gráfico de evolução do desenvolvimento acadêmico"
-    >
-      {tickValues.map((tick) => (
-        <g key={tick}>
-          <line
-            x1={paddingLeft}
-            x2={width - paddingRight}
-            y1={yFor(tick)}
-            y2={yFor(tick)}
-            style={{ stroke: "rgb(var(--tk-line))" }}
-            strokeDasharray="4 4"
+    <div className="w-full">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full"
+        role="img"
+        aria-label={`Gráfico de evolução do desenvolvimento acadêmico. ${summary}`}
+      >
+        {tickValues.map((tick) => (
+          <g key={tick}>
+            <line
+              x1={paddingLeft}
+              x2={width - paddingRight}
+              y1={yFor(tick)}
+              y2={yFor(tick)}
+              style={{ stroke: "rgb(var(--tk-line))" }}
+              strokeDasharray="4 4"
+            />
+            <text
+              x={paddingLeft - 8}
+              y={yFor(tick) + 4}
+              textAnchor="end"
+              fontSize="11"
+              style={{ fill: "rgb(var(--tk-ink-400))" }}
+            >
+              {tick.toFixed(0)}
+            </text>
+          </g>
+        ))}
+
+        {/* Linha de evolução em VERDE — este gráfico representa o
+            desenvolvimento/progresso do aluno, o conceito central que o
+            verde da identidade do Tekidu deve reforçar (grid/eixos
+            permanecem neutros). */}
+        <path
+          d={pathD}
+          fill="none"
+          style={{ stroke: "rgb(var(--tk-success-500))" }}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {validPoints.map((p) => (
+          <circle
+            key={p.index}
+            cx={xFor(p.index)}
+            cy={yFor(p.value)}
+            r="4"
+            style={{ fill: "rgb(var(--tk-success-500))" }}
           />
+        ))}
+
+        {points.map((p, i) => (
           <text
-            x={paddingLeft - 8}
-            y={yFor(tick) + 4}
-            textAnchor="end"
+            key={p.label}
+            x={xFor(i)}
+            y={height - 6}
+            textAnchor="middle"
             fontSize="11"
             style={{ fill: "rgb(var(--tk-ink-400))" }}
           >
-            {tick.toFixed(0)}
+            {p.label}
           </text>
-        </g>
-      ))}
+        ))}
+      </svg>
 
-      {/* Linha de evolução em VERDE — este gráfico representa o
-          desenvolvimento/progresso do aluno, o conceito central que o
-          verde da identidade do Tekidu deve reforçar (grid/eixos
-          permanecem neutros). */}
-      <path
-        d={pathD}
-        fill="none"
-        style={{ stroke: "rgb(var(--tk-success-500))" }}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {/* Resumo textual sempre visível — não depende de expandir nada
+          para comunicar a informação essencial do gráfico. */}
+      <p className="mt-2 text-sm text-ink-600">{summary}</p>
 
-      {validPoints.map((p) => (
-        <circle
-          key={p.index}
-          cx={xFor(p.index)}
-          cy={yFor(p.value)}
-          r="4"
-          style={{ fill: "rgb(var(--tk-success-500))" }}
-        />
-      ))}
-
-      {points.map((p, i) => (
-        <text
-          key={p.label}
-          x={xFor(i)}
-          y={height - 6}
-          textAnchor="middle"
-          fontSize="11"
-          style={{ fill: "rgb(var(--tk-ink-400))" }}
-        >
-          {p.label}
-        </text>
-      ))}
-    </svg>
+      {/* Tabela de dados completa, colapsada por padrão (item 21:
+          "quando necessário, fornecer tabela de dados"). `<details>`
+          é nativamente acessível por teclado e leitor de tela, sem
+          precisar de JS/estado adicional. */}
+      <details className="mt-2 text-sm">
+        <summary className="cursor-pointer font-medium text-ink-700 hover:text-ink-900">
+          Ver dados em tabela
+        </summary>
+        <table className="mt-2 w-full border-collapse text-left text-sm">
+          <caption className="sr-only">Valores do gráfico de evolução do desenvolvimento acadêmico</caption>
+          <thead>
+            <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
+              <th scope="col" className="py-1.5 pr-4 font-medium">
+                Período
+              </th>
+              <th scope="col" className="py-1.5 font-medium">
+                Nota
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {points.map((p) => (
+              <tr key={p.label} className="border-b border-line last:border-0">
+                <th scope="row" className="py-1.5 pr-4 font-normal text-ink-600">
+                  {p.label}
+                </th>
+                <td className="tabular py-1.5 text-ink900">{p.value !== null ? p.value.toFixed(1) : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+    </div>
   );
 }

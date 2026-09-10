@@ -186,20 +186,21 @@ export function MyStudentsPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
+              <caption className="sr-only">Meus alunos: turma, média, frequência e situação</caption>
               <thead>
                 <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-400">
-                  <th className="px-4 py-3">Aluno</th>
-                  <th className="px-4 py-3">Turma</th>
-                  <th className="px-4 py-3">Média</th>
-                  <th className="px-4 py-3">Frequência</th>
-                  <th className="px-4 py-3">Situação</th>
-                  <th className="px-4 py-3 text-right">Ações</th>
+                  <th scope="col" className="px-4 py-3">Aluno</th>
+                  <th scope="col" className="px-4 py-3">Turma</th>
+                  <th scope="col" className="px-4 py-3">Média</th>
+                  <th scope="col" className="px-4 py-3">Frequência</th>
+                  <th scope="col" className="px-4 py-3">Situação</th>
+                  <th scope="col" className="px-4 py-3 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((row) => (
                   <tr key={row.student.id} className="border-b border-line last:border-0 hover:bg-ink-50/50">
-                    <td className="px-4 py-3 font-medium text-ink900">{row.student.name}</td>
+                    <th scope="row" className="px-4 py-3 text-left font-medium text-ink900">{row.student.name}</th>
                     <td className="px-4 py-3 text-ink-600">{row.schoolClass.name}</td>
                     <td className="px-4 py-3 text-ink-600">
                       {row.average === null ? (

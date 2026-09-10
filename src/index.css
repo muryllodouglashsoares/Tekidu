@@ -157,6 +157,14 @@
     border-radius: 4px;
   }
 
+  /* Alto contraste também precisa de um indicador de foco mais forte,
+     já que o azul padrão pode não ter contraste suficiente sobre os
+     tokens recalibrados abaixo. */
+  html[data-high-contrast="true"] :focus-visible {
+    outline: 3px solid rgb(var(--tk-focus-ring, var(--tk-ink-700)));
+    outline-offset: 2px;
+  }
+
   /* Números tabulares para notas, frequência e IDs */
   .tabular {
     font-variant-numeric: tabular-nums;
@@ -278,4 +286,143 @@ body {
   /* tk-draw/tk-pop usam `forwards`/`backwards` para fixar o estado
      final — zerar a duração já é suficiente para pular direto para lá,
      sem precisar de uma regra dedicada por animação. */
+}
+
+/* ==========================================================================
+   PAINEL DE ACESSIBILIDADE — preferências manuais
+   ==========================================================================
+   Aplicadas via atributos `data-*` no elemento raiz por
+   `AccessibilityContext` (src/contexts/AccessibilityContext.tsx).
+   Mantidas centralizadas aqui — sobrescrevendo tokens/comportamento
+   globais, nunca duplicando regras por componente — para que "corrigir
+   uma vez" beneficie a aplicação inteira (item 28 do briefing).
+   ========================================================================== */
+
+/* ── Skip link ────────────────────────────────────────────────────────── */
+.tk-skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 200;
+  transform: translateY(-150%);
+  background: rgb(var(--tk-ink-700));
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+  transition: transform 0.15s ease-out;
+}
+.tk-skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* ── Tamanho do texto ─────────────────────────────────────────────────
+   Aplicado no `<html>` para escalar toda a aplicação (rem/em) de uma
+   vez, sem tocar em cada componente individualmente (item 5 do
+   briefing). 100% é o padrão (sem regra extra). */
+html[data-font-scale="110"] {
+  font-size: 110%;
+}
+html[data-font-scale="125"] {
+  font-size: 125%;
+}
+html[data-font-scale="150"] {
+  font-size: 150%;
+}
+
+/* ── Alto contraste ───────────────────────────────────────────────────
+   Sobrescreve os tokens de cor já existentes (mesma variável usada por
+   todo o Tailwind config, ver tailwind.config.js) em vez de recriar
+   regras CSS por componente. Valores calibrados para AA (contraste
+   texto/fundo ≥ 4.5:1) tanto no claro quanto no escuro. */
+html[data-high-contrast="true"] {
+  --tk-ink-400: 71 85 105;
+  --tk-ink-500: 51 65 85;
+  --tk-ink-600: 15 23 42;
+  --tk-ink-700: 29 58 138;
+  --tk-ink-800: 23 46 110;
+  --tk-ink-900: 17 34 82;
+  --tk-line: 71 85 105;
+  --tk-ink900: 0 0 0;
+  --tk-focus-ring: 29 58 138;
+  --tk-success-500: 4 120 87;
+  --tk-success-600: 3 90 65;
+  --tk-danger-500: 185 28 28;
+  --tk-danger-600: 153 27 27;
+  --tk-honors-500: 185 28 28;
+  --tk-honors-600: 153 27 27;
+}
+html.dark[data-high-contrast="true"] {
+  --tk-ink-400: 226 232 240;
+  --tk-ink-500: 241 245 249;
+  --tk-ink-600: 255 255 255;
+  --tk-ink-700: 147 197 253;
+  --tk-ink-800: 191 219 254;
+  --tk-ink-900: 219 234 254;
+  --tk-line: 148 163 184;
+  --tk-ink900: 255 255 255;
+  --tk-focus-ring: 147 197 253;
+  --tk-success-500: 74 222 128;
+  --tk-success-600: 134 239 172;
+  --tk-danger-500: 252 165 165;
+  --tk-danger-600: 254 202 202;
+  --tk-honors-500: 252 165 165;
+  --tk-honors-600: 254 202 202;
+}
+/* Bordas mais visíveis em elementos que hoje contam só com cor de
+   fundo sutil para se distinguir (cards, inputs, badges). */
+html[data-high-contrast="true"] .border-line {
+  border-color: rgb(var(--tk-line)) !important;
+  border-width: 1.5px;
+}
+
+/* ── Destaque de links ────────────────────────────────────────────────
+   Sublinhado explícito em links de conteúdo, sem afetar botões,
+   navegação em pílula (Sidebar/Bottom Nav) ou cartões clicáveis, que
+   dependem de outros indicadores (fundo, ícone, borda) para não virar
+   um sublinhado indiscriminado (item 7 do briefing). */
+html[data-highlight-links="true"] main a[href]:not(.tk-no-underline) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Redução de animações (controle manual) ─────────────────────────── */
+html[data-reduced-motion="true"] *,
+html[data-reduced-motion="true"] *::before,
+html[data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ── Modo de leitura ──────────────────────────────────────────────────
+   Aumenta espaçamento entre linhas/palavras e reduz elementos
+   puramente decorativos (marcados com `.tk-decorative` nos poucos
+   lugares que só existem por estética, ex.: ilustrações de estado
+   vazio) dentro do conteúdo principal. Não se aplica à navegação
+   (Sidebar/Bottom Nav), que precisa continuar compacta. */
+html[data-reading-mode="true"] main {
+  line-height: 1.85;
+  letter-spacing: 0.01em;
+  word-spacing: 0.08em;
+}
+html[data-reading-mode="true"] main .tk-decorative {
+  display: none;
+}
+
+/* ── Espaçamento aumentado ────────────────────────────────────────────
+   Independente do modo de leitura: dá mais "respiro" entre linhas de
+   texto em qualquer lugar do app (WCAG 1.4.12 — Text Spacing). */
+html[data-increased-spacing="true"] {
+  --tk-line-height-boost: 1.5;
+}
+html[data-increased-spacing="true"] main p,
+html[data-increased-spacing="true"] main li,
+html[data-increased-spacing="true"] main label {
+  line-height: 1.6;
 }

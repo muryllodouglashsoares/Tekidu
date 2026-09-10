@@ -40,11 +40,12 @@ export function AttendanceByDateTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
+        <caption className="sr-only">Presença por aluno e por data das aulas registradas nesta turma</caption>
         <thead>
           <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
-            <th className="sticky left-0 bg-surface px-4 py-3 font-medium">Aluno</th>
+            <th scope="col" className="sticky left-0 bg-surface px-4 py-3 font-medium">Aluno</th>
             {orderedSessions.map((session) => (
-              <th key={session.id} className="whitespace-nowrap px-3 py-3 text-center font-medium">
+              <th key={session.id} scope="col" className="whitespace-nowrap px-3 py-3 text-center font-medium">
                 <span className="block">{session.label}</span>
                 <span className="block font-normal normal-case text-ink-400">
                   {formatDate(session.date)}
@@ -56,7 +57,7 @@ export function AttendanceByDateTable({
         <tbody>
           {students.map((student) => (
             <tr key={student.id} className="border-b border-line last:border-0">
-              <td className="sticky left-0 bg-surface px-4 py-3">
+              <th scope="row" className="sticky left-0 bg-surface px-4 py-3 text-left font-normal">
                 <div className="flex items-center gap-2.5">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-semibold text-ink-700">
                     {student.name
@@ -68,7 +69,7 @@ export function AttendanceByDateTable({
                   </span>
                   <span className="truncate font-medium text-ink900">{student.name}</span>
                 </div>
-              </td>
+              </th>
               {orderedSessions.map((session) => {
                 const record = recordsByStudentAndSession[student.id]?.[session.id];
                 return (

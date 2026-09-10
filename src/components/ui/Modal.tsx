@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect } from "react";
 import { X } from "lucide-react";
 import { useIsMobile } from "@/hooks/useMediaQuery";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface ModalProps {
   title: string;
@@ -34,6 +35,11 @@ const SIZE_CLASS: Record<NonNullable<ModalProps["size"]>, string> = {
  */
 export function Modal({ title, onClose, children, size = "md", mobileBehavior = "fullscreen" }: ModalProps) {
   const isMobile = useIsMobile();
+  // Foco preso dentro do modal enquanto aberto e restaurado ao fechar
+  // (item 13 do briefing de acessibilidade) — reutilizado por todos os
+  // modais do app, já que este é o único componente de diálogo
+  // compartilhado (ver item 28: corrigir na origem).
+  const dialogRef = useFocusTrap<HTMLDivElement>(true);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -47,10 +53,12 @@ export function Modal({ title, onClose, children, size = "md", mobileBehavior = 
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-surface">
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={title}
-          className="flex h-full flex-col motion-safe:animate-[tk-sheet-up_0.22s_ease-out]"
+          tabIndex={-1}
+          className="flex h-full flex-col outline-none motion-safe:animate-[tk-sheet-up_0.22s_ease-out]"
         >
           <div className="flex shrink-0 items-center justify-between border-b border-line px-4 pb-3 pt-safe">
             <h2 className="pt-3 font-display text-lg font-semibold text-ink900">{title}</h2>
@@ -81,10 +89,12 @@ export function Modal({ title, onClose, children, size = "md", mobileBehavior = 
         onClick={onClose}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`relative z-10 max-h-[90vh] w-full ${SIZE_CLASS[size]} overflow-y-auto rounded-card border border-line bg-surface p-6 shadow-card`}
+        tabIndex={-1}
+        className={`relative z-10 max-h-[90vh] w-full ${SIZE_CLASS[size]} overflow-y-auto rounded-card border border-line bg-surface p-6 shadow-card outline-none`}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold text-ink900">{title}</h2>

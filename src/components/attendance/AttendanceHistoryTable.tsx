@@ -64,21 +64,22 @@ export function AttendanceHistoryTable({ rows }: AttendanceHistoryTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
+        <caption className="sr-only">Histórico de aulas registradas, com presenças, ausências e frequência</caption>
         <thead>
           <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
-            <th className="px-4 py-3 font-medium">Data</th>
-            <th className="px-4 py-3 font-medium">Aula</th>
-            <th className="px-4 py-3 font-medium">Turma</th>
-            <th className="px-4 py-3 font-medium">Disciplina</th>
-            <th className="px-4 py-3 text-center font-medium">Presentes</th>
-            <th className="px-4 py-3 text-center font-medium">Ausentes</th>
-            <th className="px-4 py-3 text-center font-medium">Freq.</th>
+            <th scope="col" className="px-4 py-3 font-medium">Data</th>
+            <th scope="col" className="px-4 py-3 font-medium">Aula</th>
+            <th scope="col" className="px-4 py-3 font-medium">Turma</th>
+            <th scope="col" className="px-4 py-3 font-medium">Disciplina</th>
+            <th scope="col" className="px-4 py-3 text-center font-medium">Presentes</th>
+            <th scope="col" className="px-4 py-3 text-center font-medium">Ausentes</th>
+            <th scope="col" className="px-4 py-3 text-center font-medium">Freq.</th>
           </tr>
         </thead>
         <tbody>
           {rows.map(({ session, className, disciplineName, present, absent, rate }) => (
             <tr key={session.id} className="border-b border-line last:border-0">
-              <td className="px-4 py-3 font-medium text-ink900">{formatDate(session.date)}</td>
+              <th scope="row" className="px-4 py-3 text-left font-medium text-ink900">{formatDate(session.date)}</th>
               <td className="px-4 py-3 text-ink-600">{session.label}</td>
               <td className="px-4 py-3 text-ink-600">{className}</td>
               <td className="px-4 py-3 text-ink-600">{disciplineName}</td>

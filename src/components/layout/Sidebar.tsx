@@ -187,7 +187,7 @@ export function Sidebar() {
         <span className="font-display text-xl font-bold text-ink900">Tekidu</span>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-8 overflow-y-auto px-2">
+      <nav aria-label="Navegação principal" className="flex flex-1 flex-col gap-8 overflow-y-auto px-2">
         <NavGroup title="Principal" items={principalNav} currentRole={profile?.role} />
         <NavGroup title="Minhas Turmas" items={minhasTurmasNav} currentRole={profile?.role} />
         <NavGroup title="Acadêmico" items={academicoNav} currentRole={profile?.role} />

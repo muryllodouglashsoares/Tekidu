@@ -59,6 +59,26 @@
         } catch (e) {}
       })();
     </script>
+    <script>
+      // Aplica as preferências de acessibilidade salvas (tamanho do
+      // texto, alto contraste, etc.) antes do React montar, pelo mesmo
+      // motivo do tema acima: evitar um "flash" com as configurações
+      // padrão. Mantido em sincronia com os defaults de
+      // AccessibilityContext.tsx.
+      (function () {
+        try {
+          var raw = localStorage.getItem("tekidu-accessibility-settings");
+          var settings = raw ? JSON.parse(raw) : {};
+          var root = document.documentElement;
+          root.setAttribute("data-font-scale", String(settings.fontScale || 100));
+          root.setAttribute("data-high-contrast", String(!!settings.highContrast));
+          root.setAttribute("data-reduced-motion", String(!!settings.reducedMotion));
+          root.setAttribute("data-reading-mode", String(!!settings.readingMode));
+          root.setAttribute("data-highlight-links", String(!!settings.highlightLinks));
+          root.setAttribute("data-increased-spacing", String(!!settings.increasedSpacing));
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

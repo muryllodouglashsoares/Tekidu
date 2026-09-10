@@ -16,8 +16,9 @@ interface SortableThProps {
  * com lógica de seta duplicada.
  */
 export function SortableTh({ label, active, direction, onClick, className = "" }: SortableThProps) {
+  const ariaSort = !active ? "none" : direction === "asc" ? "ascending" : "descending";
   return (
-    <th className={`px-4 py-3 font-medium ${className}`}>
+    <th scope="col" aria-sort={ariaSort} className={`px-4 py-3 font-medium ${className}`}>
       <button
         type="button"
         onClick={onClick}

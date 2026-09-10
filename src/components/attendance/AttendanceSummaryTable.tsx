@@ -69,13 +69,14 @@ export function AttendanceSummaryTable({ students, summaryByStudent }: Attendanc
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
+        <caption className="sr-only">Resumo de frequência por aluno: presenças, faltas e situação</caption>
         <thead>
           <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
-            <th className="px-4 py-3 font-medium">Aluno</th>
-            <th className="px-4 py-3 text-center font-medium">Presenças</th>
-            <th className="px-4 py-3 text-center font-medium">Faltas</th>
-            <th className="px-4 py-3 text-center font-medium">Frequência</th>
-            <th className="px-4 py-3 font-medium">Situação</th>
+            <th scope="col" className="px-4 py-3 font-medium">Aluno</th>
+            <th scope="col" className="px-4 py-3 text-center font-medium">Presenças</th>
+            <th scope="col" className="px-4 py-3 text-center font-medium">Faltas</th>
+            <th scope="col" className="px-4 py-3 text-center font-medium">Frequência</th>
+            <th scope="col" className="px-4 py-3 font-medium">Situação</th>
           </tr>
         </thead>
         <tbody>
@@ -83,14 +84,14 @@ export function AttendanceSummaryTable({ students, summaryByStudent }: Attendanc
             const summary = summaryByStudent[student.id];
             return (
               <tr key={student.id} className="border-b border-line last:border-0">
-                <td className="px-4 py-3">
+                <th scope="row" className="px-4 py-3 text-left font-normal">
                   <div className="flex items-center gap-2.5">
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink-100 text-xs font-semibold text-ink-700">
                       {initials(student.name)}
                     </span>
                     <span className="truncate font-medium text-ink900">{student.name}</span>
                   </div>
-                </td>
+                </th>
                 <td className="px-4 py-3 text-center font-medium text-success">
                   {summary?.present ?? 0}
                 </td>

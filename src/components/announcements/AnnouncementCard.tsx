@@ -45,14 +45,26 @@ interface AnnouncementCardProps {
 export function AnnouncementCard({ announcement, onOpen, actions }: AnnouncementCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuId = `announcement-menu-${announcement.id}`;
 
   useEffect(() => {
     if (!menuOpen) return;
     function onClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
     }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    }
     document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [menuOpen]);
 
   return (
@@ -94,18 +106,28 @@ export function AnnouncementCard({ announcement, onOpen, actions }: Announcement
         <div ref={menuRef} className="absolute right-3 top-3">
           <button
             type="button"
+            ref={menuButtonRef}
             aria-label="Ações do aviso"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-controls={menuOpen ? menuId : undefined}
             onClick={() => setMenuOpen((v) => !v)}
             className="rounded-card p-1.5 text-ink-400 hover:bg-ink-50 hover:text-ink-700"
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 z-10 mt-1 w-44 overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div
+              id={menuId}
+              role="menu"
+              aria-label="Ações do aviso"
+              className="absolute right-0 z-10 mt-1 w-44 overflow-hidden rounded-card border border-line bg-surface shadow-card"
+            >
               {actions.map((action) => (
                 <button
                   key={action.label}
                   type="button"
+                  role="menuitem"
                   onClick={() => {
                     setMenuOpen(false);
                     action.onClick();

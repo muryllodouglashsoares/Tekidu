@@ -260,7 +260,7 @@ export function StudentProfilePage() {
         </div>
       </Card>
 
-      <div className="mb-6 flex gap-1 border-b border-line">
+      <div role="tablist" aria-label="Seções do perfil do aluno" className="mb-6 flex gap-1 border-b border-line">
         <TabButton icon={FileText} label="Visão geral" active={tab === "overview"} onClick={() => setTab("overview")} />
         <TabButton icon={CalendarCheck} label="Frequência" active={tab === "attendance"} onClick={() => setTab("attendance")} />
         {profile?.role === "admin" && (
@@ -320,12 +320,14 @@ function TabButton({
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={active}
       onClick={onClick}
       className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
         active ? "border-ink-700 text-ink900" : "border-transparent text-ink-500 hover:text-ink-700"
       }`}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="h-4 w-4" aria-hidden="true" />
       {label}
     </button>
   );
@@ -596,12 +598,13 @@ function AttendanceTab({
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
+              <caption className="sr-only">Frequência do aluno por disciplina</caption>
               <thead>
                 <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
-                  <th className="px-4 py-3 font-medium">Disciplina</th>
-                  <th className="px-4 py-3 font-medium">Presenças</th>
-                  <th className="px-4 py-3 font-medium">Faltas</th>
-                  <th className="px-4 py-3 font-medium">Percentual</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Disciplina</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Presenças</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Faltas</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Percentual</th>
                 </tr>
               </thead>
               <tbody>
@@ -609,7 +612,7 @@ function AttendanceTab({
                   const counts = byDiscipline.get(row.discipline.id) ?? { present: 0, absent: 0 };
                   return (
                     <tr key={row.discipline.id} className="border-b border-line last:border-0">
-                      <td className="px-4 py-3 font-medium text-ink900">{row.discipline.name}</td>
+                      <th scope="row" className="px-4 py-3 text-left font-medium text-ink900">{row.discipline.name}</th>
                       <td className="px-4 py-3 tabular text-success">{counts.present}</td>
                       <td className="px-4 py-3 tabular text-danger">{counts.absent}</td>
                       <td className="px-4 py-3 tabular text-ink-600">
