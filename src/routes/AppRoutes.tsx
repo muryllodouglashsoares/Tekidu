@@ -139,6 +139,36 @@ const AnnouncementsPage = lazy(() =>
   }))
 );
 
+// Mensageria (Parte 1 do plano de evolução — chat interno professor ↔
+// aluno): restrita a "teacher"/"student" (admin não participa do chat
+// nesta fase — ver firestore.rules, `isActiveTeacher()`/
+// `isActiveStudent()`). Uma única página cobre as duas rotas abaixo
+// (lista e "lista + conversa aberta"), mesmo padrão de reaproveitar o
+// módulo entre rotas já usado por `StudentProfilePage`.
+const MessagesPage = lazy(() =>
+  import("@/pages/messages/MessagesPage").then((m) => ({ default: m.MessagesPage }))
+);
+
+// Grupo guardian-only (Fase 2/3 do plano de evolução — Portal do
+// Responsável): só quem tem `profile.role === "guardian"` baixa este
+// chunk, mesmo racional de code-splitting por role já usado acima
+// para os grupos admin/teacher/student.
+const GuardianDashboardPage = lazy(() =>
+  import("@/pages/guardianPortal/GuardianDashboardPage").then((m) => ({
+    default: m.GuardianDashboardPage,
+  }))
+);
+const GuardianBoletimPage = lazy(() =>
+  import("@/pages/guardianPortal/GuardianBoletimPage").then((m) => ({
+    default: m.GuardianBoletimPage,
+  }))
+);
+const GuardianAttendancePage = lazy(() =>
+  import("@/pages/guardianPortal/GuardianAttendancePage").then((m) => ({
+    default: m.GuardianAttendancePage,
+  }))
+);
+
 // Fallback usado dentro do AppShell (sidebar/topo já montados pelo
 // pai — ver `AppShell.tsx`, que renderiza <Outlet /> dentro de
 // <main>). Diferente do fallback da Landing Page
@@ -406,6 +436,32 @@ export function AppRoutes() {
               </Suspense>
             }
           />
+
+          {/* Mensageria: sem restrição de código-fonte além da role
+              (ver ProtectedRoute abaixo) — a Security Rule
+              (`isValidConversationPair`) é quem de fato impede um
+              professor/aluno de ler ou criar conversa fora do próprio
+              vínculo de disciplina/turma, nunca esta rota. Admin não
+              acessa: o plano restringe o chat a professor↔aluno. */}
+          <Route element={<ProtectedRoute allowedRoles={["teacher", "student"]} />}>
+            <Route element={<SuspenseOutlet fallback={dashboardPageFallback} />}>
+              <Route path="/mensagens" element={<MessagesPage />} />
+              <Route path="/mensagens/:conversationId" element={<MessagesPage />} />
+            </Route>
+          </Route>
+
+          {/* Portal do Responsável (Fase 2/3 do plano de evolução):
+              restrito à role "guardian" — a Security Rule
+              (`isOwnGuardianStudent`) é quem de fato impede um
+              responsável de ler dados de um aluno ao qual não está
+              vinculado, nunca esta rota. */}
+          <Route element={<ProtectedRoute allowedRoles={["guardian"]} />}>
+            <Route element={<SuspenseOutlet fallback={dashboardPageFallback} />}>
+              <Route path="/portal-responsavel" element={<GuardianDashboardPage />} />
+              <Route path="/portal-responsavel/boletim" element={<GuardianBoletimPage />} />
+              <Route path="/portal-responsavel/frequencia" element={<GuardianAttendancePage />} />
+            </Route>
+          </Route>
 
           <Route path="/configuracoes" element={<SettingsPage />} />
         </Route>

@@ -2,8 +2,14 @@
  * Papéis suportados pela aplicação.
  * Este union type é a "fonte da verdade" no frontend — ele espelha
  * (mas não substitui) a validação feita nas Firestore Security Rules.
+ *
+ * "guardian" (Fase 2 do plano de evolução — Portal do Responsável):
+ * único papel que NUNCA é dono de dados acadêmicos próprios — ele
+ * apenas LÊ o boletim/frequência de aluno(s) vinculados (ver
+ * `students.guardianUids` em `types/student.ts` e `firestore.rules`,
+ * `isActiveGuardian()`/`isOwnGuardianStudent()`).
  */
-export type UserRole = "student" | "teacher" | "admin";
+export type UserRole = "student" | "teacher" | "admin" | "guardian";
 
 /**
  * Formato do documento em: users/{uid}

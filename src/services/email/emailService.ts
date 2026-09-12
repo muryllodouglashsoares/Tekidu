@@ -32,7 +32,11 @@
 interface FirstAccessEmailParams {
   to: string;
   name: string;
-  role: "teacher" | "student";
+  // "guardian" adicionado na Parte 2/3 do plano de evolução (Portal do
+  // Responsável) — reaproveita integralmente este mesmo fluxo de
+  // primeiro acesso (e-mail + senha temporária), já usado por
+  // professor/aluno, em vez de criar um mecanismo de convite paralelo.
+  role: "teacher" | "student" | "guardian";
   /** Rótulo do identificador de primeiro acesso ("Matrícula" ou "Chave de acesso"). */
   loginIdentifierLabel: string;
   loginIdentifierValue: string;
@@ -55,7 +59,8 @@ function buildTemplateParams(params: FirstAccessEmailParams) {
   return {
     to_email: params.to,
     to_name: params.name,
-    role_label: params.role === "teacher" ? "professor(a)" : "aluno(a)",
+    role_label:
+      params.role === "teacher" ? "professor(a)" : params.role === "guardian" ? "responsável" : "aluno(a)",
     app_name: params.appName ?? "Tekidu",
     login_label: params.loginIdentifierLabel,
     login_value: params.loginIdentifierValue,

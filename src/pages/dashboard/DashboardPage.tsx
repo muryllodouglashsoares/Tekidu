@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import {
   Users,
   AlertTriangle,
@@ -72,6 +72,17 @@ export function DashboardPage() {
 
   if (profile.role === "student") return <StudentDashboard />;
   if (profile.role === "teacher") return <TeacherDashboard />;
+  // Fase 2/3 do plano de evolução (Portal do Responsável): "/dashboard"
+  // é a rota universal pós-login (ver `LoginPage.redirectTo`) — sem
+  // este desvio, um responsável cairia direto no `AdminDashboard`
+  // abaixo, que chama `getStudents()`/`getClasses()`/
+  // `getAcademicOverview()` incondicionalmente; todas negadas pela
+  // Security Rule para a role "guardian" (mesmo bug já corrigido para
+  // "student", ver nota histórica acima). O Portal do Responsável tem
+  // seu próprio Dashboard, em rota própria (`GuardianDashboardPage`),
+  // por isso um redirecionamento em vez de um `if` renderizando
+  // inline como `StudentDashboard`.
+  if (profile.role === "guardian") return <Navigate to="/portal-responsavel" replace />;
   return <AdminDashboard />;
 }
 

@@ -4,9 +4,8 @@ import { Card } from "@/components/ui/Card";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/layout/ErrorState";
 import { EmptyState } from "@/components/layout/EmptyState";
-import { AttendanceStatusBadge } from "@/components/attendance/AttendanceStatusBadge";
+import { AttendanceOverviewPanel } from "@/components/attendance/AttendanceOverviewPanel";
 import { useOwnStudent } from "@/hooks/useOwnStudent";
-import { useIsMobile } from "@/hooks/useMediaQuery";
 import {
   getStudentAttendanceOverview,
   type StudentAttendanceOverview,
@@ -20,9 +19,15 @@ import { describeFirebaseError } from "@/utils/firebaseError";
  * `studentAttendanceOverviewService`, que reaproveita a mesma consulta
  * por contexto já usada pelo Boletim, só expondo os totais brutos que
  * faltavam).
+ *
+ * A apresentação (cards de resumo + tabela por disciplina) foi
+ * extraída para `AttendanceOverviewPanel` na Fase 3 do plano de
+ * evolução (Portal do Responsável), que reaproveita a mesma marcação
+ * para o filho selecionado — esta página cuida só de RESOLVER qual
+ * aluno (o próprio, via `useOwnStudent`) e dos estados de
+ * loading/erro/vazio em torno do painel.
  */
 export function MyAttendancePage() {
-  const isMobile = useIsMobile();
   const { student, loading: loadingStudent, error: studentError, reload: loadStudent } =
     useOwnStudent("minha-frequencia:aluno");
 
@@ -114,95 +119,6 @@ export function MyAttendancePage() {
     );
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <Card className="p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Frequência geral</p>
-          <p className="font-display text-3xl font-bold text-ink900">{overview.overallRate ?? "—"}%</p>
-          {overview.overallRate !== null && (
-            <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full bg-ink-100">
-              <div
-                className={`h-full rounded-full ${
-                  overview.overallStatus === "critical" ? "bg-danger" : "bg-success"
-                }`}
-                style={{ width: `${Math.max(0, Math.min(100, overview.overallRate))}%` }}
-              />
-            </div>
-          )}
-        </div>
-        <div className="flex gap-6">
-          <div>
-            <p className="text-xs text-ink-400">Presenças</p>
-            <p className="font-display text-lg font-semibold text-ink900">{overview.overallPresent}</p>
-          </div>
-          <div>
-            <p className="text-xs text-ink-400">Faltas</p>
-            <p className="font-display text-lg font-semibold text-ink900">{overview.overallAbsent}</p>
-          </div>
-          <div>
-            <p className="text-xs text-ink-400">Aulas</p>
-            <p className="font-display text-lg font-semibold text-ink900">{overview.overallTotal}</p>
-          </div>
-        </div>
-        <AttendanceStatusBadge status={overview.overallStatus} />
-      </Card>
-
-      <Card className="overflow-hidden">
-        <div className="border-b border-line px-4 py-3.5">
-          <p className="font-medium text-ink900">Frequência por disciplina</p>
-        </div>
-        {isMobile ? (
-          <div className="flex flex-col divide-y divide-line">
-            {overview.disciplines.map((row) => (
-              <div key={row.discipline.id} className="flex flex-col gap-1.5 px-4 py-3.5">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="truncate text-sm font-semibold text-ink900">{row.discipline.name}</p>
-                  <p className="shrink-0 font-display text-sm font-semibold text-ink900">
-                    {row.rate === null ? "—" : `${row.rate}%`}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-ink-500">
-                    {row.present} presenças · {row.absent} faltas · {row.total} aulas
-                  </span>
-                  <AttendanceStatusBadge status={row.status} />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <caption className="sr-only">Minha frequência por disciplina</caption>
-              <thead>
-                <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-400">
-                  <th scope="col" className="px-4 py-3">Disciplina</th>
-                  <th scope="col" className="px-4 py-3">Presenças</th>
-                  <th scope="col" className="px-4 py-3">Faltas</th>
-                  <th scope="col" className="px-4 py-3">Aulas</th>
-                  <th scope="col" className="px-4 py-3">Frequência</th>
-                  <th scope="col" className="px-4 py-3">Situação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {overview.disciplines.map((row) => (
-                  <tr key={row.discipline.id} className="border-b border-line last:border-0">
-                    <th scope="row" className="px-4 py-3 text-left font-medium text-ink900">{row.discipline.name}</th>
-                    <td className="px-4 py-3 text-ink-600">{row.present}</td>
-                    <td className="px-4 py-3 text-ink-600">{row.absent}</td>
-                    <td className="px-4 py-3 text-ink-600">{row.total}</td>
-                    <td className="px-4 py-3 text-ink-600">{row.rate === null ? "—" : `${row.rate}%`}</td>
-                    <td className="px-4 py-3">
-                      <AttendanceStatusBadge status={row.status} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-    </div>
-  );
+  return <AttendanceOverviewPanel overview={overview} />;
 }
+

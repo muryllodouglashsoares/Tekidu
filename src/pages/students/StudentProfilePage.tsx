@@ -9,6 +9,7 @@ import {
   History,
   ShieldAlert,
   User,
+  Users,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/Card";
@@ -36,6 +37,8 @@ import {
   getRecordsByContext,
 } from "@/services/attendance/attendanceRecordService";
 import { getAuditLogsForStudent } from "@/services/audit/auditService";
+import { getGuardiansForStudent } from "@/services/guardians/guardianService";
+import { GuardiansTab } from "@/components/students/GuardiansTab";
 import { computeEvolution } from "@/services/reports/reportsService";
 import { ASSESSMENT_TERM_LABEL } from "@/types/assessment";
 import { BOLETIM_PERIOD_LABEL, ALL_ASSESSMENT_TERMS, type BoletimPeriod } from "@/types/boletim";
@@ -45,10 +48,11 @@ import type { Student } from "@/types/student";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { AttendanceRecord } from "@/types/attendance";
 import type { AuditLog } from "@/types/auditLog";
+import type { UserProfile } from "@/types/user";
 import { describeFirebaseError } from "@/utils/firebaseError";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 
-type Tab = "overview" | "attendance" | "history";
+type Tab = "overview" | "attendance" | "guardians" | "history";
 
 const SHIFT_LABEL_FALLBACK: Record<string, string> = {
   morning: "Manhã",
@@ -103,6 +107,27 @@ export function StudentProfilePage() {
   // carregou.
   const [teacherDisciplineIds, setTeacherDisciplineIds] = useState<string[] | null>(null);
 
+  // Responsáveis vinculados (Fase 3 do plano de evolução — Portal do
+  // Responsável): só resolvido para admin (única role que vê a aba),
+  // nunca para o professor — evita uma leitura de `users` a mais numa
+  // tela que o professor já usa bastante (Etapa 7 — "Meus Alunos").
+  const [guardians, setGuardians] = useState<UserProfile[]>([]);
+  const [guardiansLoading, setGuardiansLoading] = useState(false);
+
+  async function loadGuardians(guardianUids: string[]) {
+    setGuardiansLoading(true);
+    try {
+      setGuardians(await getGuardiansForStudent(guardianUids));
+    } catch {
+      // Falha silenciosa: a aba mostra a lista vazia e o admin pode
+      // reabrir a aba para tentar de novo — não vale a pena um
+      // segundo `ErrorState` dedicado só para esta sub-seção.
+      setGuardians([]);
+    } finally {
+      setGuardiansLoading(false);
+    }
+  }
+
   async function loadStudent() {
     if (!studentId) return;
     setLoading(true);
@@ -146,6 +171,11 @@ export function StudentProfilePage() {
     loadStudent();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId, profile?.uid]);
+
+  useEffect(() => {
+    if (!isTeacherView && student) loadGuardians(student.guardianUids);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTeacherView, student?.id, student?.guardianUids.join(",")]);
 
   async function loadBoletim() {
     if (!student?.classId) return;
@@ -264,6 +294,9 @@ export function StudentProfilePage() {
         <TabButton icon={FileText} label="Visão geral" active={tab === "overview"} onClick={() => setTab("overview")} />
         <TabButton icon={CalendarCheck} label="Frequência" active={tab === "attendance"} onClick={() => setTab("attendance")} />
         {profile?.role === "admin" && (
+          <TabButton icon={Users} label="Responsáveis" active={tab === "guardians"} onClick={() => setTab("guardians")} />
+        )}
+        {profile?.role === "admin" && (
           <TabButton icon={History} label="Histórico" active={tab === "history"} onClick={() => setTab("history")} />
         )}
       </div>
@@ -290,6 +323,20 @@ export function StudentProfilePage() {
           classId={student.classId}
           teacherDisciplineIds={teacherDisciplineIds}
         />
+      )}
+
+      {tab === "guardians" && profile?.role === "admin" && (
+        guardiansLoading ? (
+          <Card>
+            <AdaptiveTableSkeleton columns={3} />
+          </Card>
+        ) : (
+          <GuardiansTab
+            student={student}
+            guardians={guardians}
+            onChange={loadStudent}
+          />
+        )
       )}
 
       {tab === "history" && profile?.role === "admin" && <HistoryTab studentId={student.id} />}

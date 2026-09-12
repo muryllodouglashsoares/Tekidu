@@ -68,7 +68,13 @@ const MAX_PER_CATEGORY = 5;
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const { data, status, ensureLoaded } = useCommandPaletteData(profile?.role);
+  // Guardian (Fase 2 do plano de evolução) não tem um dataset
+  // pesquisável próprio aqui (o hook só sabe montar resultados de
+  // admin/teacher/student) — passar `undefined` mantém a paleta
+  // funcional (atalhos de navegação estáticos) sem tentar carregar um
+  // dataset que não existe para esta role.
+  const paletteRole = profile?.role === "guardian" ? undefined : profile?.role;
+  const { data, status, ensureLoaded } = useCommandPaletteData(paletteRole);
   const isMobile = useIsMobile();
 
   const [query, setQuery] = useState("");

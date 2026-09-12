@@ -46,6 +46,21 @@ export const STUDENT_STATUS_LABEL: Record<StudentStatus, string> = {
  * É preenchido automaticamente no momento do CADASTRO (ver
  * `studentService.createStudent`), nunca editado manualmente pelo
  * formulário.
+ *
+ * NOTA SOBRE `guardianUids` (Fase 2 do plano de evolução — Portal do
+ * Responsável): lista de uids de Firebase Authentication (nunca IDs
+ * de documento) dos responsáveis vinculados a este aluno — mesmo
+ * papel de `uid` acima, mas em relação N:N (um aluno pode ter mais de
+ * um responsável; um responsável pode ter mais de um filho — ver
+ * `guardianService.getGuardianStudents`, que consulta `students where
+ * guardianUids array-contains uid`). Gerenciado EXCLUSIVAMENTE por
+ * admin (`guardianService.linkGuardianToStudent`/
+ * `unlinkGuardianFromStudent`) — a Security Rule nega qualquer
+ * alteração deste campo por professor/aluno/o próprio responsável,
+ * mesmo que eles tenham permissão geral de editar outros campos do
+ * aluno (ver `firestore.rules`, `isChangingGuardianUids`). Ausente/
+ * vazio é tratado como "nenhum responsável vinculado ainda" (mesmo
+ * racional de `uid: null` acima — nunca um erro).
  */
 export interface Student {
   id: string;
@@ -56,6 +71,7 @@ export interface Student {
   status: StudentStatus;
   average: number | null;
   uid: string | null;
+  guardianUids: string[];
   createdAt: unknown; // Firestore Timestamp
   updatedAt: unknown; // Firestore Timestamp
 }

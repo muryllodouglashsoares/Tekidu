@@ -35,6 +35,25 @@ service cloud.firestore {
       return isSignedIn() && profile.active == true && profile.role == 'student';
     }
 
+    // PARTE 1 do plano de evolução (Mensageria) — diferente de
+    // `isActiveStaff()` (admin OU teacher), o chat é uma relação
+    // exclusivamente professor↔aluno; admin não é participante. Esta
+    // função isola "teacher" puro, sem incluir admin, para as regras
+    // de `conversations`/`messages` abaixo.
+    function isActiveTeacher() {
+      let profile = callerProfile();
+      return isSignedIn() && profile.active == true && profile.role == 'teacher';
+    }
+
+    // FASE 2 do plano de evolução (Portal do Responsável) — responsável
+    // NUNCA é staff nem dono de dado acadêmico próprio; ele só enxerga
+    // o que `isOwnGuardianStudent`/as extensões abaixo liberarem
+    // explicitamente para os alunos vinculados a ele.
+    function isActiveGuardian() {
+      let profile = callerProfile();
+      return isSignedIn() && profile.active == true && profile.role == 'guardian';
+    }
+
     // Resolve se o documento de aluno referenciado por `studentId`
     // (o ID do documento em `students`, NUNCA o uid de Auth — ver nota
     // de denormalização em `types/grade.ts`/`types/attendance.ts`)
@@ -61,6 +80,21 @@ service cloud.firestore {
     function isOwnStudentRecord(studentId) {
       return isActiveStudent() &&
         get(/databases/$(database)/documents/students/$(studentId)).data.uid == request.auth.uid;
+    }
+
+    // Mesmo papel de `isOwnStudentRecord` acima, mas para a relação
+    // N:N responsável↔aluno (`students.guardianUids`, ver
+    // `types/student.ts`). `.get('guardianUids', [])` (em vez de
+    // `.guardianUids` direto) é o que evita um erro de avaliação da
+    // regra para alunos cadastrados ANTES desta fase, que não têm o
+    // campo — mesmo cuidado aplicado em `isValidGuardianUidsChange`
+    // abaixo. Mesma nota de "COMPATIBILIDADE COM QUERIES" de
+    // `isOwnStudentRecord` se aplica aqui: só é seguro usar em cima de
+    // uma query já filtrada por `where('studentId', '==', <valor
+    // fixo>)`.
+    function isOwnGuardianStudent(studentId) {
+      return isActiveGuardian() &&
+        request.auth.uid in get(/databases/$(database)/documents/students/$(studentId)).data.get('guardianUids', []);
     }
 
     // Item 13 do plano V8 ("Refinar permissões" — menor privilégio
@@ -129,6 +163,75 @@ service cloud.firestore {
       return status == 'present' || status == 'absent';
     }
 
+    // -----------------------------------------------------------------
+    // PARTE 1 do plano de evolução — Mensageria/chat interno
+    // (professor ↔ aluno). Ver `types/conversation.ts`/`types/message.ts`
+    // para o formato completo dos documentos.
+    // -----------------------------------------------------------------
+
+    // Resolve se o par (professor, aluno, turma, disciplina) informado
+    // no payload de CRIAÇÃO de uma conversa é um vínculo real — nunca
+    // confiamos apenas no que o cliente afirma sobre si mesmo. Exige
+    // que `disciplineId` aponte para uma disciplina cujo `teacherId`
+    // seja de fato o professor do par E cuja `classIds` inclua a
+    // turma informada, e que o documento do aluno (`students/
+    // {studentId}`) de fato pertença a essa turma e tenha o `uid`
+    // informado como participante — o mesmo `uid` que precisa constar
+    // em `participantUids` (ver Rule de `create` abaixo).
+    //
+    // POR QUE `disciplineId` É OBRIGATÓRIO NA CRIAÇÃO (nota de
+    // adaptação do modelo original do plano, que o descrevia como
+    // opcional): as Security Rules do Firestore não conseguem
+    // percorrer "existe ALGUMA disciplina que liga este professor a
+    // este aluno" (não há laço/`some()` sobre uma coleção) — apenas
+    // verificar um documento específico via `get()`. Exigir que o
+    // cliente APONTE qual disciplina comprova o vínculo (a mesma
+    // escolhida por `chatContactsService`, que só oferece disciplinas
+    // reais como opção) é o que torna essa verificação possível no
+    // servidor, sem abrir mão de nenhuma garantia de segurança.
+    function isValidConversationPair() {
+      let data = request.resource.data;
+      let studentDoc = get(/databases/$(database)/documents/students/$(data.studentId)).data;
+      let discipline = get(/databases/$(database)/documents/disciplines/$(data.disciplineId)).data;
+      return data.participantUids is list && data.participantUids.size() == 2 &&
+        data.teacherUid in data.participantUids &&
+        data.studentUid in data.participantUids &&
+        data.teacherUid != data.studentUid &&
+        studentDoc.uid == data.studentUid &&
+        studentDoc.classId == data.classId &&
+        discipline.teacherId == data.teacherUid &&
+        discipline.classIds.hasAny([data.classId]);
+    }
+
+    // Um usuário só pode iniciar a conversa como UM DOS DOIS
+    // participantes que ele mesmo está criando (o professor
+    // declarando-se `teacherUid`, ou o aluno declarando-se
+    // `studentUid`) — nunca cria uma conversa "em nome" de outro par.
+    function isConversationCreator() {
+      let data = request.resource.data;
+      return (isActiveTeacher() && request.auth.uid == data.teacherUid) ||
+        (isActiveStudent() && request.auth.uid == data.studentUid);
+    }
+
+    // Limite de caracteres por mensagem (item "UX" do plano) — mesmo
+    // valor de `MESSAGE_MAX_LENGTH` em `types/message.ts`. Rules não
+    // importam TypeScript (mesma nota já registrada em
+    // `isValidScore`/`isValidAttendanceStatus`): se o limite mudar lá,
+    // precisa mudar aqui também.
+    function isValidMessageContent(content) {
+      return content is string && content.size() > 0 && content.size() <= 4000;
+    }
+
+    // Participantes da conversa PAI de uma mensagem — usada pelas
+    // regras de `conversations/{conversationId}/messages/{messageId}`
+    // abaixo. Declarada aqui (em vez de dentro do próprio `match` da
+    // subcoleção) para seguir o mesmo padrão dos demais helpers deste
+    // arquivo: todos no bloco de funções do topo, nenhum nested dentro
+    // de um `match` específico.
+    function conversationParticipants(conversationId) {
+      return get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantUids;
+    }
+
     // ---------------------------------------------------------------
     // users/{uid}
     //
@@ -177,7 +280,13 @@ service cloud.firestore {
     // ---------------------------------------------------------------
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isActiveStaff());
-      allow create: if (isActiveAdmin() && request.resource.data.role == 'teacher') ||
+      // FASE 2 do plano de evolução (Portal do Responsável): criar um
+      // responsável segue a MESMA restrição de criar um professor —
+      // só admin, nunca professor (`isActiveStaff()` cobriria os
+      // dois) — porque um responsável ganha acesso de LEITURA a dados
+      // de aluno assim que vinculado, decisão equivalente em
+      // sensibilidade a criar uma conta de staff.
+      allow create: if (isActiveAdmin() && (request.resource.data.role == 'teacher' || request.resource.data.role == 'guardian')) ||
         (isActiveStaff() && request.resource.data.role == 'student');
       allow update: if isActiveAdmin() &&
         resource.data.role == 'teacher' &&
@@ -250,7 +359,7 @@ service cloud.firestore {
     match /loginKeys/{loginKey} {
       allow get: if true;
       allow list: if false;
-      allow create: if (isActiveAdmin() && request.resource.data.role == 'teacher') ||
+      allow create: if (isActiveAdmin() && (request.resource.data.role == 'teacher' || request.resource.data.role == 'guardian')) ||
         (isActiveStaff() && request.resource.data.role == 'student');
       allow update: if false;
       allow delete: if (isSignedIn() && resource.data.uid == request.auth.uid) || isActiveAdmin();
@@ -273,15 +382,38 @@ service cloud.firestore {
     //   request.auth.uid`) — nunca o de outro aluno, e nunca uma
     //   listagem (uma query `where uid == ...` funciona porque o
     //   Firestore aplica esta regra por documento, mas o cliente
-    //   nunca deve fazer `list` sem esse filtro).
-    // - ESCRITA (criar/editar): apenas admin/teacher com conta ativa.
-    //   O aluno nunca escreve no próprio registro por aqui.
+    //   nunca deve fazer `list` sem esse filtro). FASE 2 do plano de
+    //   evolução: um responsável ATIVO com o próprio uid presente em
+    //   `guardianUids` também pode ler (`isOwnGuardianStudent`) —
+    //   nunca o de um aluno ao qual não está vinculado.
+    // - ESCRITA (criar/editar): admin/teacher com conta ativa podem
+    //   escrever normalmente, EXCETO o campo `guardianUids`: só admin
+    //   pode alterá-lo (ver `allow create`/`allow update` abaixo) — o
+    //   vínculo responsável↔aluno é uma decisão exclusivamente
+    //   administrativa (Fase 2/3 do plano de evolução), nunca algo que
+    //   um professor deveria conseguir mexer pela mesma tela que edita
+    //   nome/turma/status do aluno. O aluno nunca escreve no próprio
+    //   registro por aqui.
     // - EXCLUSÃO: restrita a admin, para evitar que um professor
     //   remova permanentemente o cadastro de um aluno por engano.
     // ---------------------------------------------------------------
     match /students/{studentId} {
-      allow read: if isSignedIn() && (isActiveStaff() || resource.data.uid == request.auth.uid);
-      allow create, update: if isActiveStaff();
+      allow read: if isSignedIn() && (
+        isActiveStaff() ||
+        resource.data.uid == request.auth.uid ||
+        isOwnGuardianStudent(studentId)
+      );
+      // FASE 2 do plano de evolução — `guardianUids` só pode ser
+      // alterado por admin (nunca professor, mesmo que professor
+      // continue podendo criar/editar o resto do cadastro do aluno —
+      // ver `isChangingGuardianUids`). Dividido em `create`/`update`
+      // porque o tratamento do valor "anterior" é diferente nos dois
+      // casos (não existe `resource` num `create`).
+      allow create: if isActiveStaff() &&
+        (isActiveAdmin() || request.resource.data.get('guardianUids', []).size() == 0);
+      allow update: if isActiveStaff() &&
+        (isActiveAdmin() ||
+         request.resource.data.get('guardianUids', []) == resource.data.get('guardianUids', []));
       allow delete: if isActiveAdmin();
     }
 
@@ -368,7 +500,7 @@ service cloud.firestore {
     // disciplina em Notas/Frequência e para o Portal do Professor).
     // ---------------------------------------------------------------
     match /disciplines/{disciplineId} {
-      allow read: if isActiveStaff() || isActiveStudent();
+      allow read: if isActiveStaff() || isActiveStudent() || isActiveGuardian();
       allow create, update: if isActiveAdmin();
       allow delete: if isActiveAdmin();
     }
@@ -454,7 +586,8 @@ service cloud.firestore {
     match /grades/{gradeId} {
       allow read: if isActiveAdmin() ||
         (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId)) ||
-        isOwnStudentRecord(resource.data.studentId);
+        isOwnStudentRecord(resource.data.studentId) ||
+        isOwnGuardianStudent(resource.data.studentId);
       // Validação de payload (Tarefa 1, pós-auditoria V8): `score`
       // precisa ser `null` (nota não lançada) ou um número em 0–10 —
       // ver `isValidScore()`. Antes desta validação, era possível
@@ -513,7 +646,8 @@ service cloud.firestore {
     match /attendanceRecords/{recordId} {
       allow read: if isActiveAdmin() ||
         (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId)) ||
-        isOwnStudentRecord(resource.data.studentId);
+        isOwnStudentRecord(resource.data.studentId) ||
+        isOwnGuardianStudent(resource.data.studentId);
       // Validação de payload (Tarefa 1, pós-auditoria V8): `status`
       // precisa ser um dos valores do enum `AttendanceRecordStatus`
       // (`src/types/attendance.ts`) — ver `isValidAttendanceStatus()`.
@@ -547,7 +681,7 @@ service cloud.firestore {
     // uma preferência de professor (nem, com mais razão, de aluno).
     // ---------------------------------------------------------------
     match /academicSettings/{schoolYear} {
-      allow read: if isActiveStaff() || isActiveStudent();
+      allow read: if isActiveStaff() || isActiveStudent() || isActiveGuardian();
       allow create, update, delete: if isActiveAdmin();
     }
 
@@ -709,6 +843,95 @@ service cloud.firestore {
 
       allow delete: if isActiveAdmin() ||
         (isActiveStaff() && resource.data.createdBy == request.auth.uid);
+    }
+
+    // ---------------------------------------------------------------
+    // conversations/{conversationId} — Mensageria (Parte 1 do plano
+    // de evolução).
+    //
+    // LEITURA: só os DOIS participantes (`request.auth.uid in
+    // participantUids`) — nunca uma listagem ampla; toda query do
+    // cliente já filtra por `array-contains` o próprio uid (ver
+    // `chatService.subscribeToConversations`), então esta regra nunca
+    // barra o uso legítimo.
+    //
+    // CRIAÇÃO: quem inicia precisa ser UM dos dois participantes
+    // (`isConversationCreator`) E o par precisa ser um vínculo real de
+    // disciplina/turma (`isValidConversationPair`) — as duas condições
+    // juntas fecham tanto "criar conversa em nome de outra pessoa"
+    // quanto "conversar com quem não tem nenhum vínculo acadêmico
+    // real".
+    //
+    // ATUALIZAÇÃO: qualquer participante pode atualizar os campos de
+    // RESUMO da conversa (enviados por `chatService.sendMessage`/
+    // `markConversationRead`) — nunca os campos de IDENTIDADE do par
+    // (`participantUids`/`studentId`/`studentUid`/`teacherUid`/
+    // `classId`/`disciplineId`), que ficam congelados após a criação.
+    // Um participante PODE, tecnicamente, zerar o contador de não
+    // lidas do OUTRO participante (`unreadCount` é liberado como um
+    // todo, não campo a campo) — aceito conscientemente: o pior caso
+    // é o badge do outro ficar temporariamente errado, nunca uma
+    // leitura indevida de conteúdo (a regra de LEITURA acima é quem
+    // protege o conteúdo real).
+    //
+    // EXCLUSÃO: nunca pelo cliente — mesmo espírito de `auditLogs`.
+    // ---------------------------------------------------------------
+    match /conversations/{conversationId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participantUids;
+      allow create: if isConversationCreator() && isValidConversationPair();
+      allow update: if isSignedIn() &&
+        request.auth.uid in resource.data.participantUids &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+          ['lastMessage', 'lastMessageAt', 'lastMessageSenderUid', 'unreadCount', 'updatedAt']
+        ) &&
+        request.resource.data.participantUids == resource.data.participantUids &&
+        request.resource.data.studentId == resource.data.studentId &&
+        request.resource.data.studentUid == resource.data.studentUid &&
+        request.resource.data.teacherUid == resource.data.teacherUid &&
+        request.resource.data.classId == resource.data.classId &&
+        request.resource.data.disciplineId == resource.data.disciplineId;
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------
+    // conversations/{conversationId}/messages/{messageId}
+    //
+    // Subcoleção — a "identidade" de quem pode ler/escrever nunca vem
+    // do próprio documento de mensagem, mas do documento PAI
+    // (`conversations/{conversationId}.participantUids`), resolvido
+    // via `get()` (mesmo custo/padrão já aceito em `isOwnDiscipline`).
+    //
+    // LEITURA/CRIAÇÃO: restritas aos dois participantes da conversa
+    // pai. Na criação, adicionalmente: `senderUid` precisa ser quem
+    // está autenticado (nunca se pode enviar "como" o outro
+    // participante) e `recipientUid` precisa ser o OUTRO participante
+    // (nunca a própria pessoa) — e o conteúdo passa por
+    // `isValidMessageContent` (não vazio, dentro do limite de
+    // caracteres), mesmo racional de validação de payload já aplicado
+    // a `grades`/`attendanceRecords` (`isValidScore`/
+    // `isValidAttendanceStatus`).
+    //
+    // ATUALIZAÇÃO: só o DESTINATÁRIO da mensagem pode alterá-la, e
+    // apenas o campo `readAt` (marcar como lida) — nunca o remetente
+    // reescrevendo o próprio conteúdo depois de enviado, e nunca o
+    // destinatário alterando o `content` recebido.
+    //
+    // EXCLUSÃO: nunca pelo cliente — uma mensagem apagada pelo
+    // remetente após o destinatário já tê-la visto quebraria a
+    // integridade do histórico da conversa para os dois lados.
+    // ---------------------------------------------------------------
+    match /conversations/{conversationId}/messages/{messageId} {
+      allow read: if isSignedIn() && request.auth.uid in conversationParticipants(conversationId);
+      allow create: if isSignedIn() &&
+        request.auth.uid in conversationParticipants(conversationId) &&
+        request.resource.data.senderUid == request.auth.uid &&
+        request.resource.data.recipientUid in conversationParticipants(conversationId) &&
+        request.resource.data.recipientUid != request.auth.uid &&
+        isValidMessageContent(request.resource.data.content);
+      allow update: if isSignedIn() &&
+        resource.data.recipientUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
+      allow delete: if false;
     }
 
     // Nenhuma outra coleção existe ainda. Por padrão, o Firestore nega

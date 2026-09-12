@@ -19,6 +19,20 @@ interface RouteMeta {
 const ROUTE_META: [string, RouteMeta][] = [
   ["/alunos/", { title: "Detalhes do Aluno", backTo: "/alunos", backLabel: "Alunos" }],
   ["/meus-alunos/", { title: "Detalhes do Aluno", backTo: "/meus-alunos", backLabel: "Meus Alunos" }],
+  // Mensagens (Parte 1 do plano de evolução): "/mensagens/:id" é a
+  // conversa aberta (mostra botão de voltar); "/mensagens" sozinha é
+  // a lista. Mesmo padrão de precedência de "/alunos/" acima — a
+  // entrada com "/" precisa vir ANTES da entrada sem "/", já que
+  // `pathname.startsWith` também bate com o prefixo mais curto.
+  ["/mensagens/", { title: "Conversa", backTo: "/mensagens", backLabel: "Mensagens" }],
+  // Portal do Responsável (Fase 2/3 do plano de evolução): mesma
+  // precedência acima — as duas sub-rotas ("/boletim", "/frequencia")
+  // precisam vir ANTES de "/portal-responsavel" sozinha, senão
+  // `pathname.startsWith("/portal-responsavel")` bateria primeiro
+  // para as três e nenhuma delas mostraria o título certo.
+  ["/portal-responsavel/boletim", { title: "Boletim" }],
+  ["/portal-responsavel/frequencia", { title: "Frequência" }],
+  ["/portal-responsavel", { title: "Início", subtitle: (name) => `Olá, ${name}` }],
   ["/dashboard", { title: "Início", subtitle: (name) => `Olá, ${name}` }],
   ["/alunos", { title: "Alunos", subtitle: "Gestão de alunos da escola" }],
   ["/turmas", { title: "Turmas", subtitle: "Gestão de turmas" }],
@@ -35,6 +49,7 @@ const ROUTE_META: [string, RouteMeta][] = [
   ["/minhas-disciplinas", { title: "Minhas Disciplinas" }],
   ["/minha-frequencia", { title: "Minha Frequência" }],
   ["/meu-desempenho", { title: "Meu Desempenho" }],
+  ["/mensagens", { title: "Mensagens" }],
   ["/calendario", { title: "Calendário", subtitle: "Calendário acadêmico" }],
   ["/avisos", { title: "Avisos" }],
   ["/configuracoes", { title: "Configurações" }],

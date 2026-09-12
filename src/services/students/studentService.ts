@@ -46,6 +46,11 @@ function toStudent(id: string, data: Record<string, unknown>): Student {
     // (Tarefa 2) — `?? null` trata a ausência do campo exatamente
     // como o estado "sem conta vinculada ainda", sem exigir migração.
     uid: (data.uid as string | null) ?? null,
+    // Fase 2 do plano de evolução (guardian) — `?? []` trata a
+    // ausência do campo (todo aluno cadastrado antes desta fase)
+    // exatamente como "nenhum responsável vinculado ainda", sem exigir
+    // migração de dados.
+    guardianUids: (data.guardianUids as string[] | undefined) ?? [],
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   };
@@ -89,6 +94,24 @@ export async function getStudentByUid(uid: string): Promise<Student | null> {
   if (snapshot.empty) return null;
   const first = snapshot.docs[0];
   return toStudent(first.id, first.data());
+}
+
+/**
+ * Resolve os alunos vinculados a um responsável (Fase 2/3 do plano de
+ * evolução — Portal do Responsável), a partir do `uid` de Firebase
+ * Authentication do responsável logado.
+ *
+ * A query `where('guardianUids', 'array-contains', uid)` é o padrão
+ * exigido pela Security Rule (`isOwnGuardianStudent`/`isActiveGuardian`
+ * em `firestore.rules`): o filtro bate exatamente com a condição da
+ * regra, permitindo ao Firestore validar a consulta sem exigir um
+ * `list` irrestrito — mesmo racional de `getStudentByUid` acima, só
+ * que para uma relação N:N em vez de 1:1.
+ */
+export async function getStudentsByGuardianUid(uid: string): Promise<Student[]> {
+  const q = query(studentsCollection, where("guardianUids", "array-contains", uid));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => toStudent(d.id, d.data()));
 }
 
 /**

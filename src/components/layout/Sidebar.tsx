@@ -12,6 +12,7 @@ import {
   BarChart3,
   LineChart,
   Megaphone,
+  MessageCircle,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -35,12 +36,38 @@ interface NavItem {
 // e "Acadêmico"). Itens marcados com `soon` levam a uma tela de
 // "em desenvolvimento" em vez de 404 — ver PlaceholderPage.
 const principalNav: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  // Avisos: acessível a QUALQUER role (sem `roles`, mesmo critério do
-  // Dashboard) — o Portal de Avisos escopa o conteúdo por perfil
-  // internamente (ver AnnouncementsPage/announcementService), não pela
-  // visibilidade do item de navegação.
-  { to: "/avisos", label: "Avisos", icon: Megaphone },
+  // Restrito a excluir "guardian": o Portal do Responsável tem seu
+  // próprio item "Início" abaixo, apontando direto para
+  // "/portal-responsavel" — mostrar também "Dashboard" aqui seria
+  // redundante (o link ainda funcionaria, via redirect em
+  // `DashboardPage`, mas duas entradas para o mesmo destino confunde
+  // a navegação).
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "teacher", "student"] },
+  // Portal do Responsável (Fase 2/3 do plano de evolução): grupo
+  // próprio de 3 itens, só para "guardian" — mesmo padrão de
+  // `minhasTurmasNav`/`meuPortalNav` abaixo (visão exclusiva de uma
+  // role, não um item avulso misturado ao grupo "Principal" de
+  // staff).
+  { to: "/portal-responsavel", label: "Início", icon: LayoutDashboard, roles: ["guardian"] },
+  { to: "/portal-responsavel/boletim", label: "Boletim", icon: FileText, roles: ["guardian"] },
+  {
+    to: "/portal-responsavel/frequencia",
+    label: "Frequência",
+    icon: CalendarCheck,
+    roles: ["guardian"],
+  },
+  // Avisos: acessível a QUALQUER role de STAFF/aluno (sem `roles`
+  // restrito a essas), mas NÃO ao responsável — a Security Rule de
+  // `announcements` ainda não libera leitura para "guardian" (o plano
+  // de evolução não lista Avisos no Portal do Responsável), então
+  // mostrar o item aqui resultaria em erro de permissão ao abrir a
+  // página. Ver "Pendências" no relatório final.
+  { to: "/avisos", label: "Avisos", icon: Megaphone, roles: ["admin", "teacher", "student"] },
+  // Mensagens (Parte 1 do plano de evolução — chat interno): restrita
+  // a professor/aluno, mesmo par de roles autorizado pela rota (ver
+  // AppRoutes.tsx) e pelas Firestore Security Rules. Admin não
+  // participa do chat nesta fase.
+  { to: "/mensagens", label: "Mensagens", icon: MessageCircle, roles: ["teacher", "student"] },
   // Alunos/Turmas/Disciplinas: visão de STAFF (escola inteira, com
   // edição) — restrita a admin. Antes também aparecia para "teacher",
   // mas essa visão foi retirada do professor: agora ele usa

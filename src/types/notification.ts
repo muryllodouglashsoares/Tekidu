@@ -48,6 +48,13 @@
  *
  * Novos tipos de evento podem ser adicionados a este union e a
  * `notificationService.createNotification` sem alterar a estrutura.
+ *
+ * PARTE 1 do plano de evolução (Mensageria — professor ↔ aluno):
+ * `message_received` é disparado por `chatService.sendMessage` sempre
+ * que uma mensagem é enviada, notificando o DESTINATÁRIO (nunca quem
+ * enviou) — passa no mesmo critério "tem valor real para quem recebe"
+ * usado acima: quem recebe uma mensagem nova precisa saber, mesmo que
+ * não esteja com `/mensagens` aberto no momento.
  */
 export type NotificationType =
   | "grade_posted"
@@ -55,7 +62,8 @@ export type NotificationType =
   | "teacher_created"
   | "assessment_created"
   | "assessment_updated"
-  | "attendance_warning";
+  | "attendance_warning"
+  | "message_received";
 
 export const NOTIFICATION_TYPE_LABEL: Record<NotificationType, string> = {
   grade_posted: "Nota lançada",
@@ -64,6 +72,7 @@ export const NOTIFICATION_TYPE_LABEL: Record<NotificationType, string> = {
   assessment_created: "Avaliação cadastrada",
   assessment_updated: "Avaliação atualizada",
   attendance_warning: "Alerta de frequência",
+  message_received: "Nova mensagem",
 };
 
 export interface Notification {

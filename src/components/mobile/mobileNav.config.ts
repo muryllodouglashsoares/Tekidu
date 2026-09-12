@@ -11,6 +11,7 @@ import {
   LineChart,
   Megaphone,
   CalendarDays,
+  MessageCircle,
   Settings,
   Moon,
   LogOut,
@@ -57,6 +58,15 @@ export const MOBILE_BOTTOM_NAV: Record<UserRole, MobileNavItem[]> = {
     { to: "/meu-desempenho", label: "Desempenho", icon: LineChart },
     { to: "/calendario", label: "Calendário", icon: CalendarDays },
   ],
+  // Portal do Responsável (Fase 2/3 do plano de evolução): só 3
+  // destinos reais existem (Início/Boletim/Frequência) — diferente
+  // dos outros grupos, não há um quarto item natural para preencher o
+  // slot (Mensagens não se aplica a esta role, ver Sidebar.tsx).
+  guardian: [
+    { to: "/portal-responsavel", label: "Início", icon: LayoutDashboard },
+    { to: "/portal-responsavel/boletim", label: "Boletim", icon: FileText },
+    { to: "/portal-responsavel/frequencia", label: "Frequência", icon: CalendarCheck },
+  ],
 };
 
 /**
@@ -97,6 +107,12 @@ export const MOBILE_MORE_SECTIONS: Record<UserRole, MobileMoreSection[]> = {
       ],
     },
     {
+      title: "Comunicação",
+      items: [
+        { to: "/mensagens", label: "Mensagens", icon: MessageCircle },
+      ],
+    },
+    {
       title: "Organização",
       items: [
         { to: "/calendario", label: "Calendário", icon: CalendarDays },
@@ -113,10 +129,20 @@ export const MOBILE_MORE_SECTIONS: Record<UserRole, MobileMoreSection[]> = {
       ],
     },
     {
+      title: "Comunicação",
+      items: [
+        { to: "/mensagens", label: "Mensagens", icon: MessageCircle },
+      ],
+    },
+    {
       title: "Organização",
       items: [{ to: "/avisos", label: "Avisos", icon: Megaphone }],
     },
   ],
+  // Portal do Responsável: os 3 destinos reais já estão na Bottom
+  // Navigation (ver acima) — "Mais" mostra só a seção fixa "Conta"
+  // (Configurações/Tema/Sair, adicionada pelo componente).
+  guardian: [],
 };
 
 // Reaproveitados pelo componente para montar a seção fixa "Conta".

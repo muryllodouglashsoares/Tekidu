@@ -90,6 +90,7 @@ const ROLE_LABEL: Record<UserRole, string> = {
   admin: "Administrador",
   teacher: "Professor",
   student: "Aluno",
+  guardian: "Responsável",
 };
 
 function NavSection({

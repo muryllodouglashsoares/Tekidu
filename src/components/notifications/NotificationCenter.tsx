@@ -10,6 +10,7 @@ import {
   FilePlus2,
   FileEdit,
   AlertTriangle,
+  MessageCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
@@ -37,6 +38,8 @@ const ICON_BY_TYPE: Record<NotificationType, typeof Bell> = {
   assessment_created: FilePlus2,
   assessment_updated: FileEdit,
   attendance_warning: AlertTriangle,
+  // PARTE 1 do plano de evolução (Mensageria) — ver `types/notification.ts`.
+  message_received: MessageCircle,
 };
 
 function formatRelativeTime(value: unknown): string {

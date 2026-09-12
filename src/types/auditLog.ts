@@ -37,6 +37,17 @@
  *   destrutiva e irreversível, é auditada; criar/editar/publicar um
  *   aviso não gera log, para não sobrecarregar a trilha com eventos de
  *   baixo risco). `before` guarda o título do aviso excluído.
+ *
+ * FASE 2/3 do plano de evolução (Portal do Responsável):
+ * - `guardian_created`: cadastro de um novo responsável
+ *   (`guardianService.createGuardian`) — mesmo papel de
+ *   `teacher_created`, `before: null`.
+ * - `guardian_linked`/`guardian_unlinked`: vínculo responsável↔aluno
+ *   criado ou removido (`guardianService.linkGuardianToStudent`/
+ *   `unlinkGuardianFromStudent`) — o dado mais sensível desta
+ *   funcionalidade (decide quem passa a enxergar boletim/frequência
+ *   de qual aluno), por isso auditado nos dois sentidos, não só na
+ *   criação. `before`/`after` guardam o nome do responsável.
  */
 export type AuditEventType =
   | "grade_updated"
@@ -47,7 +58,10 @@ export type AuditEventType =
   | "teacher_status_changed"
   | "class_deleted"
   | "discipline_deleted"
-  | "announcement_deleted";
+  | "announcement_deleted"
+  | "guardian_created"
+  | "guardian_linked"
+  | "guardian_unlinked";
 
 /**
  * Rótulo legível para cada tipo de evento — usado pela aba "Histórico"
@@ -65,6 +79,9 @@ export const AUDIT_EVENT_LABEL: Record<AuditEventType, string> = {
   class_deleted: "Turma excluída",
   discipline_deleted: "Disciplina excluída",
   announcement_deleted: "Aviso excluído",
+  guardian_created: "Responsável cadastrado",
+  guardian_linked: "Responsável vinculado a aluno",
+  guardian_unlinked: "Responsável desvinculado de aluno",
 };
 
 export interface AuditLog {

@@ -36,6 +36,10 @@ const TITLES: Record<string, string> = {
   "/minhas-disciplinas": "Minhas Disciplinas",
   "/minha-frequencia": "Minha Frequência",
   "/meu-desempenho": "Meu Desempenho",
+  "/mensagens": "Mensagens",
+  "/portal-responsavel": "Início",
+  "/portal-responsavel/boletim": "Boletim",
+  "/portal-responsavel/frequencia": "Frequência",
   "/calendario": "Calendário",
   "/configuracoes": "Configurações",
 };
