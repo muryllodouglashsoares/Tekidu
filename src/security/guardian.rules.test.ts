@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   assertFails,
   assertSucceeds,
@@ -106,6 +106,30 @@ describe("students/{studentId} — leitura pelo responsável", () => {
   it("permite ao responsável ler o próprio filho vinculado", async () => {
     const guardianDb = testEnv.authenticatedContext(GUARDIAN_UID, { role: "guardian" }).firestore();
     await assertSucceeds(guardianDb.doc(`students/${STUDENT_A_ID}`).get());
+  });
+
+  // Regressão: `getStudentsByGuardianUid` (Portal do Responsável) usa
+  // uma QUERY (`where('guardianUids', 'array-contains', uid)`), não um
+  // `.get()` de documento único — os testes acima nunca cobriam esse
+  // caminho, e foi exatamente essa lacuna que deixou passar um
+  // "permission-denied" na consulta real, mesmo com todos os testes de
+  // `.get()` passando (ver nota em `firestore.rules`).
+  it("permite ao responsável LISTAR (query) os próprios filhos vinculados", async () => {
+    const guardianDb = testEnv.authenticatedContext(GUARDIAN_UID, { role: "guardian" }).firestore();
+    const snapshot = await assertSucceeds(
+      guardianDb.collection("students").where("guardianUids", "array-contains", GUARDIAN_UID).get()
+    );
+    expect(snapshot.docs.map((d) => d.id)).toEqual([STUDENT_A_ID]);
+  });
+
+  it("a query do responsável nunca retorna alunos de outro responsável", async () => {
+    const otherGuardianDb = testEnv
+      .authenticatedContext(OTHER_GUARDIAN_UID, { role: "guardian" })
+      .firestore();
+    const snapshot = await assertSucceeds(
+      otherGuardianDb.collection("students").where("guardianUids", "array-contains", OTHER_GUARDIAN_UID).get()
+    );
+    expect(snapshot.empty).toBe(true);
   });
 
   it("nega ao responsável ler um aluno ao qual não está vinculado (mesma turma)", async () => {
