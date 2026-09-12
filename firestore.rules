@@ -877,7 +877,20 @@ service cloud.firestore {
     // EXCLUSÃO: nunca pelo cliente — mesmo espírito de `auditLogs`.
     // ---------------------------------------------------------------
     match /conversations/{conversationId} {
-      allow read: if isSignedIn() && request.auth.uid in resource.data.participantUids;
+      // `resource == null` cobre o `getDoc` de checagem que
+      // `chatService.getOrCreateConversation` faz ANTES de criar a
+      // conversa: quando é o primeiro contato entre aquele professor
+      // e aquele aluno, o documento ainda não existe, e `resource`
+      // vem `null` do Firestore. Sem este guard, `resource.data.
+      // participantUids` avalia sobre `null` e a regra estoura em
+      // erro de avaliação — que o Firestore reporta ao cliente como
+      // `permission-denied` (não como "documento não encontrado"),
+      // bloqueando a criação de qualquer conversa nova. Liberar a
+      // leitura de um documento inexistente não vaza nada (não há
+      // dado para proteger), e a segurança do CONTEÚDO real continua
+      // inteiramente a cargo da condição de participante abaixo.
+      allow read: if isSignedIn() &&
+        (resource == null || request.auth.uid in resource.data.participantUids);
       allow create: if isConversationCreator() && isValidConversationPair();
       allow update: if isSignedIn() &&
         request.auth.uid in resource.data.participantUids &&
