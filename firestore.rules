@@ -92,6 +92,14 @@ service cloud.firestore {
     // `isOwnStudentRecord` se aplica aqui: só é seguro usar em cima de
     // uma query já filtrada por `where('studentId', '==', <valor
     // fixo>)`.
+    // USO: apenas para coleções ONDE `studentId` é um CAMPO que aponta
+    // para outro documento (grades/attendanceRecords) — nunca dentro
+    // do próprio `match /students/{studentId}`, onde checar
+    // `resource.data.get('guardianUids', [])` diretamente é
+    // suficiente e evita um `get()` auto-referente à mesma coleção
+    // sendo listada (ver nota em `match /students/{studentId}` —
+    // causa raiz do bug de "permission-denied" no Portal do
+    // Responsável).
     function isOwnGuardianStudent(studentId) {
       return isActiveGuardian() &&
         request.auth.uid in get(/databases/$(database)/documents/students/$(studentId)).data.get('guardianUids', []);
@@ -398,10 +406,25 @@ service cloud.firestore {
     //   remova permanentemente o cadastro de um aluno por engano.
     // ---------------------------------------------------------------
     match /students/{studentId} {
+      // LEITURA do responsável: checagem DIRETA em `resource.data`, em
+      // vez de `isOwnGuardianStudent(studentId)` (usada em
+      // grades/attendanceRecords, onde é indispensável — lá o
+      // documento avaliado é outra coleção e `studentId` é só um
+      // campo). Aqui seria um `get()` redundante para o MESMO
+      // documento que `resource` já é, dentro da PRÓPRIA coleção que
+      // está sendo consultada — e é exatamente essa combinação (get()
+      // auto-referente + `list`/`where` na mesma coleção) que o
+      // Firestore não avalia de forma confiável: a query real do app
+      // (`getStudentsByGuardianUid`, `where('guardianUids',
+      // 'array-contains', uid)`) vinha caindo em "permission-denied"
+      // mesmo com `guardianUids` correto, enquanto um `get()` direto
+      // de `students/{studentId}` (como nos testes existentes) sempre
+      // funcionou — daí o bug só aparecer no Portal do Responsável
+      // real, nunca nos testes de regra (que só testavam `.get()`).
       allow read: if isSignedIn() && (
         isActiveStaff() ||
         resource.data.uid == request.auth.uid ||
-        isOwnGuardianStudent(studentId)
+        (isActiveGuardian() && request.auth.uid in resource.data.get('guardianUids', []))
       );
       // FASE 2 do plano de evolução — `guardianUids` só pode ser
       // alterado por admin (nunca professor, mesmo que professor
