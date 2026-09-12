@@ -33,6 +33,16 @@ import {
 import { logAuditEvent } from "@/services/audit/auditService";
 import { createNotification } from "@/services/notifications/notificationService";
 import { getAcademicSettings } from "@/services/academicSettings/academicSettingsService";
+import { ExportButtons } from "@/components/exports/ExportButtons";
+import { GenericExportPDF } from "@/components/pdf/GenericExportPDF";
+import {
+  buildAttendanceHistoryExcelSheets,
+  buildAttendanceHistoryPdfData,
+  buildAttendanceRegisterExcelSheets,
+  buildAttendanceRegisterPdfData,
+  type AttendanceExportContext,
+} from "@/services/exports/attendanceExportService";
+import { buildExportFileName } from "@/services/exports/exportFormat";
 import type { AssessmentTerm } from "@/types/assessment";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { Discipline } from "@/types/discipline";
@@ -720,6 +730,39 @@ function RegisterTab({
             currentSession={selectedSessionId ? currentSessionCounts : null}
           />
 
+          <div className="mb-4 flex justify-end">
+            <ExportButtons
+              fileNameBase={buildExportFileName("frequencia", [
+                selectedClass?.name,
+                selectedDiscipline?.name,
+                term ? `${term}bimestre` : undefined,
+                yearFilter,
+              ])}
+              isEmpty={linkedStudents.length === 0}
+              getPdfDocument={() => (
+                <GenericExportPDF
+                  {...buildAttendanceRegisterPdfData(
+                    linkedStudents,
+                    summaryByStudent,
+                    sessions,
+                    recordsByStudentAndSession,
+                    registerExportContext(selectedClass, selectedDiscipline, term, yearFilter),
+                    new Date()
+                  )}
+                />
+              )}
+              getExcelSheets={() =>
+                buildAttendanceRegisterExcelSheets(
+                  linkedStudents,
+                  summaryByStudent,
+                  sessions,
+                  recordsByStudentAndSession,
+                  registerExportContext(selectedClass, selectedDiscipline, term, yearFilter)
+                )
+              }
+            />
+          </div>
+
           {saveError && (
             <p role="alert" className="mb-4 text-sm text-danger">
               {saveError}
@@ -903,6 +946,30 @@ function HistoryTab({
             ))}
           </Select>
         </div>
+        <ExportButtons
+          fileNameBase={buildExportFileName("frequencia-historico", [
+            classes.find((c) => c.id === classFilter)?.name,
+            disciplines.find((d) => d.id === disciplineFilter)?.name,
+          ])}
+          isEmpty={rows.length === 0}
+          getPdfDocument={() => (
+            <GenericExportPDF
+              {...buildAttendanceHistoryPdfData(
+                rows,
+                classes.find((c) => c.id === classFilter)?.name ?? "Todas",
+                disciplines.find((d) => d.id === disciplineFilter)?.name ?? "Todas",
+                new Date()
+              )}
+            />
+          )}
+          getExcelSheets={() =>
+            buildAttendanceHistoryExcelSheets(
+              rows,
+              classes.find((c) => c.id === classFilter)?.name ?? "Todas",
+              disciplines.find((d) => d.id === disciplineFilter)?.name ?? "Todas"
+            )
+          }
+        />
       </Card>
 
       {loading ? (
@@ -920,6 +987,21 @@ function HistoryTab({
       )}
     </>
   );
+}
+
+/** Monta o contexto de exportação (Registro de presença) a partir dos mesmos filtros já aplicados na tela. */
+function registerExportContext(
+  selectedClass: SchoolClass | null,
+  selectedDiscipline: Discipline | null,
+  term: string,
+  yearFilter: string
+): AttendanceExportContext {
+  return {
+    yearFilter,
+    className: selectedClass?.name ?? "",
+    disciplineName: selectedDiscipline?.name ?? "",
+    term: (term as AssessmentTerm) || "",
+  };
 }
 
 function formatDatePtBr(isoDate: string): string {

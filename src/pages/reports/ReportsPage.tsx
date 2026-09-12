@@ -24,6 +24,18 @@ import {
   computeStudentSummaries,
   type ReportScope,
 } from "@/services/reports/reportsService";
+import { ExportButtons } from "@/components/exports/ExportButtons";
+import { GenericExportPDF } from "@/components/pdf/GenericExportPDF";
+import { BoletimPdfDownloadButton } from "@/components/boletim/BoletimPdfDownloadButton";
+import {
+  buildReportsOverviewExcelSheets,
+  buildReportsOverviewPdfData,
+  buildReportsStudentListExcelSheets,
+  buildReportsStudentListPdfData,
+  buildStudentBoletimExcelSheets,
+  type ReportsExportContext,
+} from "@/services/exports/reportsExportService";
+import { buildExportFileName } from "@/services/exports/exportFormat";
 import { useAuth } from "@/contexts/AuthContext";
 import { ASSESSMENT_TERM_LABEL, type AssessmentTerm } from "@/types/assessment";
 import type { SchoolClass } from "@/types/schoolClass";
@@ -210,6 +222,30 @@ export function ReportsPage() {
   const contextLabel = buildContextLabel(filterClass, selectedDiscipline, term as AssessmentTerm | "");
 
   // -------------------------------------------------------------
+  // Exportação (PDF/Excel) — reaproveita exatamente os dados já
+  // calculados acima (`overview`, `classSummaries`, `studentSummaries`),
+  // nunca uma nova consulta/cálculo. Ver services/exports/reportsExportService.ts.
+  // -------------------------------------------------------------
+  const overviewExportContext: ReportsExportContext = {
+    yearFilter,
+    className: filterClass?.name,
+    disciplineName: selectedDiscipline?.name,
+    term: (term as AssessmentTerm) || "",
+  };
+  const overviewExportFileName = buildExportFileName("relatorio", [
+    filterClass?.name,
+    selectedDiscipline?.name,
+    term ? `${term}bimestre` : undefined,
+    yearFilter,
+  ]);
+
+  const studentListExportContext: ReportsExportContext = {
+    yearFilter,
+    className: viewClass?.name,
+  };
+  const studentListExportFileName = buildExportFileName("relatorio", [viewClass?.name, yearFilter]);
+
+  // -------------------------------------------------------------
   // Busca individual (item 16) — atalho direto para o relatório do
   // aluno, sem passar pelo fluxo Turma → Alunos.
   //
@@ -329,19 +365,58 @@ export function ReportsPage() {
             <ErrorState message={reportError} onRetry={loadStudentReport} />
           </Card>
         ) : boletim ? (
-          <StudentDevelopmentReport
-            student={selectedStudent}
-            schoolClass={selectedStudentClass}
-            schoolYear={String(selectedStudentClass.schoolYear)}
-            boletim={boletim}
-            series={series}
-          />
+          <div>
+            <div className="mb-4 flex justify-end gap-2">
+              <BoletimPdfDownloadButton
+                student={selectedStudent}
+                classId={selectedStudentClass.id}
+                schoolClass={selectedStudentClass}
+                schoolYear={selectedStudentClass.schoolYear}
+                period="annual"
+                boletim={boletim}
+              />
+              <ExportButtons
+                fileNameBase={buildExportFileName("relatorio", [
+                  selectedStudent.registrationNumber || selectedStudent.name,
+                  selectedStudentClass.schoolYear,
+                ])}
+                isEmpty={boletim.disciplines.length === 0}
+                getExcelSheets={() =>
+                  buildStudentBoletimExcelSheets(
+                    boletim,
+                    selectedStudent.name,
+                    selectedStudentClass.name,
+                    selectedStudentClass.schoolYear
+                  )
+                }
+              />
+            </div>
+            <StudentDevelopmentReport
+              student={selectedStudent}
+              schoolClass={selectedStudentClass}
+              schoolYear={String(selectedStudentClass.schoolYear)}
+              boletim={boletim}
+              series={series}
+            />
+          </div>
         ) : null
       ) : viewClass ? (
         <div>
-          <div className="mb-3">
-            <h3 className="font-display text-base font-semibold text-ink900">Alunos — {viewClass.name}</h3>
-            <p className="text-sm text-ink-500">Selecione um aluno para acessar o relatório de desenvolvimento.</p>
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h3 className="font-display text-base font-semibold text-ink900">Alunos — {viewClass.name}</h3>
+              <p className="text-sm text-ink-500">Selecione um aluno para acessar o relatório de desenvolvimento.</p>
+            </div>
+            <ExportButtons
+              fileNameBase={studentListExportFileName}
+              isEmpty={studentSummaries.length === 0}
+              getPdfDocument={() => (
+                <GenericExportPDF
+                  {...buildReportsStudentListPdfData(studentSummaries, studentListExportContext, new Date())}
+                />
+              )}
+              getExcelSheets={() => buildReportsStudentListExcelSheets(studentSummaries, studentListExportContext)}
+            />
           </div>
           <Card className="overflow-hidden">
             {studentsInClass.length === 0 ? (
@@ -404,11 +479,23 @@ export function ReportsPage() {
             averageAttendanceRate={overview.averageAttendanceRate}
           />
 
-          <div className="mb-3">
-            <h3 className="font-display text-base font-semibold text-ink900">Turmas</h3>
-            <p className="text-sm text-ink-500">
-              Selecione uma turma para visualizar seus alunos e acessar os relatórios individuais.
-            </p>
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h3 className="font-display text-base font-semibold text-ink900">Turmas</h3>
+              <p className="text-sm text-ink-500">
+                Selecione uma turma para visualizar seus alunos e acessar os relatórios individuais.
+              </p>
+            </div>
+            <ExportButtons
+              fileNameBase={overviewExportFileName}
+              isEmpty={classSummaries.length === 0}
+              getPdfDocument={() => (
+                <GenericExportPDF
+                  {...buildReportsOverviewPdfData(overview, classSummaries, overviewExportContext, new Date())}
+                />
+              )}
+              getExcelSheets={() => buildReportsOverviewExcelSheets(overview, classSummaries, overviewExportContext)}
+            />
           </div>
 
           {classSummaries.length === 0 ? (
