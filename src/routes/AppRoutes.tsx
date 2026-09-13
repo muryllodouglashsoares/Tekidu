@@ -98,6 +98,13 @@ const MyPerformancePage = lazy(() =>
     default: m.MyPerformancePage,
   }))
 );
+// Justificativas de Faltas: exclusiva de "student" (ver firestore.rules,
+// `absenceJustifications`, `allow create: if isOwnStudentRecord(...)`).
+const MyAbsenceJustificationsPage = lazy(() =>
+  import("@/pages/studentPortal/MyAbsenceJustificationsPage").then((m) => ({
+    default: m.MyAbsenceJustificationsPage,
+  }))
+);
 
 // Grupo admin+teacher: Notas/Frequência/Boletim/Relatórios — nenhuma
 // dessas telas é acessível a "student" (ver ProtectedRoute abaixo).
@@ -107,6 +114,14 @@ const NotesPage = lazy(() =>
 const AttendancePage = lazy(() =>
   import("@/pages/attendance/AttendancePage").then((m) => ({
     default: m.AttendancePage,
+  }))
+);
+// Análise de Justificativas de Faltas: mesmo grupo admin+teacher de
+// "/frequencia" (a decisão de aprovar/recusar é sempre da escola,
+// nunca do próprio aluno — ver firestore.rules).
+const AbsenceJustificationsReviewPage = lazy(() =>
+  import("@/pages/attendance/AbsenceJustificationsReviewPage").then((m) => ({
+    default: m.AbsenceJustificationsReviewPage,
   }))
 );
 const BoletimPage = lazy(() =>
@@ -374,6 +389,7 @@ export function AppRoutes() {
             <Route element={<SuspenseOutlet fallback={dashboardPageFallback} />}>
               <Route path="/notas" element={<NotesPage />} />
               <Route path="/frequencia" element={<AttendancePage />} />
+              <Route path="/frequencia/justificativas" element={<AbsenceJustificationsReviewPage />} />
               {/* Boletim (visão de staff: Turma → Aluno, escolhe qualquer
                   aluno): consolida Notas + Frequência, então segue a mesma
                   restrição de acesso das duas. A visão do PRÓPRIO aluno é
@@ -405,6 +421,7 @@ export function AppRoutes() {
               <Route path="/minhas-disciplinas" element={<MyDisciplinesPage />} />
               <Route path="/minha-frequencia" element={<MyAttendancePage />} />
               <Route path="/meu-desempenho" element={<MyPerformancePage />} />
+              <Route path="/justificativas" element={<MyAbsenceJustificationsPage />} />
             </Route>
           </Route>
 

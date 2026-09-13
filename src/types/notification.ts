@@ -55,6 +55,19 @@
  * enviou) — passa no mesmo critério "tem valor real para quem recebe"
  * usado acima: quem recebe uma mensagem nova precisa saber, mesmo que
  * não esteja com `/mensagens` aberto no momento.
+ *
+ * Justificativas de Faltas (Portal do Aluno):
+ * `absence_justification_submitted` é EXCEÇÃO à regra de criação da
+ * Security Rule (`notifications`, `allow create: if isActiveStaff()`)
+ * — é o próprio aluno quem cria esta notificação, para si mesmo
+ * (confirmação de envio), imediatamente após criar a solicitação em
+ * `absenceJustificationService.createAbsenceJustification`. A Rule foi
+ * estendida com uma exceção estreita para este tipo específico (ver
+ * `firestore.rules`, bloco `notifications`) — nunca um aluno cria
+ * notificação para OUTRO destinatário.
+ * `absence_justification_approved`/`_rejected` seguem o fluxo normal:
+ * criadas pelo staff (`reviewAbsenceJustification`) ao decidir a
+ * solicitação, notificando o aluno.
  */
 export type NotificationType =
   | "grade_posted"
@@ -63,7 +76,10 @@ export type NotificationType =
   | "assessment_created"
   | "assessment_updated"
   | "attendance_warning"
-  | "message_received";
+  | "message_received"
+  | "absence_justification_submitted"
+  | "absence_justification_approved"
+  | "absence_justification_rejected";
 
 export const NOTIFICATION_TYPE_LABEL: Record<NotificationType, string> = {
   grade_posted: "Nota lançada",
@@ -73,6 +89,9 @@ export const NOTIFICATION_TYPE_LABEL: Record<NotificationType, string> = {
   assessment_updated: "Avaliação atualizada",
   attendance_warning: "Alerta de frequência",
   message_received: "Nova mensagem",
+  absence_justification_submitted: "Justificativa enviada",
+  absence_justification_approved: "Justificativa aprovada",
+  absence_justification_rejected: "Justificativa recusada",
 };
 
 export interface Notification {

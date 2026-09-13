@@ -6,6 +6,7 @@ import {
   GraduationCap,
   ClipboardList,
   CalendarCheck,
+  FileCheck,
   FileText,
   BarChart3,
   LineChart,
@@ -85,6 +86,7 @@ export const MOBILE_MORE_SECTIONS: Record<UserRole, MobileMoreSection[]> = {
         { to: "/professores", label: "Professores", icon: GraduationCap },
         { to: "/notas", label: "Notas", icon: ClipboardList },
         { to: "/frequencia", label: "Frequência", icon: CalendarCheck },
+        { to: "/frequencia/justificativas", label: "Justificativas de Faltas", icon: FileCheck },
         { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
       ],
     },
@@ -102,6 +104,7 @@ export const MOBILE_MORE_SECTIONS: Record<UserRole, MobileMoreSection[]> = {
       items: [
         { to: "/meus-alunos", label: "Meus Alunos", icon: Users },
         { to: "/boletim", label: "Boletim", icon: FileText },
+        { to: "/frequencia/justificativas", label: "Justificativas de Faltas", icon: FileCheck },
         { to: "/desempenho-turmas", label: "Desempenho das Turmas", icon: LineChart },
         { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
       ],
@@ -126,6 +129,7 @@ export const MOBILE_MORE_SECTIONS: Record<UserRole, MobileMoreSection[]> = {
       items: [
         { to: "/minhas-disciplinas", label: "Minhas Disciplinas", icon: BookOpen },
         { to: "/minha-frequencia", label: "Minha Frequência", icon: CalendarCheck },
+        { to: "/justificativas", label: "Justificativas de Faltas", icon: FileCheck },
       ],
     },
     {

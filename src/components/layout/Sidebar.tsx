@@ -8,6 +8,7 @@ import {
   GraduationCap,
   ClipboardList,
   CalendarCheck,
+  FileCheck,
   FileText,
   BarChart3,
   LineChart,
@@ -106,7 +107,7 @@ const academicoNav: NavItem[] = [
   // mesma role autorizada pela rota (ver AppRoutes) e pelas Firestore
   // Security Rules das coleções attendanceSessions/attendanceRecords.
   { to: "/frequencia", label: "Frequência", icon: CalendarCheck, roles: ["admin", "teacher"] },
-  // Boletim (visão de staff — escolhe turma/aluno manualmente): sem
+  { to: "/frequencia/justificativas", label: "Justificativas", icon: FileCheck, roles: ["admin", "teacher"] },  // Boletim (visão de staff — escolhe turma/aluno manualmente): sem
   // "soon" (implementada) e restrita a admin/teacher — mesma role
   // autorizada pela rota (ver AppRoutes) e pelas Firestore Security
   // Rules das coleções que ela consolida (grades/attendanceRecords).
@@ -124,6 +125,7 @@ const academicoNav: NavItem[] = [
   { to: "/minhas-disciplinas", label: "Minhas Disciplinas", icon: BookOpen, roles: ["student"] },
   { to: "/minha-frequencia", label: "Frequência", icon: CalendarCheck, roles: ["student"] },
   { to: "/meu-desempenho", label: "Meu Desempenho", icon: LineChart, roles: ["student"] },
+  { to: "/justificativas", label: "Justificativas", icon: FileCheck, roles: ["student"] },
 ];
 
 function NavGroup({

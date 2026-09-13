@@ -11,6 +11,9 @@ import {
   FileEdit,
   AlertTriangle,
   MessageCircle,
+  FileCheck,
+  FileX,
+  Send,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
@@ -40,6 +43,10 @@ const ICON_BY_TYPE: Record<NotificationType, typeof Bell> = {
   attendance_warning: AlertTriangle,
   // PARTE 1 do plano de evolução (Mensageria) — ver `types/notification.ts`.
   message_received: MessageCircle,
+  // Justificativas de Faltas (Portal do Aluno) — ver `types/notification.ts`.
+  absence_justification_submitted: Send,
+  absence_justification_approved: FileCheck,
+  absence_justification_rejected: FileX,
 };
 
 function formatRelativeTime(value: unknown): string {

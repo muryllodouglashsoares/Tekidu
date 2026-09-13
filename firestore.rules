@@ -172,6 +172,68 @@ service cloud.firestore {
     }
 
     // -----------------------------------------------------------------
+    // Justificativas de Faltas (Portal do Aluno) — helpers de
+    // validação usados pelo bloco `absenceJustifications` mais abaixo.
+    // -----------------------------------------------------------------
+
+    // Confere que a falta apontada por `attendanceRecordId` é real,
+    // pertence ao MESMO aluno da solicitação, está de fato marcada
+    // como "absent" (nunca uma presença) e que o contexto denormalizado
+    // na justificativa (disciplina/turma/ano/bimestre) bate com o do
+    // registro original — impede um aluno de montar uma justificativa
+    // "avulsa" apontando para uma falta de outro aluno ou para uma
+    // presença (seção 4 do prompt: "não permitir que o aluno escolha
+    // uma presença como se fosse falta" / "não permitir justificar uma
+    // falta pertencente a outro aluno").
+    function isValidJustificationTarget(data) {
+      let record = get(/databases/$(database)/documents/attendanceRecords/$(data.attendanceRecordId)).data;
+      return record.studentId == data.studentId &&
+        record.status == 'absent' &&
+        record.disciplineId == data.disciplineId &&
+        record.classId == data.classId &&
+        record.schoolYear == data.schoolYear &&
+        record.term == data.term;
+    }
+
+    // Validação de payload (mesmo racional de `isValidScore`/
+    // `isValidAttendanceStatus` acima): tamanho do motivo (10–1000
+    // caracteres, seção 10), documento com metadados não vazios,
+    // `documentType` dentro do enum, e `expiresAt` dentro de uma janela
+    // razoável ao redor de `JUSTIFICATION_WINDOW_DAYS` (2 dias) —
+    // impede um aluno de gravar um prazo manipulado (nem "nunca expira"
+    // nem "já expirado na hora de criar", o que escondería a
+    // solicitação da análise).
+    //
+    // ARMAZENAMENTO SEM STORAGE (plano Spark/gratuito — ver nota de
+    // arquitetura em `types/absenceJustification.ts`): o documento
+    // comprobatório vem embutido no próprio `documentData` (base64),
+    // não em um arquivo externo — por isso o limite de tamanho é
+    // aplicado aqui, no próprio payload do Firestore, e não em regras
+    // de Storage. `900000` é o tamanho MÁXIMO esperado do campo já
+    // codificado (arquivo de até `MAX_DOCUMENT_SIZE_BYTES` = 650 KB,
+    // codificado em base64 ≈ 867 KB — ver
+    // `MAX_DOCUMENT_DATA_FIELD_BYTES` em `types/absenceJustification.ts`,
+    // hardcoded aqui pelo mesmo motivo já documentado: Rules não
+    // importam TypeScript), com folga para não rejeitar por
+    // arredondamento, mantendo o documento inteiro (motivo + metadados
+    // + documento) bem abaixo do teto de 1 MiB do Firestore.
+    function isValidJustificationPayload(data) {
+      return data.status == 'pending' &&
+        data.reason is string && data.reason.size() >= 10 && data.reason.size() <= 1000 &&
+        data.documentData is string && data.documentData.size() > 0 && data.documentData.size() <= 900000 &&
+        data.documentData.matches('^data:.*;base64,.+') &&
+        data.documentName is string && data.documentName.size() > 0 &&
+        (data.documentType == 'image' || data.documentType == 'pdf') &&
+        data.documentSize is number && data.documentSize > 0 && data.documentSize <= 665600 &&
+        data.expiresAt is timestamp &&
+        data.expiresAt > request.time + duration.value(36, 'h') &&
+        data.expiresAt < request.time + duration.value(60, 'h') &&
+        data.get('reviewedBy', null) == null &&
+        data.get('reviewedAt', null) == null &&
+        data.get('reviewComment', null) == null;
+    }
+
+    // -----------------------------------------------------------------
     // PARTE 1 do plano de evolução — Mensageria/chat interno
     // (professor ↔ aluno). Ver `types/conversation.ts`/`types/message.ts`
     // para o formato completo dos documentos.
@@ -683,6 +745,83 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------
+    // absenceJustifications/{attendanceRecordId}
+    //
+    // Justificativas de Faltas (Portal do Aluno). ID do documento
+    // DETERMINÍSTICO — o próprio `attendanceRecordId` da falta sendo
+    // justificada (ver `absenceJustificationService.
+    // buildAbsenceJustificationId`). Esta escolha é o que torna
+    // estruturalmente impossível, sem nenhuma query adicional na Rule:
+    // - duas solicitações ativas para a MESMA falta (o segundo
+    //   `create` cairia no mesmo caminho de um documento que já
+    //   existe, e por isso é avaliado como `update`, nunca `create`);
+    // - reenvio pelo aluno após uma recusa (a Rule de `update`, logo
+    //   abaixo, é reservada exclusivamente à ANÁLISE do staff — um
+    //   aluno nunca tem permissão de `update` aqui, então a segunda
+    //   tentativa de `setDoc` no mesmo ID simplesmente falha).
+    //
+    // LEITURA: admin lê tudo; professor só as justificativas das SUAS
+    // disciplinas (`isOwnDiscipline`, mesmo fechamento de
+    // `attendanceRecords`/`grades`); o PRÓPRIO aluno lê as SUAS
+    // justificativas via `isOwnStudentRecord` — nunca as de outro
+    // aluno. Responsável NÃO tem acesso nesta primeira versão (fora do
+    // escopo do prompt — ver README/entrega para a limitação
+    // documentada).
+    //
+    // CRIAÇÃO: exclusiva do PRÓPRIO aluno (`isOwnStudentRecord` sobre
+    // `request.resource.data.studentId`) — nunca staff cria em nome de
+    // um aluno. `isValidJustificationTarget` garante que a falta
+    // referenciada é real, é do mesmo aluno e está de fato "absent"
+    // (nunca uma presença nem a falta de outro aluno).
+    // `isValidJustificationPayload` garante o motivo dentro do
+    // tamanho permitido, os metadados do documento presentes e
+    // dentro do limite de tamanho, e que NENHUM campo de revisão
+    // (`reviewedBy`/`reviewedAt`/`reviewComment`) é definido pelo
+    // próprio aluno na criação — só o status inicial `pending` é
+    // aceito (um aluno nunca cria a própria justificativa já
+    // aprovada).
+    //
+    // ATUALIZAÇÃO: exclusiva do staff (admin OU professor dono da
+    // disciplina), e SOMENTE a partir de uma justificativa ainda
+    // `pending`, transicionando para `approved` OU `rejected` —
+    // nunca de volta para `pending`, nunca por quem não é o autor da
+    // decisão (`reviewedBy` precisa ser o próprio `request.auth.uid`).
+    // `affectedKeys().hasOnly(...)` impede que a análise altere
+    // qualquer campo além dos de revisão — `studentId`,
+    // `attendanceRecordId`, `reason`, `documentData` etc. permanecem
+    // imutáveis após a criação (seção 17 do prompt: "não permitir que
+    // o aluno... substitua o documento de outra justificativa" — e,
+    // simetricamente, nem o staff altera o conteúdo original da
+    // solicitação).
+    //
+    // EXCLUSÃO: nunca por um CLIENTE (nem aluno, nem staff) — mesmo
+    // espírito de `auditLogs`/`conversations/messages`. Isso NÃO
+    // impede a limpeza automática por Firestore TTL Policy (ver
+    // `JUSTIFICATION_WINDOW_DAYS`/`expiresAt` em
+    // `types/absenceJustification.ts`): exclusões por TTL são feitas
+    // internamente pelo próprio serviço do Firestore e não passam
+    // pelas Security Rules — `allow delete: if false` só bloqueia
+    // exclusões vindas do app.
+    // ---------------------------------------------------------------
+    match /absenceJustifications/{attendanceRecordId} {
+      allow read: if isActiveAdmin() ||
+        (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId)) ||
+        isOwnStudentRecord(resource.data.studentId);
+      allow create: if isOwnStudentRecord(request.resource.data.studentId) &&
+        request.resource.data.attendanceRecordId == attendanceRecordId &&
+        isValidJustificationTarget(request.resource.data) &&
+        isValidJustificationPayload(request.resource.data);
+      allow update: if (isActiveAdmin() || (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId))) &&
+        resource.data.status == 'pending' &&
+        (request.resource.data.status == 'approved' || request.resource.data.status == 'rejected') &&
+        request.resource.data.reviewedBy == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+          ['status', 'reviewedAt', 'reviewedBy', 'reviewedByName', 'reviewComment', 'updatedAt']
+        );
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------
     // academicSettings/{schoolYear}
     //
     // Regras acadêmicas configuráveis por ano letivo (item 6/7 do
@@ -752,6 +891,18 @@ service cloud.firestore {
     // grava", porque quem cria a notificação nunca é o destinatário
     // (ex.: o professor lança a nota, o ALUNO é quem recebe).
     //
+    // EXCEÇÃO (Justificativas de Faltas): `absence_justification_
+    // submitted` é o único tipo em que o PRÓPRIO aluno cria a
+    // notificação, e só para SI MESMO (`recipientUid ==
+    // request.auth.uid`) — confirmação de que o envio foi concluído,
+    // disparada por `absenceJustificationService.
+    // submitAbsenceJustification` logo após criar a solicitação. Não
+    // há hoje infraestrutura (Cloud Functions/Admin SDK) para o staff
+    // ser notificado em tempo real de uma nova solicitação sem abrir
+    // uma exceção mais ampla nesta Rule; a fila de pendentes na tela
+    // de análise (`/frequencia/justificativas`) cumpre esse papel por
+    // enquanto — ver limitação documentada na entrega.
+    //
     // ATUALIZAÇÃO: só o destinatário pode alterar sua notificação, e
     // apenas o campo `read` — impede que o destinatário reescreva
     // título/mensagem/link de uma notificação que já recebeu.
@@ -761,7 +912,10 @@ service cloud.firestore {
     // ---------------------------------------------------------------
     match /notifications/{notificationId} {
       allow read: if isSignedIn() && resource.data.recipientUid == request.auth.uid;
-      allow create: if isActiveStaff();
+      allow create: if isActiveStaff() ||
+        (isActiveStudent() &&
+         request.resource.data.type == 'absence_justification_submitted' &&
+         request.resource.data.recipientUid == request.auth.uid);
       allow update: if isSignedIn() &&
         resource.data.recipientUid == request.auth.uid &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);

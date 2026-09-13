@@ -25,6 +25,8 @@ function toRecord(id: string, data: Record<string, unknown>): AttendanceRecord {
     schoolYear: (data.schoolYear as number) ?? new Date().getFullYear(),
     term: (data.term as AssessmentTerm) ?? "1",
     status: (data.status as AttendanceRecord["status"]) ?? "absent",
+    date: (data.date as string) ?? "",
+    label: (data.label as string) ?? "",
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   };
@@ -127,6 +129,24 @@ export async function getAttendanceRecordsByDisciplineIds(
 }
 
 /**
+ * Lista TODOS os registros de presença de um aluno, em qualquer
+ * disciplina/turma/bimestre — usado por "Justificativas de Faltas"
+ * (Portal do Aluno), que precisa enxergar as faltas do aluno no ano
+ * letivo inteiro para oferecer a solicitação de justificativa, não só
+ * dentro de um contexto disciplina+turma+bimestre já selecionado
+ * (diferente de `getRecordsByContext`, feito sob medida para a tela de
+ * Frequência de staff). Consulta de campo único (`studentId`) — a
+ * mesma exigida por `isOwnStudentRecord` para ser aceita pela Security
+ * Rule quando quem pergunta é o próprio aluno; não exige índice
+ * composto.
+ */
+export async function getRecordsByStudent(studentId: string): Promise<AttendanceRecord[]> {
+  const q = query(recordsCollection, where("studentId", "==", studentId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => toRecord(d.id, d.data()));
+}
+
+/**
  * Constrói o ID determinístico do registro de presença de um aluno em
  * uma aula. Formato: `{studentId}_{sessionId}`. Mesma correção
  * estrutural de `gradeService.buildGradeId` (ver nota lá) aplicada
@@ -151,6 +171,8 @@ export async function saveAttendanceRecord(data: AttendanceRecordInput): Promise
   if (snapshot.exists()) {
     await updateDoc(ref, {
       status: data.status,
+      ...(data.date ? { date: data.date } : {}),
+      ...(data.label ? { label: data.label } : {}),
       updatedAt: serverTimestamp(),
     });
     return;

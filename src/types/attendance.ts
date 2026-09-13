@@ -88,6 +88,19 @@ export interface AttendanceRecord {
   schoolYear: number;
   term: AssessmentTerm;
   status: AttendanceRecordStatus;
+  /**
+   * Data ("yyyy-mm-dd") e rótulo ("Aula 03") da aula, denormalizados de
+   * `AttendanceSession.date`/`.label` no momento da marcação de presença
+   * (ver `AttendancePage.handleMark`) — mesmo racional de denormalização
+   * já usado para `disciplineId`/`classId`/`schoolYear`/`term` acima,
+   * adicionado para a funcionalidade de Justificativas de Faltas (o
+   * aluno pode ler os PRÓPRIOS `attendanceRecords`, mas nunca
+   * `attendanceSessions`, restrito a staff — ver `firestore.rules`).
+   * Opcionais para não quebrar registros gravados antes desta mudança,
+   * que não têm os campos; `toRecord` retorna string vazia nesse caso.
+   */
+  date?: string;
+  label?: string;
   createdAt: unknown; // Firestore Timestamp
   updatedAt: unknown; // Firestore Timestamp
 }
@@ -100,6 +113,8 @@ export interface AttendanceRecordInput {
   schoolYear: number;
   term: AssessmentTerm;
   status: AttendanceRecordStatus;
+  date?: string;
+  label?: string;
 }
 
 /** Estatísticas de frequência calculadas para um aluno em um contexto. */

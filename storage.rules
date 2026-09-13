@@ -1,0 +1,115 @@
+rules_version = '2';
+
+// -----------------------------------------------------------------------
+// Firebase Storage — Justificativas de Faltas (Portal do Aluno).
+//
+// Único uso de Storage no projeto até aqui (ver seção 8 do prompt de
+// implementação): os documentos comprobatórios (foto/PDF) enviados
+// pelo aluno junto com a solicitação de justificativa. Todo o resto do
+// app usa exclusivamente Cloud Firestore.
+//
+// As funções abaixo usam `firestore.get()`/`firestore.exists()`
+// (Storage Rules podem consultar o Firestore do MESMO projeto) para
+// aplicar exatamente o mesmo modelo de permissões já usado em
+// `firestore.rules` — perfil/role sempre lido do documento
+// `users/{uid}` no servidor, nunca confiado a partir do cliente.
+// -----------------------------------------------------------------------
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function callerProfile() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isActiveStaff() {
+      let profile = callerProfile();
+      return isSignedIn() && profile.active == true &&
+        (profile.role == 'admin' || profile.role == 'teacher');
+    }
+
+    function isActiveAdmin() {
+      let profile = callerProfile();
+      return isSignedIn() && profile.active == true && profile.role == 'admin';
+    }
+
+    // Mesmo papel de `isOwnStudentRecord` em `firestore.rules`: resolve
+    // se o documento `students/{studentId}` pertence ao usuário
+    // autenticado.
+    function isOwnStudent(studentId) {
+      return isSignedIn() &&
+        firestore.get(/databases/(default)/documents/students/$(studentId)).data.uid == request.auth.uid;
+    }
+
+    // Um professor só pode VISUALIZAR o documento de uma justificativa
+    // que pertence a uma disciplina da qual ele é o `teacherId` — a
+    // mesma checagem de `isOwnDiscipline`/`isOwnDiscipline` em
+    // `firestore.rules`, só que resolvida aqui a partir do próprio
+    // documento `absenceJustifications/{attendanceRecordId}` (cujo ID
+    // é IGUAL ao segmento `{attendanceRecordId}` do caminho do
+    // arquivo — ver `absenceJustificationService.
+    // buildAbsenceJustificationId`).
+    function canStaffViewJustification(attendanceRecordId) {
+      let justification = firestore.get(
+        /databases/(default)/documents/absenceJustifications/$(attendanceRecordId)
+      ).data;
+      return isActiveAdmin() ||
+        (isActiveStaff() &&
+         firestore.get(/databases/(default)/documents/disciplines/$(justification.disciplineId)).data.teacherId
+           == request.auth.uid);
+    }
+
+    // Validação de upload (seção 9 do prompt): formatos aceitos e
+    // tamanho máximo — mesmos valores de
+    // `types/absenceJustification.ts` (`ACCEPTED_DOCUMENT_MIME_TYPES`/
+    // `MAX_DOCUMENT_SIZE_BYTES`), hardcoded aqui pelo mesmo motivo já
+    // documentado em `firestore.rules`: Storage Rules não importam
+    // TypeScript.
+    function isValidDocumentUpload() {
+      return request.resource.size <= 10 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/jpeg|image/png|image/webp|application/pdf');
+    }
+
+    // ---------------------------------------------------------------
+    // absence-justifications/{studentId}/{attendanceRecordId}/{fileName}
+    //
+    // LEITURA: o próprio aluno dono do documento, OU staff autorizado
+    // a analisar a justificativa correspondente
+    // (`canStaffViewJustification`). Nunca pública, nunca por simples
+    // conhecimento da URL (seção 19 do prompt) — mesmo com
+    // `getDownloadURL()` retornando uma URL de longa duração, o token
+    // embutido nela não substitui esta regra: qualquer requisição ao
+    // objeto passa por aqui.
+    //
+    // CRIAÇÃO: só o próprio aluno, só na SUA pasta (`studentId`),
+    // validado quanto a formato/tamanho.
+    //
+    // ATUALIZAÇÃO: nunca — um documento comprobatório já enviado é
+    // imutável; reenviar significa uma nova justificativa (novo
+    // `attendanceRecordId`), nunca sobrescrever o arquivo de uma
+    // solicitação existente.
+    //
+    // EXCLUSÃO: só o próprio aluno, e SOMENTE enquanto o documento
+    // `absenceJustifications/{attendanceRecordId}` correspondente
+    // ainda NÃO existe no Firestore — janela estreita que existe
+    // apenas para o rollback de upload órfão quando a gravação no
+    // Firestore falha logo em seguida (seção 11 do prompt; ver
+    // `absenceJustificationDocumentService.deleteJustificationDocument`).
+    // Depois que a justificativa é criada, o arquivo passa a ser
+    // permanente — nem o aluno pode mais apagá-lo.
+    // ---------------------------------------------------------------
+    match /absence-justifications/{studentId}/{attendanceRecordId}/{fileName} {
+      allow read: if isOwnStudent(studentId) || canStaffViewJustification(attendanceRecordId);
+      allow create: if isOwnStudent(studentId) && isValidDocumentUpload();
+      allow update: if false;
+      allow delete: if isOwnStudent(studentId) &&
+        !firestore.exists(/databases/(default)/documents/absenceJustifications/$(attendanceRecordId));
+    }
+
+    // Nenhum outro caminho de Storage existe ainda. Por padrão, nega
+    // tudo que não tem uma regra explícita.
+  }
+}

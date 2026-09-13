@@ -283,6 +283,7 @@ export function AttendancePage() {
     // determinístico do documento, não por este lookup — usado só
     // para a atualização otimista local e para o log de auditoria.
     const existing = records.find((r) => r.studentId === studentId && r.sessionId === selectedSessionId);
+    const currentSession = sessions.find((s) => s.id === selectedSessionId);
     try {
       await saveAttendanceRecord({
         studentId,
@@ -292,6 +293,8 @@ export function AttendancePage() {
         schoolYear: Number(yearFilter),
         term: term as AssessmentTerm,
         status,
+        date: currentSession?.date,
+        label: currentSession?.label,
       });
 
       if (profile && existing && existing.status !== status) {

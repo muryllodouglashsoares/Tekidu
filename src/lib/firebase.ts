@@ -38,6 +38,11 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+// Justificativas de Faltas (Portal do Aluno) armazena o documento
+// comprobatório embutido no próprio Firestore (base64) — o Firebase
+// Storage exige o plano Blaze (pago) mesmo dentro da cota gratuita, e
+// este projeto roda no plano Spark (sem possibilidade de cobrança).
+// Ver `types/absenceJustification.ts` para a explicação completa.
 
 // Persistência explícita em localStorage: a sessão sobrevive ao fechar
 // a aba/navegador. É o comportamento padrão do SDK, mas deixamos
