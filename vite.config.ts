@@ -16,13 +16,32 @@ export default defineConfig({
     // passam pelo Service Worker (network-only, controlado pelo SDK
     // do Firebase, que já tem sua própria política de cache/offline).
     VitePWA({
-      // "injectManifest" daria controle total de um SW customizado,
-      // mas para o caso da Tekidu (cache só de estáticos + SW de
-      // update-on-reload) o "generateSW" do Workbox já resolve com
-      // muito menos código para manter — ver ETAPA 2 do prompt
-      // ("não implemente manualmente um Service Worker complexo se o
-      // plugin resolver adequadamente o problema").
-      strategies: "generateSW",
+      // WEB PUSH (Firebase Cloud Messaging): "generateSW" (Workbox
+      // automático) não permite injetar o código de mensageria em
+      // segundo plano (`onBackgroundMessage`) nem o `notificationclick`
+      // customizado que o Push exige — e registrar um SEGUNDO Service
+      // Worker (`firebase-messaging-sw.js`) no mesmo escopo ("/") não é
+      // seguro: o navegador permite só UM SW ativo por escopo, então os
+      // dois entrariam em conflito/substituiriam um ao outro (ver
+      // ETAPA 22 do prompt de Push: "nunca registrar dois Service
+      // Workers conflitantes para o mesmo escopo").
+      //
+      // Por isso trocamos para "injectManifest": mantemos o MESMO
+      // Service Worker único (`src/sw.ts`), agora escrito à mão, que
+      // faz as duas coisas — precache/PWA (via `workbox-precaching`,
+      // reproduzindo o que o "generateSW" fazia) E Web Push/FCM. O
+      // manifesto de precache continua gerado automaticamente pelo
+      // Workbox no build (`self.__WB_MANIFEST` é substituído pelo
+      // plugin); só o CÓDIGO do SW passou a ser explícito.
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      injectManifest: {
+        // Mesmo motivo do "generateSW" anterior: só assets do próprio
+        // build entram no precache, nunca dados do Firebase.
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff,woff2}"],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      },
       // registerType "prompt": o novo SW fica em estado "waiting" até
       // o usuário confirmar a atualização (ver PWAUpdatePrompt) — nunca
       // ativa sozinho enquanto o usuário está no meio de um cadastro de
@@ -59,49 +78,13 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
-        // Só os arquivos gerados pelo build (HTML/CSS/JS/ícones/fontes
-        // locais) entram no precache — nunca dados do Firebase.
-        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff,woff2}"],
-        // Chunk único acima do limite padrão (ver aviso do build sobre
-        // o bundle principal) — sem isso o Workbox ignora o precache
-        // desse arquivo silenciosamente.
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        // Nunca cair no fallback de SPA para chamadas de API/Firebase.
-        navigateFallbackDenylist: [/^\/__/, /firestore\.googleapis\.com/, /identitytoolkit/],
-        runtimeCaching: [
-          {
-            // Fontes do Google Fonts (CSS): stale-while-revalidate é
-            // seguro aqui — não é dado acadêmico, só tipografia.
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\//,
-            handler: "StaleWhileRevalidate",
-            options: { cacheName: "google-fonts-stylesheets" },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\//,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "google-fonts-webfonts",
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          // IMPORTANTE (ETAPA 5 do prompt): nenhuma entrada aqui cobre
-          // firestore.googleapis.com, identitytoolkit.googleapis.com ou
-          // qualquer domínio do Firebase — essas requisições passam
-          // direto pela rede, controladas pelo próprio SDK do Firebase,
-          // nunca pelo Service Worker. Isso evita notas/frequência
-          // desatualizadas sendo servidas do cache como se fossem
-          // dados atuais.
-        ],
-        // Evita que o SW antigo continue servindo um index.html que
-        // referencia chunks já removidos de um deploy anterior (ver
-        // ETAPA 14) — sempre busca o HTML mais recente na rede quando
-        // possível, caindo pro cache só se estiver offline de verdade.
-        cleanupOutdatedCaches: true,
-        skipWaiting: false,
-        clientsClaim: false,
-      },
+      // NOTA: com "injectManifest" a chave `workbox` (runtimeCaching,
+      // navigateFallbackDenylist, cleanupOutdatedCaches, skipWaiting,
+      // clientsClaim) deixa de ser lida pelo plugin — ela só se aplica
+      // à estratégia "generateSW". O comportamento equivalente a cada
+      // uma dessas opções foi reproduzido manualmente dentro de
+      // `src/sw.ts` (ver comentários lá), então nada do que já
+      // funcionava foi perdido, só passou a ser código explícito.
       devOptions: {
         // SW habilitado em `npm run dev` só para permitir testar o
         // fluxo de instalação/offline localmente (ETAPA 25) — usa

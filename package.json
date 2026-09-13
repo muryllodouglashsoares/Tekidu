@@ -19,7 +19,8 @@
     "lucide-react": "^1.31.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0"
+    "react-router-dom": "^6.28.0",
+    "workbox-precaching": "^7.3.0"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

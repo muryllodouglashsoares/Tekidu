@@ -16,10 +16,84 @@ import type { UserProfile } from "@/types/user";
 import {
   ANNOUNCEMENT_PRIORITY_WEIGHT,
   type Announcement,
+  type AnnouncementAudience,
   type AnnouncementInput,
 } from "@/types/announcement";
+import { getTeachers } from "@/services/users/userService";
+import { getStudents } from "@/services/students/studentService";
+import { createNotifications } from "@/services/notifications/notificationService";
 
 const announcementsCollection = collection(db, "announcements");
+
+const ANNOUNCEMENT_MESSAGE_PREVIEW_LENGTH = 140;
+
+/**
+ * IMPLEMENTAÇÃO — WEB PUSH (ETAPA 10 do prompt): liga a publicação de
+ * um aviso ao Notification Service central (ver
+ * `notificationService.createNotifications`, que já cuida de gravar a
+ * notificação interna E acionar o Push). Antes desta implementação,
+ * avisos publicados não geravam NENHUMA notificação — só ficavam
+ * disponíveis para quem visitasse `/avisos` por conta própria.
+ *
+ * Os destinatários são resolvidos aqui, no CLIENTE que está
+ * publicando (admin/professor), reaproveitando `getTeachers`/
+ * `getStudents` — já usados hoje pelas telas de Disciplinas/Alunos, e
+ * já cobertos pela Rule `isActiveStaff()` de leitura de `users`/
+ * `students`. O envio do Push em si é quem valida de verdade que o
+ * chamador tinha autorização: `functions/api/send-push.ts` só entrega
+ * push para notificações que JÁ EXISTEM em Firestore, e só pode
+ * existir uma notificação `type: "announcement"` para X se a Rule de
+ * criação (`isActiveStaff()`) permitiu — ver `notificationService.ts`.
+ *
+ * Fire-and-forget (mesmo padrão de `createNotification`): a
+ * publicação do aviso em si já foi concluída com sucesso antes desta
+ * função ser chamada; uma falha ao resolver destinatários nunca deve
+ * reverter ou reportar erro na publicação.
+ */
+async function notifyAnnouncementAudience(
+  audience: AnnouncementAudience,
+  title: string,
+  content: string,
+  authorUid: string
+): Promise<void> {
+  try {
+    const recipientUids = new Set<string>();
+
+    if (audience === "all" || audience === "teachers") {
+      const teachers = await getTeachers();
+      for (const teacher of teachers) recipientUids.add(teacher.uid);
+    }
+    if (audience === "all" || audience === "students") {
+      const students = await getStudents();
+      for (const student of students) {
+        if (student.uid) recipientUids.add(student.uid);
+      }
+    }
+    recipientUids.delete(authorUid);
+    if (recipientUids.size === 0) return;
+
+    const preview =
+      content.length > ANNOUNCEMENT_MESSAGE_PREVIEW_LENGTH
+        ? `${content.slice(0, ANNOUNCEMENT_MESSAGE_PREVIEW_LENGTH)}…`
+        : content;
+
+    createNotifications(
+      Array.from(recipientUids).map((uid) => ({
+        recipientUid: uid,
+        type: "announcement" as const,
+        title: `Novo aviso: ${title}`,
+        message: preview,
+        // Portal de Avisos não tem rota por item (lista única) — ver
+        // ETAPA 10 do prompt: "utilize a rota real existente", sem
+        // inventar `/avisos/:id`.
+        link: "/avisos",
+      }))
+    );
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("[announcementService] Falha ao notificar destinatários do aviso", error);
+  }
+}
 
 function toAnnouncement(id: string, data: Record<string, unknown>): Announcement {
   return {
@@ -179,6 +253,9 @@ export async function createAnnouncement(
     publishedAt: publish ? serverTimestamp() : null,
     expiresAt: expiresAtToTimestamp(input.expiresAt),
   });
+  if (publish) {
+    notifyAnnouncementAudience(input.audience, input.title.trim(), input.content.trim(), author.uid);
+  }
   return ref.id;
 }
 

@@ -14,6 +14,7 @@ import {
   FileCheck,
   FileX,
   Send,
+  Megaphone,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
@@ -47,6 +48,8 @@ const ICON_BY_TYPE: Record<NotificationType, typeof Bell> = {
   absence_justification_submitted: Send,
   absence_justification_approved: FileCheck,
   absence_justification_rejected: FileX,
+  // IMPLEMENTAÇÃO — WEB PUSH (ETAPA 10) — ver `types/notification.ts`.
+  announcement: Megaphone,
 };
 
 function formatRelativeTime(value: unknown): string {

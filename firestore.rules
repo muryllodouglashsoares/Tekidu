@@ -394,6 +394,39 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------
+    // users/{userId}/pushTokens/{tokenId} — IMPLEMENTAÇÃO WEB PUSH.
+    //
+    // Cada documento representa um dispositivo/navegador registrado
+    // para receber notificações push (ver `types/pushToken.ts`,
+    // `services/push/pushTokenService.ts`). O ID do documento é o
+    // próprio caminho `users/{userId}/...`, então a regra abaixo já
+    // restringe TUDO ao dono — nenhum usuário consegue ler, criar,
+    // atualizar ou apagar o token de outro (ETAPA 7 do prompt).
+    //
+    // Nunca há uma regra de "list" irrestrita aqui: mesmo o próprio
+    // dono só lista os PRÓPRIOS tokens (`pushTokensCollection(uid)`
+    // já é escopado pelo path). O envio de Push em si (quem lê tokens
+    // de QUALQUER usuário para despachar mensagens) nunca passa por
+    // estas Rules — é feito pela Cloudflare Pages Function com uma
+    // Service Account, que acessa o Firestore via API REST autenticada
+    // por OAuth2 e IGNORA as Security Rules (mesmo modelo de qualquer
+    // Admin SDK) — ver `functions/api/send-push.ts`.
+    //
+    // `create`/`update` validam que `uid`/`token` no corpo do
+    // documento batem com quem está autenticado e com o ID do
+    // documento, para impedir um usuário de gravar um token "em nome"
+    // de outro uid mesmo dentro do próprio caminho (defesa em
+    // profundidade, ainda que o path já isole por dono).
+    // ---------------------------------------------------------------
+    match /users/{userId}/pushTokens/{tokenId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn() && request.auth.uid == userId &&
+        request.resource.data.uid == userId &&
+        request.resource.data.token == tokenId;
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ---------------------------------------------------------------
     // loginKeys/{loginKey}
     //
     // Coleção auxiliar do ciclo de vida de conta estilo SUAP (Etapa 9).

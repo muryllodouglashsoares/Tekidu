@@ -12,10 +12,57 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import type { Notification, NotificationInput } from "@/types/notification";
 
 const notificationsCollection = collection(db, "notifications");
+
+/**
+ * IMPLEMENTAÇÃO — WEB PUSH (ETAPA 11 do prompt: "não criar dois
+ * sistemas independentes"). Este é o ÚNICO ponto de disparo do Push
+ * real — `createNotification`/`createNotifications` já são chamados
+ * por TODO evento acadêmico existente (nota, avaliação, frequência,
+ * disciplina vinculada, mensagem, justificativa, aviso...), então
+ * conectar o Push aqui (e só aqui) garante:
+ *   EVENTO → Notification Service → Firestore notification + Push
+ * sem duplicar a lógica de "quem é o destinatário" em cada service.
+ *
+ * Deliberadamente fire-and-forget, mesmo padrão de `createNotification`
+ * abaixo: o envio do Push é um efeito colateral de algo que já foi
+ * gravado com sucesso no Firestore — uma falha aqui (rede, usuário sem
+ * push ativado, etc.) nunca deve aparecer como erro da ação principal
+ * (lançar nota, publicar aviso...) nem impedir a notificação INTERNA,
+ * que já está garantida antes desta chamada.
+ *
+ * A function server-side (`functions/api/send-push.ts`) NUNCA confia
+ * em nada enviado pelo cliente além do ID da notificação: ela relê o
+ * próprio documento em `notifications/{id}` (que só existe porque já
+ * passou pela Firestore Rule de criação) para descobrir destinatário e
+ * conteúdo — ver ETAPA 7 do prompt ("o frontend nunca deve possuir
+ * capacidade de enviar Push arbitrariamente"). Isto é o que faz este
+ * disparo ser seguro mesmo vindo do cliente: ele não CONTÉM a
+ * autorização, só AVISA a function de que há algo novo para entregar —
+ * a autorização real já foi validada pela Rule no momento do `addDoc`.
+ */
+function triggerPushDelivery(notificationIds: string[]): void {
+  if (notificationIds.length === 0) return;
+  const user = auth.currentUser;
+  if (!user) return;
+
+  user
+    .getIdToken()
+    .then((idToken) =>
+      fetch("/api/send-push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ notificationIds }),
+      })
+    )
+    .catch((error) => {
+      // eslint-disable-next-line no-console
+      console.error("[NotificationService] Falha ao acionar entrega de Push", error);
+    });
+}
 
 function toNotification(id: string, data: Record<string, unknown>): Notification {
   return {
@@ -39,24 +86,44 @@ function toNotification(id: string, data: Record<string, unknown>): Notification
  * já foi concluída com sucesso no momento em que esta função é
  * chamada.
  */
-export function createNotification(input: NotificationInput): void {
-  addDoc(notificationsCollection, {
-    recipientUid: input.recipientUid,
-    type: input.type,
-    title: input.title,
-    message: input.message,
-    link: input.link ?? null,
-    read: false,
-    createdAt: serverTimestamp(),
-  }).catch((error) => {
+/** Compartilhado por `createNotification`/`createNotifications` — grava e devolve o ID gerado, ou `null` em caso de falha (nunca lança, ver justificativa acima de cada chamador). */
+async function writeNotification(input: NotificationInput): Promise<string | null> {
+  try {
+    const ref = await addDoc(notificationsCollection, {
+      recipientUid: input.recipientUid,
+      type: input.type,
+      title: input.title,
+      message: input.message,
+      link: input.link ?? null,
+      read: false,
+      createdAt: serverTimestamp(),
+    });
+    return ref.id;
+  } catch (error) {
     // eslint-disable-next-line no-console
     console.error("[NotificationService] Falha ao criar notificação", input.type, error);
+    return null;
+  }
+}
+
+export function createNotification(input: NotificationInput): void {
+  writeNotification(input).then((id) => {
+    if (id) triggerPushDelivery([id]);
   });
 }
 
-/** Atalho para notificar vários destinatários com o mesmo conteúdo (ex.: todos os admins). */
+/**
+ * Atalho para notificar vários destinatários com o mesmo conteúdo
+ * (ex.: todos os admins, ou toda a audiência de um aviso publicado).
+ * Dispara UMA única chamada de Push com todos os IDs gerados, em vez
+ * de uma por destinatário (evita N requisições HTTP para o mesmo
+ * evento — ver ETAPA 24 do prompt de Push, "não adicionar listeners/
+ * chamadas desnecessárias").
+ */
 export function createNotifications(inputs: NotificationInput[]): void {
-  for (const input of inputs) createNotification(input);
+  Promise.all(inputs.map(writeNotification)).then((ids) => {
+    triggerPushDelivery(ids.filter((id): id is string => id !== null));
+  });
 }
 
 const RECENT_LIMIT = 30;

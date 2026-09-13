@@ -68,6 +68,14 @@
  * `absence_justification_approved`/`_rejected` seguem o fluxo normal:
  * criadas pelo staff (`reviewAbsenceJustification`) ao decidir a
  * solicitação, notificando o aluno.
+ *
+ * IMPLEMENTAÇÃO — WEB PUSH (ETAPA 10 do prompt): `announcement` é o
+ * tipo novo, disparado por `announcementService` quando um aviso é
+ * publicado (`createAnnouncement(..., publish=true)` ou
+ * `publishAnnouncement`). Segue o MESMO critério de valor real usado
+ * acima — o Portal de Avisos já existe e já tem destinatários bem
+ * definidos (`audience`), então instrumentar esse evento não inventa
+ * nada, só liga um evento que já acontecia a este sistema central.
  */
 export type NotificationType =
   | "grade_posted"
@@ -79,7 +87,8 @@ export type NotificationType =
   | "message_received"
   | "absence_justification_submitted"
   | "absence_justification_approved"
-  | "absence_justification_rejected";
+  | "absence_justification_rejected"
+  | "announcement";
 
 export const NOTIFICATION_TYPE_LABEL: Record<NotificationType, string> = {
   grade_posted: "Nota lançada",
@@ -92,6 +101,7 @@ export const NOTIFICATION_TYPE_LABEL: Record<NotificationType, string> = {
   absence_justification_submitted: "Justificativa enviada",
   absence_justification_approved: "Justificativa aprovada",
   absence_justification_rejected: "Justificativa recusada",
+  announcement: "Novo aviso",
 };
 
 export interface Notification {

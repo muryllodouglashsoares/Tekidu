@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { RoleBadge } from "@/components/ui/RoleBadge";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
+import { PushNotificationSettings } from "@/components/notifications/PushNotificationSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateOwnName } from "@/services/users/userService";
 import { getAcademicSettings, saveAcademicSettings } from "@/services/academicSettings/academicSettingsService";
@@ -306,6 +307,10 @@ export function SettingsPage() {
             renderiza nada se a instalação não for suportada. */}
         <PWAInstallPrompt />
 
+        {/* Notificações push (Web Push via FCM) — item novo, ver
+            `PushNotificationSettings` e `docs/PUSH_NOTIFICATIONS.md`. */}
+        <PushNotificationSettings />
+
         {/* Preferências */}
         <Card className="p-5">
           <h3 className="mb-2 flex items-center gap-2 font-display text-base font-semibold text-ink900">
@@ -313,9 +318,9 @@ export function SettingsPage() {
             Preferências
           </h3>
           <p className="text-sm text-ink-500">
-            Preferências de tema e notificações ainda não são suportadas nesta versão do Tekidu — em vez de
-            simular uma configuração que não seria salva de verdade, esta seção ficará disponível assim que
-            houver suporte no backend.
+            Preferências de tema ainda não são suportadas nesta versão do Tekidu — em vez de simular uma
+            configuração que não seria salva de verdade, esta seção ficará disponível assim que houver
+            suporte no backend.
           </p>
         </Card>
       </div>
