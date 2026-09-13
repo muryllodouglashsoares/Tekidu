@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/layout/EmptyState";
 import {
   AbsenceJustificationCard,
   EligibleAbsenceCard,
+  UnjustifiedAbsenceCard,
 } from "@/components/justifications/AbsenceJustificationCard";
 import { AbsenceJustificationForm } from "@/components/justifications/AbsenceJustificationForm";
 import { useOwnStudent } from "@/hooks/useOwnStudent";
@@ -143,10 +144,20 @@ export function MyAbsenceJustificationsPage() {
     );
   }
 
+  const unjustifiedCount = overview.unjustifiedRecords.length;
+  // CORREÇÃO (bug "Situação regular" com falta pendente): antes, só
+  // `eligibleRecords` era checado aqui — uma falta cujo prazo de
+  // solicitação expirou sem NUNCA ter sido justificada também zera
+  // `eligibleRecords`, então a tela mostrava "Situação regular!" para
+  // um aluno com falta real e não justificada. Agora só é "regular"
+  // quando não há nada pendente de ação NEM nada que ficou sem
+  // justificativa.
+  const isRegular = overview.eligibleRecords.length === 0 && unjustifiedCount === 0;
+
   return (
     <div className="flex flex-col gap-6">
-      {(pendingCount > 0 || approvedCount > 0) && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {(pendingCount > 0 || approvedCount > 0 || unjustifiedCount > 0) && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Card className="p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Faltas pendentes</p>
             <p className="mt-1 font-display text-2xl font-semibold text-ink900">{overview.eligibleRecords.length}</p>
@@ -159,30 +170,54 @@ export function MyAbsenceJustificationsPage() {
             <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Aprovadas</p>
             <p className="mt-1 font-display text-2xl font-semibold text-ink900">{approvedCount}</p>
           </Card>
+          <Card className="p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Sem justificativa</p>
+            <p className="mt-1 font-display text-2xl font-semibold text-danger">{unjustifiedCount}</p>
+          </Card>
         </div>
       )}
 
-      {overview.eligibleRecords.length === 0 ? (
-        // Seção 3.3: todas as faltas já foram justificadas/estão em análise.
+      {isRegular ? (
+        // Seção 3.3: todas as faltas já foram justificadas/estão em análise
+        // — e nenhuma falta ficou sem justificativa por perda de prazo.
         <EmptyState
           icon={PartyPopper}
           title="Situação regular!"
           description="Não há faltas pendentes de justificativa no momento."
         />
       ) : (
-        <div className="flex flex-col gap-3">
-          <h2 className="font-display text-base font-semibold text-ink900">
-            Você possui faltas que podem ser justificadas
-          </h2>
-          {overview.eligibleRecords.map((record) => (
-            <EligibleAbsenceCard
-              key={record.id}
-              record={record}
-              disciplineName={disciplineNameById.get(record.disciplineId) ?? "Disciplina"}
-              onRequest={() => setFormRecord(record)}
-            />
-          ))}
-        </div>
+        <>
+          {overview.eligibleRecords.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <h2 className="font-display text-base font-semibold text-ink900">
+                Você possui faltas que podem ser justificadas
+              </h2>
+              {overview.eligibleRecords.map((record) => (
+                <EligibleAbsenceCard
+                  key={record.id}
+                  record={record}
+                  disciplineName={disciplineNameById.get(record.disciplineId) ?? "Disciplina"}
+                  onRequest={() => setFormRecord(record)}
+                />
+              ))}
+            </div>
+          )}
+
+          {unjustifiedCount > 0 && (
+            <div className="flex flex-col gap-3">
+              <h2 className="font-display text-base font-semibold text-ink900">
+                Faltas sem justificativa (prazo encerrado)
+              </h2>
+              {overview.unjustifiedRecords.map((record) => (
+                <UnjustifiedAbsenceCard
+                  key={record.id}
+                  record={record}
+                  disciplineName={disciplineNameById.get(record.disciplineId) ?? "Disciplina"}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {overview.justifications.length > 0 && (
@@ -198,13 +233,15 @@ export function MyAbsenceJustificationsPage() {
         </div>
       )}
 
-      {overview.eligibleRecords.length === 0 && overview.justifications.length === 0 && (
-        <EmptyState
-          icon={FileQuestion}
-          title="Nenhuma solicitação ainda"
-          description="Quando você solicitar uma justificativa, ela aparecerá aqui."
-        />
-      )}
+      {overview.eligibleRecords.length === 0 &&
+        overview.justifications.length === 0 &&
+        unjustifiedCount === 0 && (
+          <EmptyState
+            icon={FileQuestion}
+            title="Nenhuma solicitação ainda"
+            description="Quando você solicitar uma justificativa, ela aparecerá aqui."
+          />
+        )}
 
       {formRecord && (
         <AbsenceJustificationForm
