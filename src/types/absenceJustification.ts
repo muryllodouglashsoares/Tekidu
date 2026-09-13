@@ -294,12 +294,32 @@ export function isEligibleForJustification(
  * possuem uma solicitação (qualquer status). Pura e sem I/O — a
  * página/hook busca os dois arrays via `attendanceRecordService`/
  * `absenceJustificationService` e só então chama esta função.
+ *
+ * CORREÇÃO (bug "Situação regular" com faltas pendentes): antes,
+ * `eligibleRecords` vazio era o ÚNICO sinal usado pela tela para
+ * decidir se mostra "Situação regular!" — mas uma falta cujo prazo de
+ * `JUSTIFICATION_WINDOW_DAYS` dias expirou SEM NUNCA ter recebido uma
+ * solicitação também some de `eligibleRecords` (`isEligibleForJustification`
+ * retorna `false` pela janela fechada), exatamente como uma falta já
+ * resolvida — fazendo o aluno com falta real e nunca justificada
+ * aparecer como "tudo certo". `unjustifiedRecords` (novo) isola esse
+ * terceiro caso — nem elegível para solicitar agora, nem coberta por
+ * nenhuma justificativa ativa — para a tela poder tratá-lo como o que
+ * de fato é: uma falta que ficará permanentemente sem justificativa,
+ * nunca "situação regular".
  */
 export interface AbsenceJustificationOverview {
-  /** Faltas sem nenhuma justificativa ativa — elegíveis para "Solicitar justificativa". */
+  /** Faltas sem nenhuma justificativa ativa — elegíveis para "Solicitar justificativa" agora. */
   eligibleRecords: AttendanceRecord[];
   /** Todas as solicitações do aluno, mais recentes primeiro. */
   justifications: AbsenceJustification[];
+  /**
+   * Faltas cujo prazo para solicitar justificativa (`JUSTIFICATION_WINDOW_DAYS`)
+   * já encerrou SEM nenhuma justificativa ter sido criada (pendente,
+   * aprovada ou recusada) — permanecem sem justificativa. Nunca devem
+   * ser tratadas como "resolvidas"/"situação regular" pela UI.
+   */
+  unjustifiedRecords: AttendanceRecord[];
 }
 
 export function buildAbsenceJustificationOverview(
@@ -315,13 +335,27 @@ export function buildAbsenceJustificationOverview(
 
   const justificationByRecordId = new Map(activeJustifications.map((j) => [j.attendanceRecordId, j]));
 
-  const eligibleRecords = absentRecords.filter((record) =>
-    isEligibleForJustification(record.date ?? "", justificationByRecordId.get(record.id)?.status, false, now)
-  );
+  const eligibleRecords: AttendanceRecord[] = [];
+  const unjustifiedRecords: AttendanceRecord[] = [];
+
+  for (const record of absentRecords) {
+    const existingStatus = justificationByRecordId.get(record.id)?.status;
+    if (isEligibleForJustification(record.date ?? "", existingStatus, false, now)) {
+      eligibleRecords.push(record);
+      continue;
+    }
+    // Sem NENHUMA justificativa ativa (pendente/aprovada/recusada) E
+    // fora da janela de solicitação: a falta não foi "resolvida", só
+    // deixou de poder ser solicitada — precisa continuar visível como
+    // pendência, nunca como "situação regular".
+    if (!existingStatus && !isWithinJustificationWindow(record.date ?? "", now)) {
+      unjustifiedRecords.push(record);
+    }
+  }
 
   const sortedJustifications = [...activeJustifications].sort((a, b) =>
     b.absenceDate.localeCompare(a.absenceDate)
   );
 
-  return { eligibleRecords, justifications: sortedJustifications };
+  return { eligibleRecords, justifications: sortedJustifications, unjustifiedRecords };
 }
