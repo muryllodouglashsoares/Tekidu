@@ -49,6 +49,36 @@ export function EligibleAbsenceCard({ record, disciplineName, onRequest }: Eligi
   );
 }
 
+interface UnjustifiedAbsenceCardProps {
+  record: AttendanceRecord;
+  disciplineName: string;
+}
+
+/**
+ * Uma falta cujo prazo para solicitar justificativa
+ * (`JUSTIFICATION_WINDOW_DAYS`) encerrou SEM que o aluno tenha aberto
+ * nenhuma solicitação — correção do bug em que essas faltas
+ * simplesmente desapareciam da tela e o aluno via "Situação regular!"
+ * mesmo tendo uma falta não justificada. Sem botão de ação (o prazo já
+ * fechou; reabrir a janela é uma decisão administrativa, fora desta
+ * tela) — só deixa claro que a falta permanece sem justificativa.
+ */
+export function UnjustifiedAbsenceCard({ record, disciplineName }: UnjustifiedAbsenceCardProps) {
+  return (
+    <Card className="flex flex-col gap-1 border-danger/20 bg-danger/5 p-4">
+      <p className="font-display font-semibold text-ink900">{disciplineName}</p>
+      <p className="text-sm text-ink-500">
+        {formatDate(record.date ?? "")}
+        {record.label ? ` · ${record.label}` : ""}
+      </p>
+      <p className="mt-1 text-xs font-medium text-danger">
+        Falta sem justificativa — prazo para solicitar encerrado em{" "}
+        {formatDate(justificationDeadlineDate(record.date ?? ""))}
+      </p>
+    </Card>
+  );
+}
+
 interface AbsenceJustificationCardProps {
   justification: AbsenceJustification;
   disciplineName: string;
