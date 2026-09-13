@@ -804,9 +804,22 @@ service cloud.firestore {
     // exclusões vindas do app.
     // ---------------------------------------------------------------
     match /absenceJustifications/{attendanceRecordId} {
-      allow read: if isActiveAdmin() ||
-        (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId)) ||
-        isOwnStudentRecord(resource.data.studentId);
+      // `resource == null` cobre o `getDoc` de checagem que
+      // `absenceJustificationService.getAbsenceJustificationByAttendanceRecord`
+      // faz ANTES de criar a justificativa (submitAbsenceJustification,
+      // linha ~124): na primeira solicitação para uma falta, o
+      // documento ainda não existe e `resource` vem `null` do
+      // Firestore. Sem este guard, `resource.data.studentId`/
+      // `resource.data.disciplineId` avaliam sobre `null` e a regra
+      // estoura em erro de avaliação — reportado ao cliente como
+      // `permission-denied` (mesmo bug já corrigido em
+      // `conversations` acima). Liberar a leitura de um documento
+      // inexistente não vaza nada (não há dado para proteger).
+      allow read: if isSignedIn() &&
+        (resource == null ||
+         isActiveAdmin() ||
+         (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId)) ||
+         isOwnStudentRecord(resource.data.studentId));
       allow create: if isOwnStudentRecord(request.resource.data.studentId) &&
         request.resource.data.attendanceRecordId == attendanceRecordId &&
         isValidJustificationTarget(request.resource.data) &&
