@@ -1,19 +1,47 @@
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ChevronDown, CornerDownRight } from "lucide-react";
 import type { Assessment } from "@/types/assessment";
-import { effectiveMaxScore, effectiveWeight } from "@/types/assessment";
+import { effectiveMaxScore, effectiveWeight, groupAssessments } from "@/types/assessment";
 import type { Student } from "@/types/student";
 import {
   GRADE_MIN,
   GRADE_MAX,
-  calculateWeightedAverage,
-  calculateSituation,
+  resolveStudentAcademicResult,
   DEFAULT_ACADEMIC_THRESHOLDS,
   type AcademicThresholds,
 } from "@/types/grade";
 import { SituationBadge } from "@/components/notes/SituationBadge";
 import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useHapticFeedback } from "@/hooks/useHapticFeedback";
+
+/**
+ * Uma coluna/campo de nota a renderizar — uma avaliação regular, ou uma
+ * avaliação especial (segunda chamada/recuperação) vinculada a ela,
+ * já achatadas em ordem de exibição hierárquica (item 37 do briefing:
+ * "Prova 1 ↳ Segunda chamada ↳ Recuperação, Prova 2..."). A edição de
+ * nota em si não muda: cada avaliação especial é uma avaliação de
+ * verdade com seu próprio `assessmentId`, então a mesma célula
+ * genérica (por `assessment.id`) funciona sem alterações.
+ */
+interface GradeColumn {
+  assessment: Assessment;
+  linkKind: "second_call" | "recovery" | null;
+  parentName: string | null;
+}
+
+function buildColumns(assessments: Assessment[]): GradeColumn[] {
+  return groupAssessments(assessments).flatMap((group) => [
+    { assessment: group.regular, linkKind: null, parentName: null },
+    ...(group.secondCall
+      ? [{ assessment: group.secondCall, linkKind: "second_call" as const, parentName: group.regular.name }]
+      : []),
+    ...group.recoveries.map((recovery) => ({
+      assessment: recovery,
+      linkKind: "recovery" as const,
+      parentName: group.regular.name,
+    })),
+  ]);
+}
 
 interface GradesTableProps {
   students: Student[];
@@ -60,6 +88,7 @@ export function GradesTable({
 }: GradesTableProps) {
   const isMobile = useIsMobile();
   const { trigger } = useHapticFeedback();
+  const columns = useMemo(() => buildColumns(assessments), [assessments]);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -136,11 +165,12 @@ export function GradesTable({
     return (
       <div className="flex flex-col divide-y divide-line">
         {students.map((student) => {
-          const studentScores = assessments.map((a) => scores[student.id]?.[a.id] ?? null);
-          const average = calculateWeightedAverage(
-            assessments.map((a, i) => ({ score: studentScores[i], weight: effectiveWeight(a) }))
-          );
-          const situation = calculateSituation(studentScores, assessments.length, thresholds);
+          const scoresByAssessmentId: Record<string, number | null> = {};
+          for (const a of assessments) scoresByAssessmentId[a.id] = scores[student.id]?.[a.id] ?? null;
+          const resolution = resolveStudentAcademicResult(assessments, scoresByAssessmentId, thresholds);
+          const average = resolution.effectiveResult;
+          const situation = resolution.situation;
+          const recoveryApplied = resolution.recoveryScore !== null;
           const expanded = expandedStudentId === student.id;
 
           return (
@@ -160,6 +190,11 @@ export function GradesTable({
                       Média: {average === null ? "—" : String(average).replace(".", ",")}
                     </span>
                     <SituationBadge situation={situation} />
+                    {recoveryApplied && (
+                      <span className="rounded-full bg-honors-400/20 px-2 py-0.5 text-[10px] font-medium text-honors-600">
+                        Recuperação
+                      </span>
+                    )}
                   </span>
                 </span>
                 <ChevronDown
@@ -169,7 +204,7 @@ export function GradesTable({
 
               {expanded && (
                 <div className="flex flex-col gap-2.5 bg-ink-50/50 px-4 pb-4">
-                  {assessments.map((assessment) => {
+                  {columns.map(({ assessment, linkKind, parentName }) => {
                     const key = cellKey(student.id, assessment.id);
                     const value = scores[student.id]?.[assessment.id] ?? null;
                     const isEditing = editingKey === key;
@@ -179,6 +214,12 @@ export function GradesTable({
                     return (
                       <div key={assessment.id} className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
+                          {linkKind && (
+                            <p className="flex items-center gap-1 text-[11px] text-ink-400">
+                              <CornerDownRight className="h-3 w-3" aria-hidden="true" />
+                              {linkKind === "second_call" ? "Segunda chamada" : "Recuperação"} de {parentName}
+                            </p>
+                          )}
                           <p className="truncate text-sm text-ink-700">{assessment.name}</p>
                           {((assessment.weight !== undefined && assessment.weight !== 1) ||
                             (assessment.maxScore !== undefined && assessment.maxScore !== 10)) && (
@@ -228,6 +269,17 @@ export function GradesTable({
                       </div>
                     );
                   })}
+                  {resolution.recoveryAssessments.length > 0 && (
+                    <p className="pt-1 text-xs text-ink-500">
+                      Resultado considerado:{" "}
+                      <strong className="text-ink900">
+                        {average === null ? "—" : String(average).replace(".", ",")}
+                      </strong>
+                      {resolution.baseAverage !== null && resolution.baseAverage !== average && (
+                        <> (sem recuperação: {String(resolution.baseAverage).replace(".", ",")})</>
+                      )}
+                    </p>
+                  )}
                   {!canEdit && (
                     <p className="pt-1 text-xs text-ink-400">Você não tem permissão para editar notas.</p>
                   )}
@@ -248,8 +300,16 @@ export function GradesTable({
           <tr className="border-b border-line text-xs uppercase tracking-wide text-ink-400">
             <th scope="col" className="px-4 py-3 font-medium">Aluno</th>
             <th scope="col" className="px-4 py-3 font-medium">Matrícula</th>
-            {assessments.map((a) => (
+            {columns.map(({ assessment: a, linkKind, parentName }) => (
               <th key={a.id} scope="col" className="px-4 py-3 text-center font-medium">
+                {linkKind && (
+                  <span className="mb-0.5 flex items-center justify-center gap-1 text-[10px] normal-case text-ink-400">
+                    <CornerDownRight className="h-3 w-3" aria-hidden="true" />
+                    <span title={`${linkKind === "second_call" ? "Segunda chamada" : "Recuperação"} de ${parentName}`}>
+                      {linkKind === "second_call" ? "2ª chamada" : "Recuperação"}
+                    </span>
+                  </span>
+                )}
                 {a.name}
                 {(a.weight !== undefined && a.weight !== 1) || (a.maxScore !== undefined && a.maxScore !== 10) ? (
                   <span className="block text-[10px] normal-case text-ink-300">
@@ -264,16 +324,17 @@ export function GradesTable({
         </thead>
         <tbody>
           {students.map((student) => {
-            const studentScores = assessments.map((a) => scores[student.id]?.[a.id] ?? null);
-            // Média ponderada (item 4 do plano V8): equivalente à média
-            // simples quando todas as avaliações têm peso 1 (caso mais
-            // comum), mas passa a refletir o peso real assim que uma
-            // avaliação tiver `weight` diferente — sem exigir uma
-            // fórmula à parte quando os pesos são todos iguais.
-            const average = calculateWeightedAverage(
-              assessments.map((a, i) => ({ score: studentScores[i], weight: effectiveWeight(a) }))
-            );
-            const situation = calculateSituation(studentScores, assessments.length, thresholds);
+            const scoresByAssessmentId: Record<string, number | null> = {};
+            for (const a of assessments) scoresByAssessmentId[a.id] = scores[student.id]?.[a.id] ?? null;
+            // Fonte única de verdade (item 49 do briefing): resolve nota
+            // efetiva por avaliação (segunda chamada) + resultado final
+            // (recuperação) — a mesma função usada por Boletim e Portal
+            // do Aluno/Responsável, para nunca haver dois números
+            // diferentes para a mesma combinação de notas.
+            const resolution = resolveStudentAcademicResult(assessments, scoresByAssessmentId, thresholds);
+            const average = resolution.effectiveResult;
+            const situation = resolution.situation;
+            const recoveryApplied = resolution.recoveryScore !== null;
 
             return (
               <tr key={student.id} className="border-b border-line last:border-0">
@@ -288,7 +349,7 @@ export function GradesTable({
                 <td className="px-4 py-3 font-mono text-xs text-ink-500">
                   {student.registrationNumber}
                 </td>
-                {assessments.map((assessment) => {
+                {columns.map(({ assessment }) => {
                   const key = cellKey(student.id, assessment.id);
                   const value = scores[student.id]?.[assessment.id] ?? null;
                   const isEditing = editingKey === key;
@@ -335,13 +396,25 @@ export function GradesTable({
                         </button>
                       )}
                       {hasError && (
-                        <p className="mt-1 text-[11px] text-danger">0 a 10</p>
+                        <p className="mt-1 text-[11px] text-danger">0 a {effectiveMaxScore(assessment)}</p>
                       )}
                     </td>
                   );
                 })}
-                <td className="px-4 py-3 text-center font-display font-semibold text-ink900">
-                  {average === null ? "—" : String(average).replace(".", ",")}
+                <td className="px-4 py-3 text-center">
+                  <span
+                    className="font-display font-semibold text-ink900"
+                    title={
+                      recoveryApplied
+                        ? `Sem recuperação: ${resolution.baseAverage === null ? "—" : String(resolution.baseAverage).replace(".", ",")}`
+                        : undefined
+                    }
+                  >
+                    {average === null ? "—" : String(average).replace(".", ",")}
+                  </span>
+                  {recoveryApplied && (
+                    <span className="ml-1 block text-[10px] text-honors-600">recuperação aplicada</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <SituationBadge situation={situation} />

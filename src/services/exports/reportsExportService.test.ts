@@ -141,6 +141,8 @@ describe("buildStudentBoletimExcelSheets", () => {
         {
           discipline,
           average: 9,
+          baseAverage: 9,
+          recoveryApplied: false,
           situation: "approved",
           attendanceRate: 95,
           attendanceStatus: "regular",

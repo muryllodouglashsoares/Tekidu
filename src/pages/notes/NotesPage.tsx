@@ -23,13 +23,14 @@ import { getGradesByContext, saveGrade } from "@/services/grades/gradeService";
 import { logAuditEvent } from "@/services/audit/auditService";
 import { createNotification, createNotifications } from "@/services/notifications/notificationService";
 import { getAcademicSettings } from "@/services/academicSettings/academicSettingsService";
-import { ASSESSMENT_TERM_LABEL, type Assessment, type AssessmentTerm } from "@/types/assessment";
+import { ASSESSMENT_TERM_LABEL, effectiveAssessmentKind, type Assessment, type AssessmentTerm } from "@/types/assessment";
 import type { Grade } from "@/types/grade";
-import { calculateSituation, DEFAULT_ACADEMIC_THRESHOLDS, type AcademicThresholds } from "@/types/grade";
+import { resolveStudentAcademicResult, DEFAULT_ACADEMIC_THRESHOLDS, type AcademicThresholds } from "@/types/grade";
 import type { SchoolClass } from "@/types/schoolClass";
 import type { Discipline } from "@/types/discipline";
 import type { Student } from "@/types/student";
 import { describeFirebaseError } from "@/utils/firebaseError";
+import type { AssessmentFormValues, SpecialAssessmentTarget } from "@/components/notes/AssessmentManagerModal";
 
 export function NotesPage() {
   const { profile } = useAuth();
@@ -209,13 +210,20 @@ export function NotesPage() {
   }, [grades]);
 
   const pendingCount = useMemo(() => {
-    if (assessments.length === 0) return 0;
+    const regularCount = assessments.filter((a) => effectiveAssessmentKind(a) === "regular").length;
+    if (regularCount === 0) return 0;
     return linkedStudents.filter((student) => {
-      const studentScores = assessments.map((a) => scores[student.id]?.[a.id] ?? null);
-      const situation = calculateSituation(studentScores, assessments.length, thresholds);
+      const scoresByAssessmentId: Record<string, number | null> = {};
+      for (const a of assessments) scoresByAssessmentId[a.id] = scores[student.id]?.[a.id] ?? null;
+      // Fonte única de verdade (item 49 do briefing de Recuperações):
+      // mesma função usada por Boletim/GradesTable — "incomplete" só
+      // considera avaliações regulares (item 35), então uma
+      // recuperação/segunda chamada sem nota lançada não faz o aluno
+      // entrar nesta contagem de pendências.
+      const { situation } = resolveStudentAcademicResult(assessments, scoresByAssessmentId, thresholds);
       return situation === "no_grades" || situation === "incomplete";
     }).length;
-  }, [linkedStudents, assessments, scores]);
+  }, [linkedStudents, assessments, scores, thresholds]);
 
   async function handleSaveGrade(studentId: string, assessmentId: string, score: number | null) {
     setSaveError(null);
@@ -305,8 +313,14 @@ export function NotesPage() {
     }
   }
 
-  async function handleCreateAssessment(values: { name: string; weight: number; maxScore: number }, order: number) {
-    await createAssessment({
+  async function handleCreateAssessment(
+    values: AssessmentFormValues,
+    order: number,
+    special?: SpecialAssessmentTarget
+  ) {
+    const parent = special ? assessments.find((a) => a.id === special.parentAssessmentId) : undefined;
+
+    const assessmentId = await createAssessment({
       disciplineId,
       classId,
       schoolYear: Number(yearFilter),
@@ -315,21 +329,54 @@ export function NotesPage() {
       order,
       weight: values.weight,
       maxScore: values.maxScore,
+      assessmentKind: special?.kind,
+      parentAssessmentId: special?.parentAssessmentId,
     });
+
+    // RECUPERAÇÕES E SEGUNDA CHAMADA (item 28 do briefing): auditoria
+    // dedicada só para as duas naturezas especiais — a criação de uma
+    // avaliação REGULAR continua sem log de auditoria (comportamento
+    // já existente, fora do escopo desta funcionalidade).
+    if (profile && special) {
+      logAuditEvent({
+        type: special.kind === "second_call" ? "second_call_created" : "recovery_created",
+        actorId: profile.uid,
+        actorName: profile.name,
+        disciplineId,
+        disciplineName: selectedDiscipline?.name ?? null,
+        assessmentId,
+        assessmentName: values.name,
+        after: parent?.name ?? null,
+      });
+    }
 
     // Etapa 6 — notifica os alunos da turma que uma nova avaliação foi
     // cadastrada, ANTES do lançamento da nota (que já é coberto por
     // `grade_posted` em `handleSaveGrade`). Só os alunos com conta
     // vinculada (`student.uid`) recebem — mesmo filtro já usado em
-    // `handleSaveGrade`.
+    // `handleSaveGrade`. Para recuperação/segunda chamada, a mensagem
+    // deixa explícito qual é a avaliação de origem (item 27 do
+    // briefing) — sem criar um novo tipo de notificação: reaproveita
+    // `assessment_created`, só com título/mensagem específicos.
+    const notificationTitle = special
+      ? special.kind === "second_call"
+        ? "Nova segunda chamada"
+        : "Nova recuperação cadastrada"
+      : "Nova avaliação cadastrada";
+    const notificationMessage = special
+      ? `Foi cadastrada uma ${special.kind === "second_call" ? "segunda chamada" : "recuperação"} de ${
+          selectedDiscipline?.name ?? "sua disciplina"
+        }${parent ? ` para "${parent.name}"` : ""}.`
+      : `${values.name} em ${selectedDiscipline?.name ?? "sua disciplina"}.`;
+
     createNotifications(
       linkedStudents
         .filter((s) => s.uid)
         .map((s) => ({
           recipientUid: s.uid as string,
           type: "assessment_created" as const,
-          title: "Nova avaliação cadastrada",
-          message: `${values.name} em ${selectedDiscipline?.name ?? "sua disciplina"}.`,
+          title: notificationTitle,
+          message: notificationMessage,
           link: "/meu-boletim",
         }))
     );
@@ -338,12 +385,10 @@ export function NotesPage() {
     toast.success(`Avaliação "${values.name}" criada com sucesso.`);
   }
 
-  async function handleUpdateAssessment(
-    assessmentId: string,
-    values: { name: string; weight: number; maxScore: number }
-  ) {
+  async function handleUpdateAssessment(assessmentId: string, values: AssessmentFormValues) {
     const assessment = assessments.find((a) => a.id === assessmentId);
     if (!assessment) return;
+    const kind = effectiveAssessmentKind(assessment);
     await updateAssessment(assessmentId, {
       disciplineId: assessment.disciplineId,
       classId: assessment.classId,
@@ -353,7 +398,25 @@ export function NotesPage() {
       order: assessment.order,
       weight: values.weight,
       maxScore: values.maxScore,
+      // Natureza e vínculo pai/filho não mudam ao editar — só nome,
+      // peso e valor máximo (mesmos campos do formulário reutilizado).
+      assessmentKind: assessment.assessmentKind,
+      parentAssessmentId: assessment.parentAssessmentId,
     });
+
+    if (profile && kind !== "regular") {
+      logAuditEvent({
+        type: kind === "second_call" ? "second_call_updated" : "recovery_updated",
+        actorId: profile.uid,
+        actorName: profile.name,
+        disciplineId,
+        disciplineName: selectedDiscipline?.name ?? null,
+        assessmentId,
+        assessmentName: values.name,
+        before: assessment.name,
+        after: values.name,
+      });
+    }
 
     // Etapa 6 — só notifica em atualização quando o NOME muda (ex.:
     // "Prova 1" virou "Prova remarcada"). Ajustar peso/nota máxima não
@@ -381,10 +444,23 @@ export function NotesPage() {
 
   async function handleDeleteAssessment(assessmentId: string) {
     const assessment = assessments.find((a) => a.id === assessmentId);
-    await deleteAssessment(assessmentId);
+    const kind = assessment ? effectiveAssessmentKind(assessment) : "regular";
+    try {
+      await deleteAssessment(assessmentId);
+    } catch (error) {
+      // Bloqueio de integridade do `assessmentService` (item 56 do
+      // briefing: avaliação regular com recuperação/segunda chamada
+      // vinculada não pode ser excluída) — a UI já desabilita o botão
+      // nesse caso, mas mantém esta barreira caso o estado local esteja
+      // desatualizado.
+      const message = error instanceof Error ? error.message : "Não foi possível excluir a avaliação.";
+      toast.error(message);
+      throw error;
+    }
     if (profile) {
       logAuditEvent({
-        type: "assessment_deleted",
+        type:
+          kind === "second_call" ? "second_call_deleted" : kind === "recovery" ? "recovery_deleted" : "assessment_deleted",
         actorId: profile.uid,
         actorName: profile.name,
         disciplineId,

@@ -27,10 +27,20 @@ export function BoletimTable({ rows }: BoletimTableProps) {
                   <p className="truncate font-medium text-ink900">{row.discipline.name}</p>
                   <p className="truncate text-xs text-ink-400">{row.discipline.teacherName || "—"}</p>
                 </div>
-                <p className="shrink-0 font-display text-lg font-semibold text-ink900">
+                <p
+                  className="shrink-0 font-display text-lg font-semibold text-ink900"
+                  title={
+                    row.recoveryApplied
+                      ? `Sem recuperação: ${row.baseAverage === null ? "—" : row.baseAverage.toFixed(1)}`
+                      : undefined
+                  }
+                >
                   {row.average === null ? "—" : row.average.toFixed(1)}
                 </p>
               </div>
+              {row.recoveryApplied && (
+                <p className="text-[11px] text-honors-600">Recuperação realizada</p>
+              )}
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink-100">
                 <div
                   className={`h-full rounded-full ${
@@ -71,7 +81,20 @@ export function BoletimTable({ rows }: BoletimTableProps) {
               <th scope="row" className="px-4 py-3 text-left font-medium text-ink900">{row.discipline.name}</th>
               <td className="px-4 py-3 text-ink-600">{row.discipline.teacherName || "—"}</td>
               <td className="px-4 py-3 tabular text-ink-600">
-                {row.average === null ? "—" : row.average.toFixed(1)}
+                <span
+                  title={
+                    row.recoveryApplied
+                      ? `Sem recuperação: ${row.baseAverage === null ? "—" : row.baseAverage.toFixed(1)}`
+                      : undefined
+                  }
+                >
+                  {row.average === null ? "—" : row.average.toFixed(1)}
+                </span>
+                {row.recoveryApplied && (
+                  <span className="ml-1.5 rounded-full bg-honors-400/20 px-1.5 py-0.5 text-[10px] font-medium text-honors-600">
+                    Recuperação
+                  </span>
+                )}
               </td>
               <td className="px-4 py-3 tabular text-ink-600">
                 {row.attendanceRate === null ? "—" : `${row.attendanceRate}%`}

@@ -1,11 +1,12 @@
 import { getDisciplines, getDisciplinesForClass } from "@/services/disciplines/disciplineService";
 import { getGradesByContext } from "@/services/grades/gradeService";
+import { getAssessmentsByContext } from "@/services/assessments/assessmentService";
 import { getRecordsByContext } from "@/services/attendance/attendanceRecordService";
 import { getAcademicSettings } from "@/services/academicSettings/academicSettingsService";
 import {
   ACADEMIC_SITUATION_LABEL,
-  calculateAverage,
   deriveSituationFromAverage,
+  resolveStudentAcademicResult,
   type AcademicSituation,
   type AcademicThresholds,
 } from "@/types/grade";
@@ -25,6 +26,10 @@ export interface DisciplineBoletimRow {
   situation: AcademicSituation;
   attendanceRate: number | null;
   attendanceStatus: AttendanceStatus | null;
+  /** Média antes de aplicar a recuperação — só difere de `average` quando `recoveryApplied` é `true` (item 18/24 do briefing: transparência). */
+  baseAverage: number | null;
+  /** `true` quando existe uma recuperação com nota lançada neste contexto — usada para exibir o indicativo discreto "Recuperação realizada" (item 24). */
+  recoveryApplied: boolean;
 }
 
 /** Boletim consolidado de um aluno: identificação fica a cargo da página (já tem Student/SchoolClass). */
@@ -119,38 +124,70 @@ export async function getStudentBoletim(
       // Para admin/aluno (dono do próprio registro), isso nunca ocorre.
       let studentGrades: import("@/types/grade").Grade[] = [];
       let studentRecords: import("@/types/attendance").AttendanceRecord[] = [];
+      let contextAssessments: import("@/types/assessment").Assessment[] = [];
       try {
-        const [gradesByTerm, recordsByTerm] = await Promise.all([
+        const [gradesByTerm, recordsByTerm, assessmentsByTerm] = await Promise.all([
           Promise.all(
             terms.map((term) => getGradesByContext(discipline.id, classId, schoolYear, term, studentId))
           ),
           Promise.all(
             terms.map((term) => getRecordsByContext(discipline.id, classId, schoolYear, term, studentId))
           ),
+          // Item 22 do briefing ("atenção ao boletim atual"): antes, o
+          // Boletim só buscava `grades` e tirava a média aritmética
+          // simples (`calculateAverage`), ignorando peso por avaliação
+          // — diferente da tela de Notas, que já usa
+          // `calculateWeightedAverage`. Buscar as avaliações do
+          // contexto aqui (mesmo padrão paralelo por bimestre já usado
+          // para notas/frequência acima) é o que permite chamar
+          // `resolveStudentAcademicResult` — a MESMA função usada por
+          // Notas — e assim eliminar a divergência entre as duas
+          // telas, além de tornar o Boletim ciente de recuperação/
+          // segunda chamada.
+          Promise.all(
+            terms.map((term) => getAssessmentsByContext(discipline.id, classId, schoolYear, term))
+          ),
         ]);
         studentGrades = gradesByTerm.flat().filter((g) => g.studentId === studentId);
         studentRecords = recordsByTerm.flat().filter((r) => r.studentId === studentId);
+        contextAssessments = assessmentsByTerm.flat();
       } catch {
         // Sem permissão para esta disciplina específica — trata como
         // "sem dados" em vez de propagar o erro (ver nota acima).
       }
 
-      const average = calculateAverage(studentGrades.map((g) => g.score));
+      const scoresByAssessmentId: Record<string, number | null> = {};
+      for (const grade of studentGrades) {
+        scoresByAssessmentId[grade.assessmentId] = grade.score;
+      }
+      const resolution = resolveStudentAcademicResult(contextAssessments, scoresByAssessmentId, thresholds);
+
       const present = studentRecords.filter((r) => r.status === "present").length;
       const total = studentRecords.length;
       const attendanceRate = calculateAttendanceRate(present, total);
 
+      // A variante "incomplete" só faz sentido dentro de UM bimestre
+      // específico (depende de quantas avaliações existem NAQUELE
+      // bimestre — item 35). No período "Anual" (`terms.length > 1`),
+      // preserva o comportamento já existente antes desta
+      // funcionalidade: classifica direto pela média consolidada,
+      // sem a variante "incomplete" (ver nota histórica original desta
+      // função, mantida abaixo).
+      const situation =
+        terms.length > 1
+          ? deriveSituationFromAverage(resolution.effectiveResult, thresholds)
+          : resolution.situation;
+
       return {
         discipline,
-        average,
+        average: resolution.effectiveResult,
+        baseAverage: resolution.baseAverage,
+        recoveryApplied: resolution.recoveryScore !== null,
         // Reaproveita a MESMA função central usada por Notas
-        // (`calculateSituation` → `deriveSituationFromAverage` em
-        // types/grade.ts) — o Boletim não tem sua própria fórmula de
-        // aprovação; só não usa a variante \"incomplete\" (que depende
-        // da contagem de avaliações de UM bimestre específico; no
-        // período \"Anual\" isso deixaria de fazer sentido, já que
-        // consolidamos 4 bimestres).
-        situation: deriveSituationFromAverage(average, thresholds),
+        // (`resolveStudentAcademicResult` → `deriveSituationFromAverage`
+        // em types/grade.ts) — o Boletim não tem sua própria fórmula de
+        // aprovação/recuperação.
+        situation,
         attendanceRate,
         attendanceStatus: calculateAttendanceStatus(attendanceRate, settings.minAttendanceRate),
       };

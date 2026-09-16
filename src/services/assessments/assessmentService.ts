@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   orderBy,
   query,
@@ -11,7 +12,8 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Assessment, AssessmentInput, AssessmentTerm, AssessmentType } from "@/types/assessment";
+import type { Assessment, AssessmentInput, AssessmentKind, AssessmentTerm, AssessmentType } from "@/types/assessment";
+import { effectiveAssessmentKind } from "@/types/assessment";
 
 const assessmentsCollection = collection(db, "assessments");
 
@@ -29,6 +31,8 @@ function toAssessment(id: string, data: Record<string, unknown>): Assessment {
     type: data.type as AssessmentType | undefined,
     description: data.description as string | undefined,
     date: data.date as string | undefined,
+    assessmentKind: data.assessmentKind as AssessmentKind | undefined,
+    parentAssessmentId: data.parentAssessmentId as string | undefined,
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   };
@@ -119,7 +123,77 @@ export async function getAssessmentsByDisciplineIds(
   return results.flat();
 }
 
+/** Busca uma avaliação específica pelo ID. `null` se não existir (item 55, edge case 1 — avaliação pai inexistente). */
+export async function getAssessmentById(id: string): Promise<Assessment | null> {
+  const snapshot = await getDoc(doc(db, "assessments", id));
+  if (!snapshot.exists()) return null;
+  return toAssessment(snapshot.id, snapshot.data());
+}
+
+/** Avaliações especiais (recuperação/segunda chamada) vinculadas a uma avaliação regular — usada para bloquear a exclusão do pai (item 56) e para checar duplicidade de segunda chamada (item 16). */
+export async function getDependentAssessmentsById(parentAssessmentId: string): Promise<Assessment[]> {
+  const q = query(assessmentsCollection, where("parentAssessmentId", "==", parentAssessmentId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => toAssessment(d.id, d.data()));
+}
+
+/**
+ * Valida a relação pai/filho de uma avaliação especial ANTES de
+ * gravar (item 30/31 do briefing: "não confiar apenas no frontend" —
+ * esta validação roda no cliente como primeira barreira de UX/
+ * integridade; a barreira de segurança real, contra manipulação direta
+ * da API, é a mesma checagem espelhada em `firestore.rules`).
+ *
+ * Garante: avaliação pai existe (edge case 1), pertence ao MESMO
+ * contexto (disciplina/turma/ano/bimestre — edge cases 2-5) e é uma
+ * avaliação REGULAR, nunca outra avaliação especial (edge case 6 —
+ * "avaliação especial apontando para outra avaliação especial").
+ * Lança um erro com mensagem amigável quando algo não bate.
+ */
+export async function validateSpecialAssessmentParent(
+  input: Pick<AssessmentInput, "disciplineId" | "classId" | "schoolYear" | "term">,
+  parentAssessmentId: string
+): Promise<Assessment> {
+  const parent = await getAssessmentById(parentAssessmentId);
+  if (!parent) {
+    throw new Error("A avaliação de origem selecionada não existe mais.");
+  }
+  if (
+    parent.disciplineId !== input.disciplineId ||
+    parent.classId !== input.classId ||
+    parent.schoolYear !== input.schoolYear ||
+    parent.term !== input.term
+  ) {
+    throw new Error("A avaliação de origem precisa ser da mesma disciplina, turma, ano letivo e bimestre.");
+  }
+  if (effectiveAssessmentKind(parent) !== "regular") {
+    throw new Error("Só é possível criar recuperação ou segunda chamada a partir de uma avaliação regular.");
+  }
+  return parent;
+}
+
+/**
+ * Cria uma avaliação, validando a relação pai/filho quando ela é uma
+ * avaliação especial (recuperação/segunda chamada — item 30 do
+ * briefing). Evita duplicidade de segunda chamada ativa por avaliação
+ * regular (item 16: "por padrão, uma avaliação regular deve possuir no
+ * máximo uma segunda chamada ativa vinculada a ela").
+ */
 export async function createAssessment(data: AssessmentInput): Promise<string> {
+  const kind = data.assessmentKind ?? "regular";
+  if (kind !== "regular") {
+    if (!data.parentAssessmentId) {
+      throw new Error("Informe a avaliação de origem da recuperação/segunda chamada.");
+    }
+    await validateSpecialAssessmentParent(data, data.parentAssessmentId);
+    if (kind === "second_call") {
+      const siblings = await getDependentAssessmentsById(data.parentAssessmentId);
+      if (siblings.some((s) => effectiveAssessmentKind(s) === "second_call")) {
+        throw new Error("Esta avaliação já possui uma segunda chamada cadastrada.");
+      }
+    }
+  }
+
   const ref = await addDoc(assessmentsCollection, {
     ...data,
     createdAt: serverTimestamp(),
@@ -140,8 +214,24 @@ export async function updateAssessment(id: string, data: AssessmentInput): Promi
  * "órfãs" apontando para um `assessmentId` inexistente). Usa o mesmo
  * padrão de `getGradesByAssessment` do `gradeService` para localizar os
  * documentos a remover antes de excluir a avaliação em si.
+ *
+ * PROTEÇÃO (item 56 do briefing): uma avaliação REGULAR com
+ * recuperação(ões) e/ou segunda chamada vinculadas não pode ser
+ * excluída enquanto essas dependentes existirem — evita deixar
+ * `parentAssessmentId` órfão silenciosamente. O chamador (UI) deve
+ * orientar o usuário a excluir primeiro as avaliações dependentes.
+ * Avaliações especiais (que nunca têm dependentes, edge case 6) são
+ * sempre excluíveis normalmente.
  */
 export async function deleteAssessment(id: string): Promise<void> {
+  const dependents = await getDependentAssessmentsById(id);
+  if (dependents.length > 0) {
+    const names = dependents.map((d) => d.name).join(", ");
+    throw new Error(
+      `Esta avaliação possui recuperação/segunda chamada vinculada (${names}). Exclua-as primeiro.`
+    );
+  }
+
   const gradesQuery = query(collection(db, "grades"), where("assessmentId", "==", id));
   const gradesSnapshot = await getDocs(gradesQuery);
   await Promise.all(gradesSnapshot.docs.map((d) => deleteDoc(d.ref)));

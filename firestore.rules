@@ -165,6 +165,58 @@ service cloud.firestore {
         (request.resource.data.weight is number && request.resource.data.weight > 0);
     }
 
+    // -----------------------------------------------------------------
+    // RECUPERAÇÕES E SEGUNDA CHAMADA (item 30/31 do briefing:
+    // "não confiar apenas no frontend" / "segurança contra
+    // manipulação"). `assessmentService.validateSpecialAssessmentParent`
+    // já faz esta mesma checagem no cliente antes de gravar — aqui é a
+    // barreira real, contra quem chama a API diretamente contornando o
+    // app. `canWriteAcademicRecord` (acima) já garante que o
+    // `disciplineId` do payload é de uma disciplina do próprio
+    // professor (ou admin); exigir abaixo que a avaliação-pai tenha o
+    // MESMO `disciplineId`/`classId`/`schoolYear`/`term` do payload
+    // fecha a brecha "criar recuperação da disciplina de outro
+    // professor apontando parentAssessmentId para lá": o professor só
+    // consegue apontar para uma avaliação que já é da SUA disciplina.
+    // -----------------------------------------------------------------
+
+    // Enum de `AssessmentKind` (`src/types/assessment.ts`). Documentos
+    // antigos sem o campo continuam válidos (equivalem a "regular" —
+    // ver `effectiveAssessmentKind`).
+    function isValidAssessmentKind() {
+      return !('assessmentKind' in request.resource.data) ||
+        request.resource.data.assessmentKind == null ||
+        request.resource.data.assessmentKind in ['regular', 'recovery', 'second_call'];
+    }
+
+    function isRegularAssessmentData(data) {
+      return !('assessmentKind' in data) || data.assessmentKind == null || data.assessmentKind == 'regular';
+    }
+
+    // Uma avaliação regular (ou documento antigo sem `assessmentKind`)
+    // não pode ter `parentAssessmentId`; uma avaliação especial
+    // precisa apontar para uma avaliação REGULAR existente do mesmo
+    // contexto (edge cases 1-6 do item 55: pai inexistente, outra
+    // disciplina/turma/ano/bimestre, ou pai que também é especial).
+    function isValidAssessmentParent() {
+      let data = request.resource.data;
+      return isRegularAssessmentData(data)
+        ? (!('parentAssessmentId' in data) || data.parentAssessmentId == null)
+        : (
+            'parentAssessmentId' in data && data.parentAssessmentId is string &&
+            exists(/databases/$(database)/documents/assessments/$(data.parentAssessmentId)) &&
+            isCompatibleAssessmentParent(data, get(/databases/$(database)/documents/assessments/$(data.parentAssessmentId)).data)
+          );
+    }
+
+    function isCompatibleAssessmentParent(data, parent) {
+      return parent.disciplineId == data.disciplineId &&
+        parent.classId == data.classId &&
+        parent.schoolYear == data.schoolYear &&
+        parent.term == data.term &&
+        isRegularAssessmentData(parent);
+    }
+
     // Enum de `AttendanceRecordStatus` (`src/types/attendance.ts`):
     // apenas "present"/"absent" existem hoje.
     function isValidAttendanceStatus(status) {
@@ -664,8 +716,12 @@ service cloud.firestore {
         (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId));
       // Validação de payload (Tarefa 1, pós-auditoria V8): `weight`,
       // quando presente, precisa ser > 0 — ver `isValidAssessmentWeight()`.
+      // RECUPERAÇÕES E SEGUNDA CHAMADA: `assessmentKind`/
+      // `parentAssessmentId`, quando presentes, precisam ser válidos e
+      // compatíveis com o contexto — ver `isValidAssessmentKind()`/
+      // `isValidAssessmentParent()` acima.
       allow create: if canWriteAcademicRecord(request.resource.data.disciplineId) &&
-        isValidAssessmentWeight();
+        isValidAssessmentWeight() && isValidAssessmentKind() && isValidAssessmentParent();
       // UPDATE checa a disciplina ATUAL (resource) E a disciplina do
       // payload enviado (request.resource) — evita que um professor
       // "sequestre" uma avaliação de outra disciplina apenas
@@ -673,7 +729,7 @@ service cloud.firestore {
       // payload de update.
       allow update: if canWriteAcademicRecord(resource.data.disciplineId) &&
         canWriteAcademicRecord(request.resource.data.disciplineId) &&
-        isValidAssessmentWeight();
+        isValidAssessmentWeight() && isValidAssessmentKind() && isValidAssessmentParent();
       allow delete: if canWriteAcademicRecord(resource.data.disciplineId);
     }
 

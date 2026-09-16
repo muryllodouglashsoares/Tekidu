@@ -48,6 +48,24 @@
  *   funcionalidade (decide quem passa a enxergar boletim/frequência
  *   de qual aluno), por isso auditado nos dois sentidos, não só na
  *   criação. `before`/`after` guardam o nome do responsável.
+ *
+ * RECUPERAÇÕES E SEGUNDA CHAMADA (item 28 do briefing):
+ * - `recovery_created`/`second_call_created`: cadastro de uma
+ *   avaliação de recuperação/segunda chamada
+ *   (`assessmentService.createAssessment` com `assessmentKind`
+ *   correspondente). `after` guarda o nome da avaliação criada e da
+ *   avaliação regular de origem.
+ * - `recovery_updated`/`second_call_updated`: edição de nome/peso/valor
+ *   máximo de uma avaliação especial já existente.
+ * - `recovery_deleted`/`second_call_deleted`: exclusão de uma avaliação
+ *   especial (e das notas lançadas nela) — item 41: a avaliação
+ *   original nunca é afetada por esta exclusão. Reaproveita `before`
+ *   para o nome da avaliação excluída (mesmo racional de
+ *   `assessment_deleted`, que continua sendo usado só para avaliações
+ *   REGULARES).
+ * Lançamento de nota em avaliações especiais continua usando o mesmo
+ * `grade_updated` já existente — não é um evento novo, só mais um
+ * `assessmentId` possível.
  */
 export type AuditEventType =
   | "grade_updated"
@@ -61,7 +79,13 @@ export type AuditEventType =
   | "announcement_deleted"
   | "guardian_created"
   | "guardian_linked"
-  | "guardian_unlinked";
+  | "guardian_unlinked"
+  | "recovery_created"
+  | "recovery_updated"
+  | "recovery_deleted"
+  | "second_call_created"
+  | "second_call_updated"
+  | "second_call_deleted";
 
 /**
  * Rótulo legível para cada tipo de evento — usado pela aba "Histórico"
@@ -82,6 +106,12 @@ export const AUDIT_EVENT_LABEL: Record<AuditEventType, string> = {
   guardian_created: "Responsável cadastrado",
   guardian_linked: "Responsável vinculado a aluno",
   guardian_unlinked: "Responsável desvinculado de aluno",
+  recovery_created: "Recuperação cadastrada",
+  recovery_updated: "Recuperação atualizada",
+  recovery_deleted: "Recuperação excluída",
+  second_call_created: "Segunda chamada cadastrada",
+  second_call_updated: "Segunda chamada atualizada",
+  second_call_deleted: "Segunda chamada excluída",
 };
 
 export interface AuditLog {
