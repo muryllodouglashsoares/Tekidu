@@ -6,7 +6,7 @@ import {
   setPersistence,
   signOut as signOutSecondaryAuth,
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 /**
  * Todas as chaves abaixo são PÚBLICAS por natureza — o Firebase foi
@@ -37,7 +37,18 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// `ignoreUndefinedProperties`: os tipos de input dos services (ex.:
+// `AssessmentInput`) têm vários campos opcionais (`weight`, `type`,
+// `assessmentKind`, `parentAssessmentId`...) que a UI frequentemente
+// passa explicitamente como `undefined` quando não se aplicam (ex.:
+// `assessmentKind: special?.kind` numa avaliação regular). Sem esta
+// opção, `addDoc`/`updateDoc`/`setDoc` rejeitam QUALQUER campo com
+// valor `undefined` em qualquer lugar do app — é essa a causa do erro
+// "Unsupported field value: undefined" ao criar uma avaliação comum.
+// Ativar isso aqui, uma única vez, resolve a causa para todos os
+// services (não só `assessmentService`), em vez de cada um precisar
+// filtrar `undefined` manualmente antes de cada escrita.
+export const db = initializeFirestore(app, { ignoreUndefinedProperties: true });
 // Justificativas de Faltas (Portal do Aluno) armazena o documento
 // comprobatório embutido no próprio Firestore (base64) — o Firebase
 // Storage exige o plano Blaze (pago) mesmo dentro da cota gratuita, e
