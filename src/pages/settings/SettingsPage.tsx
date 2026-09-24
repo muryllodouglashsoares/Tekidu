@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { User, ShieldCheck, Sparkles, CheckCircle2, GraduationCap } from "lucide-react";
+import { User, ShieldCheck, CheckCircle2, GraduationCap } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -310,19 +310,6 @@ export function SettingsPage() {
         {/* Notificações push (Web Push via FCM) — item novo, ver
             `PushNotificationSettings` e `docs/PUSH_NOTIFICATIONS.md`. */}
         <PushNotificationSettings />
-
-        {/* Preferências */}
-        <Card className="p-5">
-          <h3 className="mb-2 flex items-center gap-2 font-display text-base font-semibold text-ink900">
-            <Sparkles className="h-4 w-4 text-ink-500" aria-hidden="true" />
-            Preferências
-          </h3>
-          <p className="text-sm text-ink-500">
-            Preferências de tema ainda não são suportadas nesta versão do Tekidu — em vez de simular uma
-            configuração que não seria salva de verdade, esta seção ficará disponível assim que houver
-            suporte no backend.
-          </p>
-        </Card>
       </div>
     </div>
   );
