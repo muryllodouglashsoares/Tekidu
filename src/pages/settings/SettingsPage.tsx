@@ -25,9 +25,6 @@ import { describeFirebaseError } from "@/utils/firebaseError";
  *   já existente (`resetPassword`, usado em "Esqueci minha senha"),
  *   em vez de inventar um endpoint de troca de senha que o projeto
  *   não tem.
- * - Preferências (tema/notificações): NÃO há suporte no backend para
- *   persistir isso, então a seção só informa que ainda não está
- *   disponível — sem fingir salvar algo que se perde ao recarregar.
  */
 export function SettingsPage() {
   const { profile, firebaseUser, resetPassword, refreshProfile } = useAuth();
