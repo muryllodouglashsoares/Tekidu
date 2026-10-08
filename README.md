@@ -4,7 +4,7 @@
 
 ### Visualizando a evolução acadêmica.
 
-Plataforma de gestão e acompanhamento acadêmico com experiências dedicadas para **administradores, professores e estudantes**.
+Plataforma de gestão e acompanhamento acadêmico com experiências dedicadas para **administradores, professores, estudantes e responsáveis**.
 
 <br />
 
@@ -27,13 +27,14 @@ Plataforma de gestão e acompanhamento acadêmico com experiências dedicadas pa
 
 A **Tekidu** centraliza informações acadêmicas — notas, frequência, boletim, turmas e comunicados — em um único ambiente, no lugar de planilhas e sistemas dispersos.
 
-A plataforma possui três experiências distintas, cada uma com permissões e telas próprias:
+A plataforma possui quatro experiências distintas, cada uma com permissões e telas próprias:
 
 | Perfil | Foco |
 |---|---|
 | 👨‍💼 **Administrador** | Gestão de estudantes, professores, turmas, disciplinas e avisos |
 | 👨‍🏫 **Professor** | Turmas, avaliações, lançamento de notas e frequência |
-| 👨‍🎓 **Estudante** | Boletim, desempenho, frequência e avisos, com acesso restrito aos próprios dados |
+| 👨‍🎓 **Estudante** | Boletim, desempenho, frequência, justificativas de falta, mensagens e avisos, com acesso restrito aos próprios dados |
+| 👪 **Responsável** | Consulta de boletim e frequência dos estudantes vinculados (somente leitura) |
 
 ---
 
@@ -43,9 +44,14 @@ A plataforma possui três experiências distintas, cada uma com permissões e te
 - **Gestão acadêmica** — estudantes, professores, turmas, disciplinas e avaliações, com CRUDs completos para o perfil admin.
 - **Notas e boletim** — lançamento de avaliações, cálculo de médias e boletim consolidado por estudante.
 - **Frequência** — registro de sessões, presença/ausência e histórico por período.
+- **Justificativas de falta** — o estudante envia a justificativa com documento comprobatório (imagem ou PDF) e admin/professor analisam.
+- **Mensagens** — conversas entre professores e estudantes.
+- **Exportação** — boletim em PDF e exportações em Excel/PDF de frequência e relatórios.
 - **Relatórios e desempenho** — indicadores acadêmicos por estudante e por turma.
 - **Avisos, notificações e calendário acadêmico** — comunicação centralizada, com central de notificações dedicada.
 - **Command Palette** — navegação rápida por atalhos de teclado.
+- **PWA e Web Push** — instalável, com Service Worker; o envio de push depende de variáveis de ambiente na Cloudflare Pages (ver [docs/PUSH_NOTIFICATIONS.md](./docs/PUSH_NOTIFICATIONS.md)).
+- **Painel de acessibilidade** — preferências de texto, contraste e movimento (ver [docs/ACCESSIBILITY.md](./docs/ACCESSIBILITY.md)).
 - **UX mobile dedicada** — bottom navigation, sheets e FAB próprios para telas pequenas (não apenas CSS responsivo).
 - **Dark mode** — tema claro/escuro via tokens de design em CSS variables.
 
@@ -70,16 +76,16 @@ A plataforma possui três experiências distintas, cada uma com permissões e te
 ## Diferenciais técnicos
 
 ### 🔐 Segurança no banco, não só na interface
-As permissões por role (`admin`, `teacher`, `student`) são validadas diretamente em **Firestore Security Rules**, cobrindo quem pode ler/escrever cada coleção, validação de payload e acesso restrito a dados próprios — esconder um botão na UI não é tratado como controle de acesso.
+As permissões por role (`admin`, `teacher`, `student`, `guardian`) são validadas diretamente em **Firestore Security Rules**, cobrindo quem pode ler/escrever cada coleção, validação de payload e acesso restrito a dados próprios — esconder um botão na UI não é tratado como controle de acesso.
 
 ### 🧪 Testes automatizados em duas frentes
-As regras de segurança têm suíte própria com **Vitest + Firebase Emulator + `@firebase/rules-unit-testing`**, validando cenários de acesso permitido/negado. Há também testes de unidade para regras de negócio (cálculo de médias e frequência), fora do escopo das rules.
+As regras de segurança (Firestore Rules) têm suítes próprias com **Vitest + Firebase Emulator + `@firebase/rules-unit-testing`**, validando cenários de acesso permitido/negado. Há também testes de unidade para regras de negócio (cálculo de médias, frequência, justificativas) e para a formatação de exportações, fora do escopo das rules. Não há testes de componentes de interface nem pipeline de CI configurado no repositório.
 
 ### ⚡ Code splitting granular
-Praticamente todas as páginas são carregadas sob demanda com `React.lazy`, agrupadas por `<Suspense>` conforme o perfil do usuário — um estudante nunca baixa o código do portal administrativo.
+A maioria das páginas é carregada sob demanda com `React.lazy`, agrupadas por `<Suspense>` conforme o perfil do usuário. Login, primeiro acesso, dashboard, meu boletim e configurações fazem parte do carregamento inicial.
 
 ### 🧩 Camada de serviços por domínio
-A comunicação com o Firestore fica isolada em serviços (`students`, `grades`, `attendance`, `reports`, `audit`, `email`, entre outros), mantendo componentes de UI livres de lógica de acesso a dados.
+A comunicação com o Firestore fica isolada em serviços (`students`, `grades`, `attendance`, `reports`, `audit`, `email`, `chat`, `justifications`, entre outros), mantendo componentes de UI livres de lógica de acesso a dados.
 
 ### 📝 Auditoria de ações
 Alterações sensíveis (como edição de notas) geram um log de auditoria assíncrono, sem bloquear a ação principal do usuário caso o registro falhe.
@@ -93,7 +99,9 @@ Alterações sensíveis (como edição de notas) geram um log de auditoria assí
 | React 18 | Tailwind CSS | Firebase Authentication | Vitest |
 | TypeScript | Framer Motion | Cloud Firestore | Firebase Emulator |
 | Vite | Lucide React | Firestore Security Rules | `@firebase/rules-unit-testing` |
-| React Router | | Cloudflare Pages Function (e-mail) | |
+| React Router | | Cloudflare Pages Functions (e-mail e push) | |
+| | | Firebase Cloud Messaging | |
+| | | Workbox / vite-plugin-pwa | |
 
 ---
 
@@ -109,14 +117,19 @@ Firebase (Auth + Firestore)
 Firestore Security Rules
 ```
 
+E-mail de primeiro acesso e Web Push passam por Cloudflare Pages Functions (`functions/api/`), que guardam as credenciais do EmailJS e do FCM fora do bundle do cliente.
+
 ```text
 src/
 ├── components/   # UI reutilizável (inclui variantes mobile)
-├── pages/        # Telas por perfil (admin, teacher, student)
+├── pages/        # Telas por perfil (admin, teacher, student, guardian)
 ├── services/     # Acesso a dados por domínio
-├── contexts/     # Auth, tema, toasts
+├── contexts/     # Auth, tema, toasts, acessibilidade
 ├── security/     # Testes das Firestore Rules
 └── routes/       # Roteamento com guards por role
+
+functions/api/    # Cloudflare Pages Functions (e-mail de primeiro acesso, push)
+docs/             # Documentação complementar e screenshots
 ```
 
 ---
@@ -139,12 +152,15 @@ cp .env.example .env.local
 npm run dev
 ```
 
+> As funções em `functions/api/` (e-mail de primeiro acesso e push) rodam na Cloudflare Pages e não são executadas por `npm run dev`. O cadastro de professores, estudantes e responsáveis depende do envio desse e-mail; veja [FIREBASE_SETUP.md](./FIREBASE_SETUP.md).
+
 ## Scripts
 
 | Comando | Descrição |
 |---|---|
 | `npm run dev` | Ambiente de desenvolvimento |
 | `npm run build` | Build de produção (`tsc -b && vite build`) |
+| `npm run preview` | Pré-visualização local do build |
 | `npm run test` | Testes de unidade |
 | `npm run test:rules` | Testes das Firestore Security Rules (via emulador) |
 | `npm run lint` | ESLint |
@@ -162,6 +178,8 @@ npm run dev
 - [x] Firestore Security Rules + testes automatizados
 - [x] Code splitting por perfil
 - [x] Log de auditoria (básico)
+- [x] PWA (instalação e Service Worker)
+- [x] Painel de preferências de acessibilidade
 
 **Próximas evoluções**
 - [ ] Dashboard de auditoria mais completo
@@ -169,13 +187,12 @@ npm run dev
 - [ ] CI/CD
 - [ ] Testes de componentes de interface
 - [ ] Melhorias de acessibilidade
-- [ ] PWA
 
 ---
 
 ## Demonstração
 
-🚀 **[Acesse a demonstração da Tekidu](https://tekidu.pages.dev)**
+🚀 **[Acesse a demonstração da Tekidu](https://ifconnect.pages.dev)**
 
 ---
 
