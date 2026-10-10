@@ -57,7 +57,7 @@ function toJustification(id: string, data: Record<string, unknown>): AbsenceJust
  * máximo 1 justificativa" garantido pela ESTRUTURA do banco, não só
  * por uma checagem em memória no cliente).
  *
- * ISSO É O QUE IMPEDE, ESTRUTURALMENTE (seção 4/11/12 do prompt):
+ * ISSO É O QUE IMPEDE, ESTRUTURALMENTE:
  * - duas solicitações ativas para a mesma falta;
  * - reenvio depois de uma recusa (o documento já existe; a Security
  *   Rule só libera `create` quando o documento AINDA NÃO EXISTE —
@@ -95,7 +95,7 @@ export interface SubmitAbsenceJustificationParams {
 }
 
 /**
- * Orquestra o fluxo completo de envio (seção 11 do prompt, adaptado
+ * Orquestra o fluxo completo de envio (adaptado
  * ao armazenamento em Firestore — ver nota de arquitetura em
  * `types/absenceJustification.ts`): valida → prepara o documento
  * (compressão + base64, só no cliente, sem I/O de rede) → grava TUDO
@@ -129,7 +129,8 @@ export async function submitAbsenceJustification({
   const document = await prepareJustificationDocument(file);
 
   // `expiresAt` = agora + JUSTIFICATION_WINDOW_DAYS dias — usado pela
-  // Firestore TTL Policy (configuração externa, ver entrega) para
+  // Firestore TTL Policy (configuração externa ao código — ver
+   // `types/absenceJustification.ts`) para
   // apagar automaticamente o registro (e o documento pesado embutido
   // nele) depois do prazo, e também tratado como "já expirado" no
   // próprio cliente antes disso (`isJustificationExpired`). Como a
@@ -223,8 +224,8 @@ export interface ReviewAbsenceJustificationParams {
 }
 
 /**
- * Aprova ou recusa uma solicitação (seção 16 do prompt). NUNCA altera
- * `AttendanceRecord.status` (seção 20 — a falta original permanece
+ * Aprova ou recusa uma solicitação. NUNCA altera
+ * `AttendanceRecord.status` (a falta original permanece
  * `absent` mesmo quando a justificativa é aprovada; é a PRÓPRIA
  * justificativa que passa a carregar `status: "approved"`, e é isso
  * que relatórios futuros devem consultar para distinguir "falta

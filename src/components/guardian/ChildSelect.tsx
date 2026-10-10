@@ -3,7 +3,7 @@ import type { Student } from "@/types/student";
 
 /**
  * Seletor "qual filho" — reaproveitado por `GuardianBoletimPage` e
- * `GuardianAttendancePage` (Fase 3 do plano de evolução — Portal do
+ * `GuardianAttendancePage` (Portal do
  * Responsável). Extraído para não duplicar a mesma marcação de
  * `<Select>` + `<option>` nas duas telas; a lógica de QUAL filho está
  * selecionado por padrão continua em cada página (a primeira, ao

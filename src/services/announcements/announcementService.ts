@@ -28,7 +28,7 @@ const announcementsCollection = collection(db, "announcements");
 const ANNOUNCEMENT_MESSAGE_PREVIEW_LENGTH = 140;
 
 /**
- * IMPLEMENTAÇÃO — WEB PUSH (ETAPA 10 do prompt): liga a publicação de
+ * IMPLEMENTAÇÃO — WEB PUSH: liga a publicação de
  * um aviso ao Notification Service central (ver
  * `notificationService.createNotifications`, que já cuida de gravar a
  * notificação interna E acionar o Push). Antes desta implementação,
@@ -83,8 +83,8 @@ async function notifyAnnouncementAudience(
         type: "announcement" as const,
         title: `Novo aviso: ${title}`,
         message: preview,
-        // Portal de Avisos não tem rota por item (lista única) — ver
-        // ETAPA 10 do prompt: "utilize a rota real existente", sem
+        // Portal de Avisos não tem rota por item (lista única) — usa a
+        // rota real existente, sem
         // inventar `/avisos/:id`.
         link: "/avisos",
       }))
@@ -131,8 +131,7 @@ export function isAnnouncementExpired(announcement: Announcement): boolean {
 
 /**
  * Ordena para exibição: fixados primeiro, depois por prioridade
- * (urgente > importante > normal), depois pelos mais recentes (seção
- * 16 do briefing). Feito em memória — a lista já foi filtrada por
+ * (urgente > importante > normal), depois pelos mais recentes. Feito em memória — a lista já foi filtrada por
  * role/audience/publicação nas queries acima, então o volume por tela
  * é pequeno o suficiente para não justificar um campo de ordenação
  * denormalizado no Firestore.
@@ -161,8 +160,7 @@ function dedupeById(list: Announcement[]): Announcement[] {
 }
 
 /**
- * Busca os avisos visíveis para o perfil logado (seção 48 do
- * briefing). O escopo é resolvido no CLIENTE apenas para decidir QUAIS
+ * Busca os avisos visíveis para o perfil logado. O escopo é resolvido no CLIENTE apenas para decidir QUAIS
  * queries disparar — a garantia real de que ninguém lê além do
  * permitido está em `firestore.rules`, que espelha exatamente estas
  * mesmas regras.
@@ -241,7 +239,7 @@ export async function createAnnouncement(
     priority: input.priority,
     audience: input.audience,
     published: publish,
-    // Fixar é exclusivo do admin (seção 16) — reforçado aqui mesmo que
+    // Fixar é exclusivo do admin — reforçado aqui mesmo que
     // a UI já esconda o controle do professor, para nunca depender só
     // do frontend.
     pinned: author.role === "admin" ? input.pinned : false,
@@ -288,7 +286,7 @@ export async function publishAnnouncement(announcementId: string): Promise<void>
   });
 }
 
-/** Despublicar retorna o aviso ao estado de rascunho (seção 21). */
+/** Despublicar retorna o aviso ao estado de rascunho. */
 export async function unpublishAnnouncement(announcementId: string): Promise<void> {
   await updateDoc(doc(db, "announcements", announcementId), {
     published: false,

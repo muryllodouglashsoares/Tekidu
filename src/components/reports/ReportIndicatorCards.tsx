@@ -9,7 +9,7 @@ interface ReportIndicatorCardsProps {
 }
 
 /**
- * Indicadores do topo dos Relatórios (item 13 do briefing): média
+ * Indicadores do topo dos Relatórios: média
  * global, evolução, quantidade de alunos e frequência média — todos
  * calculados a partir de dados reais em `reportsService.computeReportOverview`,
  * nunca hardcoded.

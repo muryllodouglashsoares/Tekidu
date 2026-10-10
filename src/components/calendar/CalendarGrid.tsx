@@ -24,8 +24,7 @@ const MAX_VISIBLE_DOTS = 4;
  * do dia, um destaque para "hoje" e para o dia selecionado. Em telas
  * ≥ sm, até `MAX_VISIBLE_CHIPS` eventos aparecem como chips de texto.
  * Em mobile, 7 colunas deixam ~45px por célula num aparelho de 320px —
- * texto truncado ali não ajuda em nada (ver "CALENDÁRIO ACADÊMICO
- * MOBILE" no briefing) — então a célula mostra só pontos coloridos por
+ * texto truncado ali não ajuda em nada — então a célula mostra só pontos coloridos por
  * categoria; o título completo aparece ao tocar o dia, no painel
  * abaixo do grid (mesmo princípio de progressive disclosure do resto
  * do app).

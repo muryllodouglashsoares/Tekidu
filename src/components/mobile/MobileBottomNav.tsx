@@ -10,8 +10,7 @@ interface MobileBottomNavProps {
 }
 
 /**
- * Navegação principal em smartphones (ver "BOTTOM NAVIGATION" no
- * briefing mobile). Fixa, respeita safe area, altura confortável e só
+ * Navegação principal em smartphones. Fixa, respeita safe area, altura confortável e só
  * mostra os destinos mais importantes de cada role — o restante vive
  * no item "Mais" (ver `MobileMoreSheet`). Some em telas ≥ md, onde a
  * Sidebar volta a ser a navegação principal.

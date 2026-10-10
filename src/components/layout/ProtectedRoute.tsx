@@ -45,7 +45,7 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/conta-desativada" replace />;
   }
 
-  // Etapa 9 — ciclo de vida de conta estilo SUAP: enquanto a conta
+  // Ciclo de vida de conta estilo SUAP: enquanto a conta
   // ainda estiver com a senha temporária (`mustSetPassword: true`),
   // NENHUMA outra tela pode ser liberada, mesmo que o usuário tente
   // navegar direto para a URL de outra página — a única exceção é a

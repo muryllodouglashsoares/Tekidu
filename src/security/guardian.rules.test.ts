@@ -13,8 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ID = "tekidu-rules-test-guardian";
 
 /**
- * Testes de Security Rules do Portal do Responsável (Fase 2/3 do
- * plano de evolução — "PARTE 10: Testes de Segurança / Guardian").
+ * Testes de Security Rules do Portal do Responsável.
  *
  * Cenário-base: GUARDIAN_UID é responsável só por STUDENT_A (não por
  * STUDENT_B, matriculado na mesma turma). Cada teste comprova que essa

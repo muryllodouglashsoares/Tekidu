@@ -38,7 +38,7 @@ interface AnnouncementCardProps {
 
 /**
  * Card compacto reutilizado tanto na listagem principal quanto na área
- * de destaque e no widget do Dashboard (seção 28 do briefing). O
+ * de destaque e no widget do Dashboard. O
  * conteúdo é truncado (line-clamp) para manter a leitura rápida — os
  * detalhes completos ficam em `AnnouncementDetailModal`.
  */

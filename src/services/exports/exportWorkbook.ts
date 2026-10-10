@@ -1,6 +1,5 @@
 /**
- * Geração de planilhas .xlsx inteiramente no navegador (itens 4, 13 e
- * 14 do briefing): nenhuma requisição a servidor, nenhuma Cloud
+ * Geração de planilhas .xlsx inteiramente no navegador: nenhuma requisição a servidor, nenhuma Cloud
  * Function — só o `exceljs` (biblioteca open-source, MIT), carregado
  * sob demanda (dynamic import) para não engordar o bundle inicial das
  * páginas de Relatórios/Frequência.
@@ -8,9 +7,9 @@
  * Por que `exceljs` e não `xlsx` (SheetJS)? A versão gratuita do
  * `xlsx` (SheetJS Community Edition) não aplica estilo de célula
  * (negrito/cor de cabeçalho), congelamento de painel nem autofiltro —
- * esses recursos ficam restritos à edição paga. Como o briefing pede
- * explicitamente cabeçalho destacado, congelamento e filtro automático
- * (itens 18/34), `exceljs` é a biblioteca gratuita que cobre esses
+ * esses recursos ficam restritos à edição paga. Como é necessário
+ * cabeçalho destacado, congelamento e filtro automático,
+ * `exceljs` é a biblioteca gratuita que cobre esses
  * requisitos sem custo adicional.
  */
 
@@ -48,12 +47,12 @@ function triggerDownload(blob: Blob, fileName: string) {
 }
 
 /**
- * Constrói o workbook a partir de uma ou mais abas (item 15 do
- * briefing: abas só quando fazem sentido para os dados reais) e
+ * Constrói o workbook a partir de uma ou mais abas (abas só quando fazem sentido
+ * para os dados reais) e
  * dispara o download. Cada aba recebe cabeçalho em negrito com fundo,
  * largura de coluna adequada, congelamento da primeira linha e
- * autofiltro — mantendo a planilha utilizável no Excel/LibreOffice
- * (item 18), sem cores excessivas ou elementos decorativos.
+ * autofiltro — mantendo a planilha utilizável no Excel/LibreOffice,
+ * sem cores excessivas ou elementos decorativos.
  */
 export async function downloadExcelWorkbook(sheets: ExportSheet[], fileName: string): Promise<void> {
   const ExcelJS = await import("exceljs");

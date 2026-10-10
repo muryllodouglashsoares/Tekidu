@@ -18,8 +18,8 @@ import type { Notification, NotificationInput } from "@/types/notification";
 const notificationsCollection = collection(db, "notifications");
 
 /**
- * IMPLEMENTAÇÃO — WEB PUSH (ETAPA 11 do prompt: "não criar dois
- * sistemas independentes"). Este é o ÚNICO ponto de disparo do Push
+ * IMPLEMENTAÇÃO — WEB PUSH (sem criar dois
+ * sistemas independentes). Este é o ÚNICO ponto de disparo do Push
  * real — `createNotification`/`createNotifications` já são chamados
  * por TODO evento acadêmico existente (nota, avaliação, frequência,
  * disciplina vinculada, mensagem, justificativa, aviso...), então
@@ -38,8 +38,8 @@ const notificationsCollection = collection(db, "notifications");
  * em nada enviado pelo cliente além do ID da notificação: ela relê o
  * próprio documento em `notifications/{id}` (que só existe porque já
  * passou pela Firestore Rule de criação) para descobrir destinatário e
- * conteúdo — ver ETAPA 7 do prompt ("o frontend nunca deve possuir
- * capacidade de enviar Push arbitrariamente"). Isto é o que faz este
+ * conteúdo — o frontend nunca deve possuir
+ * capacidade de enviar Push arbitrariamente. Isto é o que faz este
  * disparo ser seguro mesmo vindo do cliente: ele não CONTÉM a
  * autorização, só AVISA a function de que há algo novo para entregar —
  * a autorização real já foi validada pela Rule no momento do `addDoc`.
@@ -117,8 +117,8 @@ export function createNotification(input: NotificationInput): void {
  * (ex.: todos os admins, ou toda a audiência de um aviso publicado).
  * Dispara UMA única chamada de Push com todos os IDs gerados, em vez
  * de uma por destinatário (evita N requisições HTTP para o mesmo
- * evento — ver ETAPA 24 do prompt de Push, "não adicionar listeners/
- * chamadas desnecessárias").
+ * evento; sem adicionar listeners/
+ * chamadas desnecessárias).
  */
 export function createNotifications(inputs: NotificationInput[]): void {
   Promise.all(inputs.map(writeNotification)).then((ids) => {
@@ -163,7 +163,7 @@ export async function getUnreadCount(uid: string): Promise<number> {
 }
 
 /**
- * Etapa 6 — versão em tempo real de `getRecentNotifications`, usada
+ * Versão em tempo real de `getRecentNotifications`, usada
  * pelo painel do sino enquanto ele está aberto. `onSnapshot` mantém a
  * lista sincronizada sem precisar de um botão "atualizar" nem de
  * polling: uma nota lançada por um professor em outra aba aparece no
@@ -196,7 +196,7 @@ export function subscribeToRecentNotifications(
 }
 
 /**
- * Etapa 6 — versão em tempo real de `getUnreadCount`. Assinada
+ * Versão em tempo real de `getUnreadCount`. Assinada
  * IMEDIATAMENTE ao entrar no app (não só quando o painel abre), para
  * o contador do sino já nascer certo e se manter certo mesmo com o
  * painel fechado — é o que faz o sino "acender" sozinho quando uma

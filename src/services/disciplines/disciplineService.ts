@@ -70,7 +70,7 @@ export async function updateDiscipline(id: string, data: DisciplineInput): Promi
 /**
  * Exclui uma disciplina. Restrita a admin (ver firestore.rules).
  *
- * Registra um evento de auditoria (Tarefa 4, Fase 1 pós-auditoria V8):
+ * Registra um evento de auditoria:
  * antes desta mudança, excluir uma disciplina não deixava nenhum
  * rastro. Mesmo racional de `classService.deleteClass`: busca o
  * documento ANTES de excluir para registrar nome/código no `before` —

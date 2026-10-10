@@ -36,10 +36,10 @@ const styles = StyleSheet.create({
 });
 
 /**
- * Bloco de identificação (itens 4–7 e 9 do briefing): Nome, Matrícula,
+ * Bloco de identificação: Nome, Matrícula,
  * Turma, Série e Ano letivo/Período — os mesmos campos já exibidos no
  * card "Identificação do aluno" de `BoletimPage`/`MyBoletimPage`, sem
- * email/uid (item 9 do briefing: nada de dados desnecessários).
+ * email/uid (nada de dados desnecessários).
  */
 export function BoletimPDFStudentInfo({
   student,
@@ -53,7 +53,7 @@ export function BoletimPDFStudentInfo({
    * `classes/{classId}` permite leitura apenas para staff
    * (`isActiveStaff()`), então o aluno nunca busca o documento da
    * turma — Turma/Série simplesmente não aparecem no PDF dele, o
-   * mesmo comportamento já usado na tela (item 18 do briefing: nenhuma
+   * mesmo comportamento já usado na tela (nenhuma
    * consulta administrativa extra para alunos).
    */
   schoolClass: SchoolClass | null;

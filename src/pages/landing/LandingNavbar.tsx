@@ -14,8 +14,7 @@ const NAV_LINKS = [
 ];
 
 /**
- * Navbar flutuante em formato de pílula, replicando a composição do
- * Figma: logo + links centrais + CTA "Entrar", tudo dentro de uma
+ * Navbar flutuante em formato de pílula, logo + links centrais + CTA "Entrar", tudo dentro de uma
  * cápsula com fundo translúcido e blur, fixa no topo. Os links têm um
  * sublinhado que desliza entre eles no hover (layout shared entre os
  * elementos, sem custo de layout/paint fora da própria linha), o

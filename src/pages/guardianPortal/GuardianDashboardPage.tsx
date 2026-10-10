@@ -19,7 +19,7 @@ interface ChildSummary {
 }
 
 /**
- * Portal do Responsável — Dashboard (Fase 3 do plano de evolução).
+ * Portal do Responsável — Dashboard.
  * Uma linha por filho vinculado, com média geral/frequência/situação —
  * os MESMOS três números que `StudentDashboard` (Portal do Aluno) já
  * mostra para o próprio aluno, aqui repetidos por filho, todos

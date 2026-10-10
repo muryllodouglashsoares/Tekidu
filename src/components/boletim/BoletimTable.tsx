@@ -7,9 +7,9 @@ interface BoletimTableProps {
 }
 
 /**
- * "Desempenho por disciplina" (item 10 do briefing). Em desktop segue
+ * "Desempenho por disciplina". Em desktop segue
  * como tabela; em mobile vira uma lista de cards por disciplina com
- * barra de progresso da média (ver "BOLETIM MOBILE" do briefing) —
+ * barra de progresso da média —
  * mesma fonte de dados (`DisciplineBoletimRow`), só muda a apresentação.
  */
 export function BoletimTable({ rows }: BoletimTableProps) {

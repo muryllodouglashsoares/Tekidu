@@ -23,9 +23,9 @@ interface BoletimFiltersProps {
 }
 
 /**
- * Pesquisa/filtros de acesso direto ao boletim (item 11 do briefing):
+ * Pesquisa/filtros de acesso direto ao boletim:
  * ano letivo → turma → aluno → período. Continua disponível
- * independentemente da navegação Turma → Aluno → Boletim (item 3): os
+ * independentemente da navegação Turma → Aluno → Boletim: os
  * dois fluxos escrevem no MESMO estado (ver BoletimPage), então
  * escolher aqui ou clicar num ClassCard/linha de aluno leva ao mesmo
  * lugar.

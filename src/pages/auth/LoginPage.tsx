@@ -42,11 +42,11 @@ export function LoginPage() {
 
   const [mode, setMode] = useState<LoginMode>("normal");
 
-  // Modo normal (Fase 3 — uso já estabelecido: e-mail + senha definitiva).
+  // Modo normal (uso já estabelecido: e-mail + senha definitiva).
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Modo primeiro acesso (Fase 2 — Etapa 9): matrícula (aluno) ou chave
+  // Modo primeiro acesso: matrícula (aluno) ou chave
   // de 8 caracteres (professor) + a senha temporária recebida por
   // e-mail. O Firebase Authentication só autentica por e-mail, então
   // primeiro resolvemos "identificador → e-mail" via `resolveLoginKey`
@@ -97,7 +97,7 @@ export function LoginPage() {
         return;
       }
       if (resolved.expired) {
-        // Aviso de UX (Decisão 3) — ver limitação documentada em
+        // Aviso de UX — ver limitação documentada em
         // `resolveLoginKey`/`FIREBASE_SETUP.md`: sem Cloud Functions,
         // isto não invalida a senha de fato no Firebase Authentication.
         setError(

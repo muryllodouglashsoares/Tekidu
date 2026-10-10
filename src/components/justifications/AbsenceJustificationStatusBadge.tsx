@@ -19,8 +19,7 @@ const icons: Record<AbsenceJustificationStatus, typeof Clock> = {
 /**
  * Badge de status da justificativa (Em análise / Aprovada / Recusada).
  * Mesmo padrão de `AttendanceStatusBadge`/`DisciplineStatusBadge`:
- * ícone + cor + texto, nunca depende só da cor (seção 21 do prompt —
- * acessibilidade).
+ * ícone + cor + texto, nunca depende só da cor.
  */
 export function AbsenceJustificationStatusBadge({ status }: { status: AbsenceJustificationStatus }) {
   const Icon = icons[status];

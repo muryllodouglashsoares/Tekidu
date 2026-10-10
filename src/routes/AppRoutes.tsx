@@ -20,8 +20,7 @@ const LandingPage = lazy(() =>
 );
 
 // ---------------------------------------------------------------------
-// Code-splitting por role (Parte 2 do prompt de fechamento de gap +
-// performance). Antes, só a Landing Page era lazy() — as ~30 páginas
+// Code-splitting por role (performance). Antes, só a Landing Page era lazy() — as ~30 páginas
 // de dashboard (admin, Portal do Professor, Portal do Aluno) estavam
 // todas no mesmo chunk principal: um aluno que só acessa
 // "/meu-boletim" baixava também o código de TeachersPage, ClassesPage,
@@ -35,8 +34,8 @@ const LandingPage = lazy(() =>
 // ---------------------------------------------------------------------
 
 // Grupo admin-only: única role com acesso à visão de escola inteira
-// (ver NOTA DE SEGURANÇA mais abaixo — Etapa 7 fechou a Rule
-// correspondente, então isto agora é reforçado nos dois níveis:
+// (ver NOTA DE SEGURANÇA mais abaixo — a Rule
+// correspondente já foi fechada, então isto é reforçado nos dois níveis:
 // rota E Firestore Rules).
 const StudentsPage = lazy(() =>
   import("@/pages/students/StudentsPage").then((m) => ({ default: m.StudentsPage }))
@@ -63,7 +62,7 @@ const TeachersPage = lazy(() =>
   import("@/pages/teachers/TeachersPage").then((m) => ({ default: m.TeachersPage }))
 );
 
-// Grupo teacher-only: Portal do Professor (Etapa 4).
+// Grupo teacher-only: Portal do Professor.
 const MyClassesPage = lazy(() =>
   import("@/pages/teacherPortal/MyClassesPage").then((m) => ({
     default: m.MyClassesPage,
@@ -80,7 +79,7 @@ const PerformancePage = lazy(() =>
   }))
 );
 
-// Grupo student-only: Portal do Aluno (Etapa 3), exceto MyBoletimPage
+// Grupo student-only: Portal do Aluno, exceto MyBoletimPage
 // (ver justificativa na constante `dashboardFallback`/rota "/configuracoes"
 // mais abaixo — mantida no bundle principal por decisão explícita).
 const MyDisciplinesPage = lazy(() =>
@@ -154,9 +153,9 @@ const AnnouncementsPage = lazy(() =>
   }))
 );
 
-// Mensageria (Parte 1 do plano de evolução — chat interno professor ↔
+// Mensageria (chat interno professor ↔
 // aluno): restrita a "teacher"/"student" (admin não participa do chat
-// nesta fase — ver firestore.rules, `isActiveTeacher()`/
+// — ver firestore.rules, `isActiveTeacher()`/
 // `isActiveStudent()`). Uma única página cobre as duas rotas abaixo
 // (lista e "lista + conversa aberta"), mesmo padrão de reaproveitar o
 // módulo entre rotas já usado por `StudentProfilePage`.
@@ -164,7 +163,7 @@ const MessagesPage = lazy(() =>
   import("@/pages/messages/MessagesPage").then((m) => ({ default: m.MessagesPage }))
 );
 
-// Grupo guardian-only (Fase 2/3 do plano de evolução — Portal do
+// Grupo guardian-only (Portal do
 // Responsável): só quem tem `profile.role === "guardian"` baixa este
 // chunk, mesmo racional de code-splitting por role já usado acima
 // para os grupos admin/teacher/student.
@@ -226,7 +225,7 @@ function SuspenseOutlet({ fallback }: { fallback: ReactNode }) {
  * `getStudentByUid`/`getStudentBoletim` (ambas liberadas ao próprio
  * aluno pela Security Rule — ver `isOwnStudentRecord`). Redirecionar
  * o aluno para longe de "/" deixava o Dashboard próprio dele
- * (seção 7 do plano multi-role — saudação, média, frequência,
+ * (saudação, média, frequência,
  * disciplinas, notificações) inacessível, mesmo já implementado.
  */
 function HomeRoute() {
@@ -298,10 +297,9 @@ export function AppRoutes() {
       />
 
       {/* Rotas protegidas: exigem sessão ativa + perfil válido.
-          Todas compartilham o AppShell (sidebar + topo), preservando a
-          navegação do protótipo do Figma. */}
+          Todas compartilham o AppShell (sidebar + topo). */}
       <Route element={<ProtectedRoute />}>
-        {/* Etapa 9 — ciclo de vida de conta estilo SUAP: "/primeiro-acesso"
+        {/* Ciclo de vida de conta estilo SUAP: "/primeiro-acesso"
             fica FORA do AppShell de propósito (sem sidebar/topo) — é um
             passo bloqueante antes de "entrar" no sistema, não mais uma
             tela do dashboard. `ProtectedRoute` (acima) já garante que
@@ -313,14 +311,13 @@ export function AppRoutes() {
           <Route path="/dashboard" element={<HomeRoute />} />
 
           {/* Alunos/Turmas/Disciplinas: visão de STAFF com edição —
-              restrita a admin (decisão tomada após a Etapa 4: agora que
-              o Portal do Professor está validado, o professor usa
+              restrita a admin (o professor usa
               EXCLUSIVAMENTE suas rotas escopadas "/minhas-turmas",
               "/meus-alunos" e "/desempenho-turmas" — nunca mais a visão
               de escola inteira, que permitia editar qualquer turma/aluno
               fora de suas disciplinas. Só o admin continua com acesso
               irrestrito ao sistema.
-              NOTA DE SEGURANÇA (RESOLVIDA na Etapa 7): esta restrição
+              NOTA DE SEGURANÇA (RESOLVIDA): esta restrição
               era, até então, só de ROTA/UX (ver ProtectedRoute) — as
               Firestore Rules (firestore.rules) liberavam escrita de
               `classes`/`disciplines` para qualquer `isActiveStaff()`,
@@ -335,7 +332,7 @@ export function AppRoutes() {
           <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
             <Route element={<SuspenseOutlet fallback={dashboardPageFallback} />}>
               <Route path="/alunos" element={<StudentsPage />} />
-              {/* Perfil 360° (Fase 8): central acadêmica de UM aluno —
+              {/* Perfil 360°: central acadêmica de UM aluno —
                   identificação, resumo, notas por disciplina, desenvolvimento
                   e frequência. Mesma restrição de acesso de "/alunos" (é
                   alcançado a partir de lá). O professor tem o EQUIVALENTE
@@ -355,8 +352,7 @@ export function AppRoutes() {
             </Route>
           </Route>
 
-          {/* Portal do Professor — "Minhas Turmas"/"Meus Alunos" (Etapa 4
-              do plano multi-role): restritas à role "teacher", somente
+          {/* Portal do Professor — "Minhas Turmas"/"Meus Alunos": restritas à role "teacher", somente
               leitura, sempre escopadas ao próprio `profile.uid` dentro
               de `teacherOverviewService` (nunca à escola inteira). Desde
               a restrição de "/alunos" a admin, estas rotas passaram a
@@ -365,7 +361,7 @@ export function AppRoutes() {
               Perfil 360° de staff (StudentProfilePage), com verificação
               de que o aluno pertence a uma disciplina do professor
               logado antes de renderizar (ver StudentProfilePage).
-              "/desempenho-turmas" (Etapa 4b) completa o Portal do
+              "/desempenho-turmas" completa o Portal do
               Professor: compara as turmas do professor entre si e
               mostra a evolução por bimestre de cada uma. */}
           <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
@@ -379,8 +375,8 @@ export function AppRoutes() {
 
           {/* Notas: restrita a admin/teacher (alunos não devem ter acesso
               ao lançamento de notas — ver ProtectedRoute). As demais
-              seções abaixo ainda não implementadas nesta fase seguem o
-              mesmo texto "em desenvolvimento" do protótipo do Figma. */}
+              seções abaixo ainda não implementadas exibem o
+              texto "em desenvolvimento". */}
           {/* Frequência: mesma restrição de acesso de Notas (admin/teacher) —
               alunos não lançam a própria frequência (ver firestore.rules:
               a role "student" só tem LEITURA escopada ao próprio registro
@@ -393,7 +389,7 @@ export function AppRoutes() {
               {/* Boletim (visão de staff: Turma → Aluno, escolhe qualquer
                   aluno): consolida Notas + Frequência, então segue a mesma
                   restrição de acesso das duas. A visão do PRÓPRIO aluno é
-                  "/meu-boletim" (Tarefa 3), abaixo — somente leitura, sem
+                  "/meu-boletim", abaixo — somente leitura, sem
                   escolher "qual aluno". */}
               <Route path="/boletim" element={<BoletimPage />} />
               {/* Relatórios: consolida Notas + Frequência em visão analítica
@@ -403,8 +399,8 @@ export function AppRoutes() {
             </Route>
           </Route>
 
-          {/* Portal do Aluno (Etapa 3 do plano multi-role): "Meu
-              Boletim" (Tarefa 3, Fase 1 pós-auditoria V8) + "Minhas
+          {/* Portal do Aluno: "Meu
+              Boletim" + "Minhas
               Disciplinas"/"Minha Frequência"/"Meu Desempenho" — todas
               restritas à role "student", somente leitura do PRÓPRIO
               aluno (resolvido pelo `uid` logado via `useOwnStudent`,
@@ -459,7 +455,7 @@ export function AppRoutes() {
               (`isValidConversationPair`) é quem de fato impede um
               professor/aluno de ler ou criar conversa fora do próprio
               vínculo de disciplina/turma, nunca esta rota. Admin não
-              acessa: o plano restringe o chat a professor↔aluno. */}
+              acessa: o chat é restrito a professor↔aluno. */}
           <Route element={<ProtectedRoute allowedRoles={["teacher", "student"]} />}>
             <Route element={<SuspenseOutlet fallback={dashboardPageFallback} />}>
               <Route path="/mensagens" element={<MessagesPage />} />
@@ -467,7 +463,7 @@ export function AppRoutes() {
             </Route>
           </Route>
 
-          {/* Portal do Responsável (Fase 2/3 do plano de evolução):
+          {/* Portal do Responsável:
               restrito à role "guardian" — a Security Rule
               (`isOwnGuardianStudent`) é quem de fato impede um
               responsável de ler dados de um aluno ao qual não está

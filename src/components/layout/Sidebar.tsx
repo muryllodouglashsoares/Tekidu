@@ -33,7 +33,7 @@ interface NavItem {
   roles?: UserRole[];
 }
 
-// Mesma organização e rótulos do protótipo do Figma (grupos "Principal"
+// Organização em grupos ("Principal"
 // e "Acadêmico"). Itens marcados com `soon` levam a uma tela de
 // "em desenvolvimento" em vez de 404 — ver PlaceholderPage.
 const principalNav: NavItem[] = [
@@ -44,7 +44,7 @@ const principalNav: NavItem[] = [
   // `DashboardPage`, mas duas entradas para o mesmo destino confunde
   // a navegação).
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "teacher", "student"] },
-  // Portal do Responsável (Fase 2/3 do plano de evolução): grupo
+  // Portal do Responsável: grupo
   // próprio de 3 itens, só para "guardian" — mesmo padrão de
   // `minhasTurmasNav`/`meuPortalNav` abaixo (visão exclusiva de uma
   // role, não um item avulso misturado ao grupo "Principal" de
@@ -59,15 +59,15 @@ const principalNav: NavItem[] = [
   },
   // Avisos: acessível a QUALQUER role de STAFF/aluno (sem `roles`
   // restrito a essas), mas NÃO ao responsável — a Security Rule de
-  // `announcements` ainda não libera leitura para "guardian" (o plano
-  // de evolução não lista Avisos no Portal do Responsável), então
+  // `announcements` ainda não libera leitura para "guardian" (Avisos não faz parte do
+  // Portal do Responsável), então
   // mostrar o item aqui resultaria em erro de permissão ao abrir a
-  // página. Ver "Pendências" no relatório final.
+  // página.
   { to: "/avisos", label: "Avisos", icon: Megaphone, roles: ["admin", "teacher", "student"] },
-  // Mensagens (Parte 1 do plano de evolução — chat interno): restrita
+  // Mensagens (chat interno): restrita
   // a professor/aluno, mesmo par de roles autorizado pela rota (ver
   // AppRoutes.tsx) e pelas Firestore Security Rules. Admin não
-  // participa do chat nesta fase.
+  // participa do chat.
   { to: "/mensagens", label: "Mensagens", icon: MessageCircle, roles: ["teacher", "student"] },
   // Alunos/Turmas/Disciplinas: visão de STAFF (escola inteira, com
   // edição) — restrita a admin. Antes também aparecia para "teacher",
@@ -83,7 +83,7 @@ const principalNav: NavItem[] = [
   { to: "/professores", label: "Professores", icon: GraduationCap, roles: ["admin"] },
 ];
 
-// Etapa 4 do plano multi-role — Portal do Professor: "Minhas Turmas" e
+// Portal do Professor: "Minhas Turmas" e
 // "Meus Alunos" são a visão do professor filtrada por
 // `discipline.teacherId === profile.uid` (ver teacherOverviewService),
 // diferente do grupo "Principal" acima, que é a visão de staff da
@@ -91,7 +91,7 @@ const principalNav: NavItem[] = [
 const minhasTurmasNav: NavItem[] = [
   { to: "/minhas-turmas", label: "Minhas Turmas", icon: School, roles: ["teacher"] },
   { to: "/meus-alunos", label: "Meus Alunos", icon: Users, roles: ["teacher"] },
-  // Etapa 4b do plano multi-role: comparação entre as turmas do
+  // Comparação entre as turmas do
   // professor e evolução por bimestre de cada uma — mesma role
   // restrita a "teacher" dos outros dois itens deste grupo.
   { to: "/desempenho-turmas", label: "Desempenho", icon: LineChart, roles: ["teacher"] },
@@ -113,13 +113,13 @@ const academicoNav: NavItem[] = [
   // Rules das coleções que ela consolida (grades/attendanceRecords).
   { to: "/boletim", label: "Boletim", icon: FileText, roles: ["admin", "teacher"] },
   { to: "/relatorios", label: "Relatórios", icon: BarChart3, roles: ["admin", "teacher"] },
-  // Meu Boletim (Tarefa 3, Fase 1 pós-auditoria V8): Portal do Aluno —
+  // Meu Boletim: Portal do Aluno —
   // visão somente-leitura do PRÓPRIO boletim/frequência, restrita à
   // role "student" (o inverso exato de "Boletim" acima, que é de
   // staff). Resolvido automaticamente pelo `uid` logado, sem escolher
   // "qual aluno" — ver MyBoletimPage.
   { to: "/meu-boletim", label: "Meu Boletim", icon: FileText, roles: ["student"] },
-  // Etapa 3 do plano multi-role — restante do Portal do Aluno: mesma
+  // Restante do Portal do Aluno: mesma
   // regra de "Meu Boletim" acima (somente leitura, `uid` resolvido
   // automaticamente, nunca escolhe "qual aluno").
   { to: "/minhas-disciplinas", label: "Minhas Disciplinas", icon: BookOpen, roles: ["student"] },
@@ -198,7 +198,7 @@ export function Sidebar() {
     .map((part) => part[0]?.toUpperCase())
     .join("");
 
-  // Etapa 9e (auditoria de logout): antes desta mudança não existia
+  // Sair da conta: sem este item não existiria
   // NENHUM jeito de sair de dentro do app — `AuthContext.signOut` só
   // era chamado a partir de `StatusPage` (rotas de erro como
   // "/sem-perfil"), inalcançáveis por um usuário com sessão normal.

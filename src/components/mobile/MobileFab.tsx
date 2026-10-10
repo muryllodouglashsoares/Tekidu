@@ -9,7 +9,7 @@ interface MobileFabProps {
 /**
  * Floating Action Button — usado apenas em telas com UMA ação
  * principal clara (ex.: "Novo aluno" em Alunos), nunca em todas as
- * páginas (ver "FLOATING ACTION BUTTON" no briefing). Posicionado
+ * páginas. Posicionado
  * acima da Bottom Navigation, respeitando a safe area.
  */
 export function MobileFab({ onClick, label, icon }: MobileFabProps) {

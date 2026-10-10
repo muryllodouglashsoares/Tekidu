@@ -9,8 +9,8 @@
  * próprio dono — nenhum estudante enxerga o evento de outro.
  *
  * `disciplineId`/`classId` ficam previstos (opcionais) para a evolução
- * futura descrita no prompt (Turma → Disciplina → Evento), mas não são
- * usados por nenhuma tela nesta fase — não implementamos seletor de
+ * futura (Turma → Disciplina → Evento), mas não são
+ * usados por nenhuma tela hoje — não implementamos seletor de
  * turma/disciplina no formulário ainda, só reservamos o campo para não
  * exigir migração de dados quando isso for necessário.
  */

@@ -9,7 +9,7 @@ import type { PushPermissionState } from "@/types/pushToken";
 
 interface UsePushNotificationsResult {
   status: PushPermissionState;
-  /** Quantos dispositivos/navegadores deste usuário têm push ativo hoje (ETAPA 19). */
+  /** Quantos dispositivos/navegadores deste usuário têm push ativo hoje. */
   activeDeviceCount: number;
   loading: boolean;
   actionPending: boolean;
@@ -19,8 +19,8 @@ interface UsePushNotificationsResult {
 }
 
 /**
- * Hook único consumido pela UI (ETAPA 5: "a lógica de Push deve ficar
- * isolada em um serviço/hook apropriado, não amarrada a componentes").
+ * Hook único consumido pela UI (a lógica de Push fica
+ * isolada em um serviço/hook apropriado, não amarrada a componentes).
  */
 export function usePushNotifications(uid: string | undefined): UsePushNotificationsResult {
   const [status, setStatus] = useState<PushPermissionState>(() =>

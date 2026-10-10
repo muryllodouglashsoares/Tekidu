@@ -14,7 +14,7 @@ export interface PreparedJustificationDocument {
 }
 
 /**
- * Valida um arquivo ANTES do processamento (seção 9 do prompt) —
+ * Valida um arquivo ANTES do processamento —
  * formato e tamanho. Chamada tanto pelo componente de upload (feedback
  * imediato ao selecionar, antes de qualquer compressão) quanto, para
  * PDFs, dentro de `prepareJustificationDocument` (PDF não pode ser
@@ -114,7 +114,7 @@ function fileToDataUrl(file: File): Promise<string> {
 
 /**
  * Orquestra o preparo do documento comprobatório inteiramente no
- * cliente (seção 8/9 do prompt, adaptado para o plano gratuito — ver
+ * cliente (adaptado para o plano gratuito — ver
  * nota de arquitetura em `types/absenceJustification.ts`): comprime a
  * imagem se necessário, valida formato/tamanho final e codifica em
  * base64. Não há upload nem I/O de rede aqui — o resultado é gravado

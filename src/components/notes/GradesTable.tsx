@@ -17,7 +17,7 @@ import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 /**
  * Uma coluna/campo de nota a renderizar — uma avaliação regular, ou uma
  * avaliação especial (segunda chamada/recuperação) vinculada a ela,
- * já achatadas em ordem de exibição hierárquica (item 37 do briefing:
+ * já achatadas em ordem de exibição hierárquica (ex.:
  * "Prova 1 ↳ Segunda chamada ↳ Recuperação, Prova 2..."). A edição de
  * nota em si não muda: cada avaliação especial é uma avaliação de
  * verdade com seu próprio `assessmentId`, então a mesma célula
@@ -50,7 +50,7 @@ interface GradesTableProps {
   scores: Record<string, Record<string, number | null>>;
   canEdit: boolean;
   onSaveGrade: (studentId: string, assessmentId: string, score: number | null) => Promise<void>;
-  /** Média mínima/recuperação do ano letivo (item 6 do plano V8). Cai
+  /** Média mínima/recuperação do ano letivo. Cai
    * para o padrão do sistema quando não informado. */
   thresholds?: AcademicThresholds;
 }
@@ -65,7 +65,7 @@ function initials(name: string) {
 }
 
 /**
- * Reproduz a edição direta na tabela mostrada no Figma (\"Clique em uma
+ * Edição direta na tabela (\"Clique em uma
  * nota para editar\"). Cada célula alterna entre exibição e um `<input>`
  * nativo (não usa o componente `Input` do design system aqui de
  * propósito: `Input` sempre renderiza um `<label>` associado, o que não
@@ -73,7 +73,7 @@ function initials(name: string) {
  * mesma linguagem visual, só sem o wrapper de formulário).
  *
  * Em mobile, uma tabela de N avaliações por M alunos vira "planilha"
- * inevitavelmente (ver "NOTAS MOBILE" no briefing: evitar essa
+ * inevitavelmente (evitar essa
  * aparência) — a mesma edição vira uma lista de alunos com
  * progressive disclosure: card fechado mostra média/situação, expandir
  * revela um input grande por avaliação, fácil de tocar.
@@ -326,7 +326,7 @@ export function GradesTable({
           {students.map((student) => {
             const scoresByAssessmentId: Record<string, number | null> = {};
             for (const a of assessments) scoresByAssessmentId[a.id] = scores[student.id]?.[a.id] ?? null;
-            // Fonte única de verdade (item 49 do briefing): resolve nota
+            // Fonte única de verdade: resolve nota
             // efetiva por avaliação (segunda chamada) + resultado final
             // (recuperação) — a mesma função usada por Boletim e Portal
             // do Aluno/Responsável, para nunca haver dois números

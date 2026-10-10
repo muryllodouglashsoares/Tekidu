@@ -67,8 +67,7 @@ export function AcademicCalendarPage() {
 
   const { month, year } = formatMonthYear(visibleMonth);
 
-  // Swipe horizontal para trocar de mês em mobile (ver "GESTOS" no
-  // briefing: só vale a pena quando melhora mesmo a UX — trocar de mês
+  // Swipe horizontal para trocar de mês em mobile (só vale a pena quando melhora mesmo a UX — trocar de mês
   // é uma ação repetida com frequência, então o gesto complementa os
   // botões de seta sem escondê-los). Limiar de 48px evita disparo
   // acidental durante o scroll vertical da página.

@@ -7,8 +7,8 @@ import {
 } from "@/types/attendance";
 
 /**
- * Testes unitários das funções puras de cálculo de frequência
- * (Tarefa 5, Fase 1 pós-auditoria V8). Nenhum destes testes toca
+ * Testes unitários das funções puras de cálculo de frequência.
+ * Nenhum destes testes toca
  * Firebase/Firestore — são funções sem I/O.
  */
 describe("calculateAttendanceRate", () => {

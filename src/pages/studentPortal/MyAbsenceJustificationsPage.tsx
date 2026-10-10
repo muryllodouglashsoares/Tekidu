@@ -133,7 +133,7 @@ export function MyAbsenceJustificationsPage() {
     );
   }
 
-  // Seção 3.2: nenhuma falta registrada em momento algum.
+  // Nenhuma falta registrada em momento algum.
   if (absences.length === 0 && justifications.length === 0) {
     return (
       <EmptyState
@@ -178,7 +178,7 @@ export function MyAbsenceJustificationsPage() {
       )}
 
       {isRegular ? (
-        // Seção 3.3: todas as faltas já foram justificadas/estão em análise
+        // Todas as faltas já foram justificadas/estão em análise
         // — e nenhuma falta ficou sem justificativa por perda de prazo.
         <EmptyState
           icon={PartyPopper}

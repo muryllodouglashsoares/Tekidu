@@ -22,9 +22,8 @@ export default defineConfig({
       // customizado que o Push exige — e registrar um SEGUNDO Service
       // Worker (`firebase-messaging-sw.js`) no mesmo escopo ("/") não é
       // seguro: o navegador permite só UM SW ativo por escopo, então os
-      // dois entrariam em conflito/substituiriam um ao outro (ver
-      // ETAPA 22 do prompt de Push: "nunca registrar dois Service
-      // Workers conflitantes para o mesmo escopo").
+      // dois entrariam em conflito/substituiriam um ao outro (nunca registrar dois Service
+      // Workers conflitantes para o mesmo escopo).
       //
       // Por isso trocamos para "injectManifest": mantemos o MESMO
       // Service Worker único (`src/sw.ts`), agora escrito à mão, que
@@ -45,11 +44,11 @@ export default defineConfig({
       // registerType "prompt": o novo SW fica em estado "waiting" até
       // o usuário confirmar a atualização (ver PWAUpdatePrompt) — nunca
       // ativa sozinho enquanto o usuário está no meio de um cadastro de
-      // aluno ou lançamento de notas (ETAPA 14/15 do prompt).
+      // aluno ou lançamento de notas.
       registerType: "prompt",
       injectRegister: false,
       manifest: {
-        name: "Tekidu — Gestão Escolar",
+        name: "Tekidu — Gestão Acadêmica",
         short_name: "Tekidu",
         description: "Plataforma de gestão e acompanhamento acadêmico.",
         lang: "pt-BR",
@@ -87,7 +86,7 @@ export default defineConfig({
       // funcionava foi perdido, só passou a ser código explícito.
       devOptions: {
         // SW habilitado em `npm run dev` só para permitir testar o
-        // fluxo de instalação/offline localmente (ETAPA 25) — usa
+        // fluxo de instalação/offline localmente — usa
         // 'module' para não exigir um build de produção antes.
         enabled: true,
         type: "module",

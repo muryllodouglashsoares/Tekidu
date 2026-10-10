@@ -68,7 +68,7 @@ const MAX_PER_CATEGORY = 5;
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  // Guardian (Fase 2 do plano de evolução) não tem um dataset
+  // Guardian não tem um dataset
   // pesquisável próprio aqui (o hook só sabe montar resultados de
   // admin/teacher/student) — passar `undefined` mantém a paleta
   // funcional (atalhos de navegação estáticos) sem tentar carregar um
@@ -86,7 +86,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       ensureLoaded();
       setQuery("");
       setActiveIndex(0);
-      // Foco automático (Fase 2 — "foco automático"). O timeout garante
+      // Foco automático. O timeout garante
       // que o input já esteja montado/visível quando o foco é aplicado.
       const timer = setTimeout(() => inputRef.current?.focus(), 0);
       return () => clearTimeout(timer);
@@ -196,8 +196,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   const allResults = useMemo(() => [...navItems, ...entityGroups], [navItems, entityGroups]);
 
-  // Agrupamento por categoria preservando a ordem de `allResults`
-  // (Fase 2 — "agrupamento por categoria").
+  // Agrupamento por categoria preservando a ordem de `allResults`.
   const grouped = useMemo(() => {
     const map = new Map<string, ResultItem[]>();
     for (const item of allResults) {

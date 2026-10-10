@@ -3,8 +3,7 @@ import { RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 /**
- * Notifica sobre uma nova versão da Tekidu já disponível (ETAPA 14/15
- * do prompt), sem nunca recarregar sozinho. Fica montado globalmente
+ * Notifica sobre uma nova versão da Tekidu já disponível, sem nunca recarregar sozinho. Fica montado globalmente
  * (ver AppShell) e só aparece quando o Service Worker detecta um novo
  * build em "waiting" — o usuário decide o momento de atualizar, o que
  * evita interromper alguém no meio de um lançamento de notas/cadastro

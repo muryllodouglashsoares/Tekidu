@@ -20,8 +20,7 @@ import { ASSESSMENT_TERM_LABEL } from "@/types/assessment";
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 /**
- * "Desempenho" (Etapa 4b do plano multi-role) — última peça pendente
- * da Etapa 4: enquanto "/minhas-turmas" mostra média/frequência ANUAL
+ * "Desempenho": enquanto "/minhas-turmas" mostra média/frequência ANUAL
  * embutidas em cada card, esta tela responde duas perguntas que aquela
  * não respondia:
  * (1) COMPARAÇÃO — qual das minhas turmas está indo melhor/pior
@@ -77,7 +76,7 @@ export function PerformancePage() {
   // Comparação entre turmas: só entram no ranking de média/frequência
   // as turmas que já têm o respectivo dado real lançado — nunca
   // comparamos com "0" inventado para uma turma sem notas/registros
-  // ainda (regra 5 do plano: nada de dado fake).
+  // ainda (nada de dado fake).
   const withAverage = useMemo(() => overview.filter((i) => i.average !== null), [overview]);
   const withAttendance = useMemo(() => overview.filter((i) => i.attendanceRate !== null), [overview]);
 

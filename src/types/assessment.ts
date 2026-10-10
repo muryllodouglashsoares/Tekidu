@@ -30,8 +30,7 @@ export const ASSESSMENT_TERM_LABEL: Record<AssessmentTerm, string> = {
  * `order` define a ordem das colunas na tabela de notas (não depende de
  * `createdAt`, para permitir reordenar sem afetar histórico).
  *
- * `weight`/`maxScore`/`type`/`description`/`date` (item 4 do plano V8 —
- * "Avaliações mais completas") são OPCIONAIS e retrocompatíveis:
+ * `weight`/`maxScore`/`type`/`description`/`date` são OPCIONAIS e retrocompatíveis:
  * avaliações criadas antes desta versão não têm esses campos no
  * Firestore, então todo código que os lê usa um fallback (`weight ?? 1`,
  * `maxScore ?? GRADE_MAX`) — nunca assuma que estão presentes.
@@ -47,12 +46,12 @@ export const ASSESSMENT_TYPE_LABEL: Record<AssessmentType, string> = {
 
 /**
  * Natureza de uma avaliação quantitativa (RECUPERAÇÕES E SEGUNDA
- * CHAMADA, item 5 do briefing).
+ * CHAMADA).
  *
  * - `regular`: avaliação comum, a única natureza que existia antes
  *   desta funcionalidade. Também o valor assumido por qualquer
  *   avaliação antiga sem o campo `assessmentKind` gravado — ver
- *   `effectiveAssessmentKind` (item 42, "migração": nenhum documento
+ *   `effectiveAssessmentKind` (migração: nenhum documento
  *   antigo precisa ser reescrito).
  * - `second_call`: nova oportunidade para um aluno que não realizou
  *   UMA avaliação regular específica (`parentAssessmentId` aponta para
@@ -63,8 +62,8 @@ export const ASSESSMENT_TYPE_LABEL: Record<AssessmentType, string> = {
  * - `recovery`: avaliação complementar de recuperação de desempenho de
  *   um contexto (disciplina + turma + bimestre). `parentAssessmentId`
  *   aponta para uma avaliação regular do MESMO contexto (usada apenas
- *   como âncora de vínculo/validação — ver item 30 do briefing — e de
- *   agrupamento na interface, item 37); o efeito no cálculo não é por
+ *   como âncora de vínculo/validação e de
+ *   agrupamento na interface); o efeito no cálculo não é por
  *   avaliação, e sim sobre o RESULTADO final do contexto (ver
  *   `calculateEffectiveAcademicResult`, `types/grade.ts`).
  */
@@ -135,7 +134,7 @@ export function effectiveMaxScore(assessment: Pick<Assessment, "maxScore">): num
   return assessment.maxScore && assessment.maxScore > 0 ? assessment.maxScore : 10;
 }
 
-/** Natureza efetiva de uma avaliação — nunca leia `assessment.assessmentKind` diretamente (item 42: retrocompatibilidade). */
+/** Natureza efetiva de uma avaliação — nunca leia `assessment.assessmentKind` diretamente (retrocompatibilidade). */
 export function effectiveAssessmentKind(assessment: Pick<Assessment, "assessmentKind">): AssessmentKind {
   return assessment.assessmentKind ?? "regular";
 }
@@ -147,8 +146,8 @@ export function isSpecialAssessment(assessment: Pick<Assessment, "assessmentKind
 
 /**
  * Uma avaliação regular agrupada com sua segunda chamada e suas
- * recuperações vinculadas (item 37 do briefing — "exibição
- * hierárquica"). Usada pela tabela de Notas e pelo gerenciador de
+ * recuperações vinculadas (exibição
+ * hierárquica). Usada pela tabela de Notas e pelo gerenciador de
  * avaliações para renderizar o vínculo pai/filho sem duplicar a lógica
  * de agrupamento em cada componente.
  */
@@ -162,7 +161,7 @@ export interface AssessmentGroup {
  * Agrupa uma lista de avaliações de um mesmo contexto (disciplina +
  * turma + bimestre) em avaliações regulares + suas avaliações
  * especiais vinculadas, ordenadas por `order`. Avaliações especiais
- * "órfãs" (item 55 — avaliação pai inexistente/excluída) não aparecem
+ * "órfãs" (avaliação pai inexistente/excluída) não aparecem
  * em nenhum grupo; ver `getOrphanSpecialAssessments` para localizá-las
  * quando necessário (ex.: uma tela de manutenção/auditoria).
  */
@@ -185,7 +184,7 @@ export function groupAssessments(assessments: Assessment[]): AssessmentGroup[] {
   }));
 }
 
-/** Avaliações especiais cujo `parentAssessmentId` não aponta para nenhuma avaliação regular presente na lista (item 55, edge case 1). */
+/** Avaliações especiais cujo `parentAssessmentId` não aponta para nenhuma avaliação regular presente na lista (avaliação pai inexistente). */
 export function getOrphanSpecialAssessments(assessments: Assessment[]): Assessment[] {
   const regularIds = new Set(
     assessments.filter((a) => effectiveAssessmentKind(a) === "regular").map((a) => a.id)

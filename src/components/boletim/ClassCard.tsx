@@ -11,8 +11,7 @@ interface ClassCardProps {
 }
 
 /**
- * Card de turma exibido na tela inicial de Boletins (item 6 do
- * briefing). Mesmas informações já disponíveis no modelo real de
+ * Card de turma exibido na tela inicial de Boletins. Mesmas informações já disponíveis no modelo real de
  * `SchoolClass`/`students` (nada inventado): nome, série, ano letivo,
  * turno e quantidade de alunos vinculados.
  */

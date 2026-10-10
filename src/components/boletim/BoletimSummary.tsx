@@ -8,7 +8,7 @@ interface BoletimSummaryProps {
 }
 
 /**
- * Card de resumo acadêmico (item 10 do briefing): média geral,
+ * Card de resumo acadêmico: média geral,
  * frequência, número de disciplinas e situação geral — os quatro
  * indicadores derivados em `boletimService.getStudentBoletim`.
  */

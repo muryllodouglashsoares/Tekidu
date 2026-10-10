@@ -14,14 +14,14 @@ import {
   type AssessmentKind,
 } from "@/types/assessment";
 
-/** Payload editável de uma avaliação nesta modal (item 4 do plano V8 — "Avaliações mais completas"). */
+/** Payload editável de uma avaliação nesta modal. */
 export interface AssessmentFormValues {
   name: string;
   weight: number;
   maxScore: number;
 }
 
-/** Identifica a avaliação regular de origem quando o formulário está criando uma recuperação ou segunda chamada (item 13/14/15 do briefing de Recuperações). */
+/** Identifica a avaliação regular de origem quando o formulário está criando uma recuperação ou segunda chamada */
 export interface SpecialAssessmentTarget {
   kind: Extract<AssessmentKind, "recovery" | "second_call">;
   parentAssessmentId: string;
@@ -47,7 +47,7 @@ const SPECIAL_LABEL: Record<SpecialAssessmentTarget["kind"], string> = {
 /**
  * Permite cadastrar/editar/remover avaliações (Prova 1, Trabalho, etc.)
  * do contexto atualmente selecionado na tela de Notas — inclui peso e
- * valor máximo (item 4 do plano V8), preparando a base para média
+ * valor máximo, preparando a base para média
  * ponderada (`calculateWeightedAverage`, types/grade.ts) sem obrigar o
  * usuário a preencher nada além do nome quando peso/valor padrão (1 e
  * 10) já servem. Não reaproveita `Select`/`ConfirmDialog` para exclusão
@@ -55,11 +55,10 @@ const SPECIAL_LABEL: Record<SpecialAssessmentTarget["kind"], string> = {
  * system em vez de criar um novo padrão de confirmação.
  *
  * RECUPERAÇÕES E SEGUNDA CHAMADA: cada avaliação regular ganha duas
- * ações extras ("Criar segunda chamada"/"Criar recuperação" — item 13
- * do briefing) que reabrem o MESMO formulário acima, pré-preenchido e
- * com um selo indicando a avaliação de origem (item 14/15) — nenhum
+ * ações extras ("Criar segunda chamada"/"Criar recuperação") que reabrem o MESMO formulário acima, pré-preenchido e
+ * com um selo indicando a avaliação de origem — nenhum
  * formulário novo é criado. A lista passa a ser agrupada
- * hierarquicamente (item 37: "Prova 1 ↳ Segunda chamada ↳
+ * hierarquicamente ("Prova 1 ↳ Segunda chamada ↳
  * Recuperação"), reaproveitando `groupAssessments` (types/assessment.ts,
  * mesma função usada por `GradesTable`).
  */

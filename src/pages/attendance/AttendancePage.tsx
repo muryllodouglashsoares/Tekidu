@@ -124,7 +124,7 @@ export function AttendancePage() {
     if (!yearFilter && yearOptions.length > 0) setYearFilter(String(yearOptions[0]));
   }, [yearOptions, yearFilter]);
 
-  // Etapa 6 — frequência mínima configurada para o ano letivo
+  // Frequência mínima configurada para o ano letivo
   // selecionado, usada só para decidir se um lançamento de presença
   // CRUZOU o limiar (ver `handleMark`). Buscada uma vez por ano
   // letivo, não por lançamento — `getAcademicSettings` já cai para os
@@ -143,7 +143,7 @@ export function AttendancePage() {
   const [disciplineId, setDisciplineId] = useState<string>("");
   const [term, setTerm] = useState<string>("");
 
-  // Etapa 7 — mesmo escopo de turma/disciplina para o professor já
+  // Mesmo escopo de turma/disciplina para o professor já
   // aplicado em NotesPage: ver a nota lá para o racional completo.
   const myDisciplines = useMemo(() => {
     if (profile?.role !== "teacher") return disciplines;
@@ -312,7 +312,7 @@ export function AttendancePage() {
         });
       }
 
-      // Etapa 6 — "alerta de frequência": notifica o aluno só quando o
+      // Alerta de frequência: notifica o aluno só quando o
       // lançamento CRUZA o limiar mínimo configurado (de "acima" para
       // "abaixo"), nunca a cada falta isolada já abaixo do limiar. Ver
       // nota em `types/notification.ts` sobre esse critério.
@@ -425,7 +425,7 @@ export function AttendancePage() {
     setHistoryLoading(true);
     setHistoryError(null);
     try {
-      // Etapa 7 — escopo de disciplina para o professor: antes,
+      // Escopo de disciplina para o professor: antes,
       // `getAllSessions()` trazia o histórico de aulas de TODAS as
       // disciplinas da escola (só a UI filtrava depois). Para um
       // professor, a leitura em si já sai restrita às suas próprias
@@ -453,7 +453,7 @@ export function AttendancePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, historyLoaded, historyLoading]);
 
-  // Etapa 7 — turmas/disciplinas oferecidas ao professor no filtro do
+  // Turmas/disciplinas oferecidas ao professor no filtro do
   // Histórico: mesmo escopo por disciplina do professor, mas SEM o
   // filtro de ano letivo de `classOptions` (o Histórico é uma visão
   // "qualquer ano", ver comentário acima da aba).

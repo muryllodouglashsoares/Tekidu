@@ -1,6 +1,6 @@
 /**
- * Envio de e-mail transacional — Decisão 2 revisada: a chamada à
- * EmailJS deixou de ser feita direto do navegador e passou a ser
+ * Envio de e-mail transacional — a chamada à
+ * EmailJS não é feita direto do navegador, é
  * intermediada por uma Cloudflare Pages Function
  * (`functions/api/send-first-access-email.ts`).
  *
@@ -32,7 +32,7 @@
 interface FirstAccessEmailParams {
   to: string;
   name: string;
-  // "guardian" adicionado na Parte 2/3 do plano de evolução (Portal do
+  // "guardian" (Portal do
   // Responsável) — reaproveita integralmente este mesmo fluxo de
   // primeiro acesso (e-mail + senha temporária), já usado por
   // professor/aluno, em vez de criar um mecanismo de convite paralelo.
@@ -41,7 +41,7 @@ interface FirstAccessEmailParams {
   loginIdentifierLabel: string;
   loginIdentifierValue: string;
   tempPassword: string;
-  /** Prazo de validade da credencial (Decisão 3), já formatado para exibição. */
+  /** Prazo de validade da credencial, já formatado para exibição. */
   expiresAtLabel: string;
   appName?: string;
 }

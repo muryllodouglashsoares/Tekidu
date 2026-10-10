@@ -38,12 +38,11 @@ const styles = StyleSheet.create({
 });
 
 /**
- * Cabeçalho institucional (item 15 do briefing): reproduz o mesmo
+ * Cabeçalho institucional: reproduz o mesmo
  * traço diagonal + ponto de `components/ui/BrandMark.tsx` usando as
  * primitivas de SVG do `@react-pdf/renderer`, para o documento carregar
- * a identidade visual real do Tekidu em vez de "El Dorado Academy" (a
- * marca da imagem de referência) — sem depender de um arquivo de
- * imagem externo, que poderia falhar ao carregar (item 26 do briefing).
+ * a identidade visual real do Tekidu em vez de uma marca genérica — sem depender de um arquivo de
+ * imagem externo, que poderia falhar ao carregar.
  */
 export function BoletimPDFHeader({ title }: { title: string }) {
   return (

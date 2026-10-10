@@ -13,10 +13,9 @@ import {
 import type { Assessment } from "@/types/assessment";
 
 /**
- * Testes unitários das funções puras de cálculo acadêmico (Tarefa 5,
- * Fase 1 pós-auditoria V8). Nenhum destes testes toca Firebase/
+ * Testes unitários das funções puras de cálculo acadêmico. Nenhum destes testes toca Firebase/
  * Firestore — são funções sem I/O, testadas isoladamente com os casos
- * de fronteira citados no prompt.
+ * de fronteira relevantes.
  */
 describe("calculateAverage", () => {
   it("calcula a média aritmética simples ignorando null", () => {
@@ -140,10 +139,10 @@ describe("deriveSituationFromAverage", () => {
 });
 
 /**
- * RECUPERAÇÕES E SEGUNDA CHAMADA (item 45 do briefing) — testes das
+ * RECUPERAÇÕES E SEGUNDA CHAMADA — testes das
  * funções puras que resolvem nota efetiva sem jamais sobrescrever a
- * nota original (item 57: "o sistema calcula um resultado efetivo
- * separado do histórico bruto").
+ * nota original (o sistema calcula um resultado efetivo
+ * separado do histórico bruto).
  */
 describe("calculateEffectiveAssessmentScore", () => {
   it("usa a nota original quando não há segunda chamada lançada", () => {
@@ -216,7 +215,7 @@ describe("resolveStudentAcademicResult", () => {
   });
 
   it("recuperação com nota maior que a média eleva o resultado efetivo, preservando o histórico bruto", () => {
-    // Exemplo do item 53 do briefing: Prova 1 (peso 2) = 4, Prova 2 (peso 1) = 6 → média 4,67; recuperação = 7.
+    // Exemplo: Prova 1 (peso 2) = 4, Prova 2 (peso 1) = 6 → média 4,67; recuperação = 7.
     const prova1 = makeAssessment({ id: "prova1", name: "Prova 1", order: 0, weight: 2 });
     const prova2 = makeAssessment({ id: "prova2", name: "Prova 2", order: 1, weight: 1 });
     const recuperacao = makeAssessment({
@@ -252,7 +251,7 @@ describe("resolveStudentAcademicResult", () => {
   });
 
   it("segunda chamada: aluno sem nota original passa a ter a nota da segunda chamada como resultado", () => {
-    // Exemplo do item 54 do briefing.
+    // Segunda chamada substitui a ausência da nota original.
     const prova1 = makeAssessment({ id: "prova1", name: "Prova 1" });
     const segundaChamada = makeAssessment({
       id: "sc1",
@@ -345,7 +344,7 @@ describe("resolveStudentAcademicResult", () => {
       parentAssessmentId: "prova1",
     });
     // As duas avaliações regulares têm nota — não deve ser "incomplete"
-    // mesmo com a recuperação sem nota lançada (item 35 do briefing).
+    // mesmo com a recuperação sem nota lançada.
     const result = resolveStudentAcademicResult(
       [prova1, prova2, recuperacao],
       { prova1: 8, prova2: 7, rec1: null }

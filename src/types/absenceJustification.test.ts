@@ -184,7 +184,7 @@ describe("buildAbsenceJustificationOverview", () => {
     const justifications = [
       makeJustification({ id: "rec-1", attendanceRecordId: "rec-1", status: "rejected" }),
     ];
-    // Recusada continua NÃO elegível por padrão (seção 12 do prompt) —
+    // Recusada continua NÃO elegível por padrão —
     // aqui verificamos o inverso do teste acima só para deixar
     // explícito que o comportamento padrão é conservador.
     const overview = buildAbsenceJustificationOverview(records, justifications, FIXED_NOW);

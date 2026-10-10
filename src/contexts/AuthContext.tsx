@@ -30,7 +30,7 @@ interface AuthContextValue {
    * Rebusca users/{uid} e atualiza `profile` no contexto. Necessário
    * porque o perfil é carregado com `getDoc` (uma leitura única, não
    * um listener em tempo real) — sem isto, editar o nome em
-   * Configurações (item 23) não refletiria na Sidebar/topbar até um
+   * Configurações não refletiria na Sidebar/topbar até um
    * novo login.
    */
   refreshProfile: () => Promise<void>;
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
-    // Etapa 9e (auditoria de logout — cenário de laboratório de
+    // Logout seguro (cenário de laboratório de
     // informática/computador compartilhado): limpamos `firebaseUser`/
     // `profile` no contexto IMEDIATAMENTE, antes mesmo de aguardar
     // `firebaseSignOut` resolver. Sem isto, existe uma janela — por

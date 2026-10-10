@@ -143,7 +143,7 @@ export function useAccessibility(): AccessibilityContextValue {
 /**
  * Preferência efetiva de movimento reduzido: combina a escolha manual
  * do usuário no painel com `prefers-reduced-motion` do sistema
- * operacional (item 30 do briefing — não obrigar configuração manual
+ * operacional (não obrigar configuração manual
  * de algo que o SO já sinalizou).
  */
 export function usePrefersReducedMotion(): boolean {

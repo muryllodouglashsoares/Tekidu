@@ -17,7 +17,7 @@ const dotStyles: Record<BoletimStatus, string> = {
 };
 
 /**
- * Badge da situação acadêmica GERAL do boletim (item 10 do briefing).
+ * Badge da situação acadêmica GERAL do boletim.
  * Mesmo padrão visual de `SituationBadge` (Notas) e
  * `AttendanceStatusBadge` (Frequência) — ponto colorido + rótulo em
  * texto, para a nova tela parecer uma continuação natural das duas.

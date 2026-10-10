@@ -14,7 +14,7 @@ const styles: Record<UserRole, string> = {
   admin: "bg-ink-700 text-white",
   teacher: "bg-honors-400 text-ink-900",
   student: "bg-ink-100 text-ink-700",
-  // Fase 2 do plano de evolução (guardian) — tom neutro próprio,
+  // guardian — tom neutro próprio,
   // distinto dos três já existentes, para não ser confundido com
   // "Aluno" (o mais próximo visualmente).
   guardian: "bg-ink-50 text-ink-600 border border-line",

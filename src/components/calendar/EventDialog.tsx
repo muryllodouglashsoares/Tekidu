@@ -43,7 +43,7 @@ function buildDefaultForm(defaultDate: string, event?: AcademicEvent | null): Ac
 }
 
 /**
- * Fluxo simples pedido no briefing: escolher data → preencher dados →
+ * Fluxo simples: escolher data → preencher dados →
  * salvar → aparece imediatamente (via listener em tempo real do
  * hook) → permanece salvo (Firestore). Segue o mesmo padrão de
  * formulário sem biblioteca de `ClassFormModal`/`StudentFormModal`

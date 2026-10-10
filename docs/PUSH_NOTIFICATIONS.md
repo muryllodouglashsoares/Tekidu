@@ -189,12 +189,11 @@ Login
 
 Testes automatizados relevantes (`npm test`) cobrem a lógica pura dos
 serviços (não cobrem a permissão nativa do navegador nem o envio real
-via FCM, que exigem ambiente de navegador/rede reais — ver seção 20 do
-prompt original: "criar uma maneira segura de testar", cumprida aqui
-pelo fluxo manual acima, já que simular a API de Push do navegador em
+via FCM, que exigem ambiente de navegador/rede reais — por isso o teste
+é feito pelo fluxo manual acima, já que simular a API de Push do navegador em
 um ambiente de CI teria valor limitado para este projeto).
 
-## 10. Checklist de aceitação (mapeada às etapas do prompt original)
+## 10. Checklist de aceitação
 
 - [x] Ativação sob demanda (nunca automática) — `PushNotificationSettings.tsx`.
 - [x] Multi-dispositivo, um token por navegador/aparelho — `pushTokenService.ts` (ID = token).

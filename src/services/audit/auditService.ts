@@ -23,12 +23,12 @@ function toAuditLog(id: string, data: Record<string, unknown>): AuditLog {
 }
 
 /**
- * Registra um evento de auditoria (item 14 do plano V8). Deliberadamente
+ * Registra um evento de auditoria. Deliberadamente
  * "fire-and-forget": falhas ao gravar o log NUNCA devem impedir a ação
  * principal do usuário (salvar uma nota, excluir uma avaliação) de ser
  * concluída — por isso o erro é apenas logado no console, nunca
  * propagado para quem chamou. Auditoria é um registro complementar,
- * não um requisito bloqueante desta fase.
+ * não um requisito bloqueante.
  */
 export function logAuditEvent(input: AuditLogInput): void {
   addDoc(auditCollection, {
@@ -53,8 +53,8 @@ export function logAuditEvent(input: AuditLogInput): void {
 const HISTORY_LIMIT = 50;
 
 /**
- * Histórico de eventos de auditoria relacionados a UM aluno (Fase 8 —
- * aba "Histórico" do Perfil 360°): alterações de nota, exclusão de
+ * Histórico de eventos de auditoria relacionados a UM aluno (aba
+ * "Histórico" do Perfil 360°): alterações de nota, exclusão de
  * avaliação, alteração de frequência. Restrito a admin pela mesma
  * regra de leitura de `auditLogs` (ver `firestore.rules`) — a UI só
  * deve exibir esta aba para esse perfil, mas a proteção real está na

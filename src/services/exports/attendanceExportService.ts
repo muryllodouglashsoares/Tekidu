@@ -27,7 +27,7 @@ function statusLabel(summary: AttendanceSummary | undefined): string {
 }
 
 /**
- * Exportação da aba "Registro de presença" (item 20 do briefing):
+ * Exportação da aba "Registro de presença":
  * resumo por aluno (presenças/faltas/frequência/situação) e, quando há
  * aulas registradas, a grade "por data" (aluno x aula) — os mesmos
  * dados exibidos nas visões "Resumo"/"Por data" da tela.
@@ -175,7 +175,7 @@ export function buildAttendanceRegisterExcelSheets(
   return sheets;
 }
 
-/** Exportação da aba "Histórico" (item 20/24 do briefing): uma linha por aula, com o filtro de turma/disciplina já aplicado. */
+/** Exportação da aba "Histórico": uma linha por aula, com o filtro de turma/disciplina já aplicado. */
 export function buildAttendanceHistoryPdfData(
   rows: AttendanceHistoryRow[],
   classFilterName: string,

@@ -4,7 +4,7 @@ import { useInView, type Variants } from "framer-motion";
 /**
  * Camada de animação da Landing Page (framer-motion).
  *
- * Princípios (ver briefing "Camada de Animação e UX de Impacto"):
+ * Princípios:
  *  - Só `transform` e `opacity` são animados (sem width/height/top/left).
  *  - Toda animação de entrada dispara uma única vez, via viewport
  *    (`whileInView` + `viewport={{ once: true }}`), nunca por scroll

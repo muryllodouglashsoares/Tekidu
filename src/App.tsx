@@ -15,14 +15,13 @@ export default function App() {
         <AuthProvider>
           {/* ToastProvider fica dentro do Router (não usa navegação) e
               envolve todas as rotas — o mesmo padrão de feedback de
-              sucesso/erro (Fase 6) precisa estar disponível tanto nas
+              sucesso/erro precisa estar disponível tanto nas
               telas protegidas quanto no login (ex.: falha ao entrar). */}
           <ToastProvider>
             <AppRoutes />
             {/* Overlays globais da PWA — fora de qualquer rota
-                específica de propósito (ver ETAPA 8 do prompt PWA:
-                "não coloque lógica de PWA dentro de páginas
-                específicas"), então funcionam tanto nas rotas
+                específica de propósito (a lógica de PWA não vive dentro de
+                páginas específicas), então funcionam tanto nas rotas
                 protegidas quanto na Landing Page/Login. */}
             <OfflineIndicator />
             <PWAUpdatePrompt />

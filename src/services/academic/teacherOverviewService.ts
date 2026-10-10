@@ -14,10 +14,10 @@ import type { SchoolClass } from "@/types/schoolClass";
 import type { Discipline } from "@/types/discipline";
 
 /**
- * Portal do Professor (Etapa 4 do plano multi-role): "Minhas Turmas" e
+ * Portal do Professor: "Minhas Turmas" e
  * "Meus Alunos".
  *
- * POR QUE ESTE ARQUIVO EXISTE (evitar duplicação — item 26 do plano):
+ * POR QUE ESTE ARQUIVO EXISTE (evitar duplicação):
  * `DashboardPage.tsx` (`TeacherDashboard`) já calculava, inline, a
  * lista de "disciplina + turma" de um professor (`teacherId ===
  * profile.uid` → `discipline.classIds`). Essa MESMA relação é a base
@@ -25,12 +25,12 @@ import type { Discipline } from "@/types/discipline";
  * de novo, ele foi extraído para cá e o Dashboard passou a chamar
  * `getTeacherAssignments` também (ver DashboardPage.tsx).
  *
- * ESCOPO/SEGURANÇA (item 13/14 do plano; fechado na Etapa 7): todas as
+ * ESCOPO/SEGURANÇA: todas as
  * funções abaixo recebem `teacherUid` e filtram TUDO a partir dele —
  * um professor nunca vê turma/aluno fora de `discipline.teacherId ===
- * teacherUid`. Até a Etapa 6, isso só era garantido em memória (a
+ * teacherUid`. Antes, isso só era garantido em memória (a
  * leitura em si buscava o ano letivo INTEIRO via `getXBySchoolYear` e
- * filtrava depois) — a Etapa 7 fechou essa lacuna: `loadTeacherRawData`
+ * filtrava depois) — essa lacuna foi fechada: `loadTeacherRawData`
  * agora busca `myDisciplines` PRIMEIRO e usa as versões
  * `getXByDisciplineIds` (uma consulta por disciplina, nunca uma
  * consulta ampla do ano inteiro) para avaliações/aulas/notas/presença
@@ -83,7 +83,7 @@ interface TeacherRawData {
 }
 
 async function loadTeacherRawData(teacherUid: string, schoolYear: number): Promise<TeacherRawData> {
-  // Etapa 7 — busca disciplinas/turmas/alunos primeiro (leitura de
+  // Busca disciplinas/turmas/alunos primeiro (leitura de
   // catálogo, já ampla por Security Rule — ver nota em
   // `firestore.rules`) para resolver `myDisciplines` ANTES de buscar
   // avaliações/aulas/notas/presença, que agora são escopadas por
@@ -159,7 +159,7 @@ function buildAssignments(data: TeacherRawData): TeacherAssignment[] {
   return built;
 }
 
-/** "Minhas Turmas": mesma lista de `getTeacherAssignments`, mas com média/frequência calculadas (seção 4 do plano). */
+/** "Minhas Turmas": mesma lista de `getTeacherAssignments`, mas com média/frequência calculadas. */
 export async function getTeacherClassesOverview(teacherUid: string, schoolYear: number): Promise<TeacherClassOverview[]> {
   const data = await loadTeacherRawData(teacherUid, schoolYear);
   const assignments = buildAssignments(data);
@@ -190,8 +190,8 @@ export async function getTeacherClassesOverview(teacherUid: string, schoolYear: 
  * calculadas apenas sobre as disciplinas deste professor com aquele
  * aluno (não a média geral do aluno em todas as matérias da escola),
  * porque é essa a informação que pertence à responsabilidade do
- * professor (seção 13/21 do plano: "acessar dados acadêmicos
- * relacionados às suas responsabilidades").
+ * professor (acessar dados acadêmicos
+ * relacionados às suas responsabilidades).
  */
 export async function getTeacherStudentsOverview(teacherUid: string, schoolYear: number): Promise<TeacherStudentOverview[]> {
   const data = await loadTeacherRawData(teacherUid, schoolYear);
@@ -244,7 +244,7 @@ export async function getTeacherStudentsOverview(teacherUid: string, schoolYear:
 }
 
 /**
- * "Desempenho" do professor (Etapa 4b do plano multi-role): mesma
+ * "Desempenho" do professor: mesma
  * lista de `getTeacherClassesOverview` (uma linha por
  * disciplina+turma do professor), mas cada item também carrega a
  * série de médias por bimestre — para permitir (a) comparar turmas
@@ -253,7 +253,7 @@ export async function getTeacherStudentsOverview(teacherUid: string, schoolYear:
  * `MyPerformancePage.tsx` do aluno, mas por turma em vez de por
  * aluno).
  *
- * REAPROVEITAMENTO (regra 1 do plano — nada de service duplicado):
+ * REAPROVEITAMENTO (nada de service duplicado):
  * a série por bimestre usa `reportsService.computeDevelopmentSeries`,
  * a MESMA função já usada pelo gráfico de "/relatorios" (visão do
  * admin) — nenhuma lógica de agregação por bimestre é reimplementada

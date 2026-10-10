@@ -57,7 +57,7 @@ function pageTitle(pathname: string): string {
 
 /**
  * Layout compartilhado por todas as rotas protegidas: sidebar fixa em
- * telas médias/grandes (preserva a navegação do protótipo do Figma) e
+ * telas médias/grandes e
  * menu retrátil em telas pequenas.
  */
 export function AppShell() {
@@ -69,10 +69,9 @@ export function AppShell() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [accessibilityOpen, setAccessibilityOpen] = useState(false);
 
-  // Fase 2 — Command Palette: Ctrl+K (Windows/Linux) e Cmd+K (Mac)
+  // Command Palette: Ctrl+K (Windows/Linux) e Cmd+K (Mac)
   // abrem a busca global de qualquer lugar dentro das rotas protegidas.
-  // Em mobile o atalho de teclado não existe (ver "COMMAND PALETTE" no
-  // briefing) — a mesma busca é alcançada pelo botão de lupa do
+  // Em mobile o atalho de teclado não existe — a mesma busca é alcançada pelo botão de lupa do
   // MobileHeader, que chama `setPaletteOpen(true)` diretamente.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -94,7 +93,7 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen bg-paper">
-      {/* Skip link (item 11 do briefing de acessibilidade): primeiro
+      {/* Skip link: primeiro
           elemento focável da página, permite pular Sidebar/Header
           diretamente para o conteúdo principal. */}
       <SkipLink />
@@ -102,7 +101,7 @@ export function AppShell() {
       {/* Sidebar — navegação principal em desktop/tablet. Em mobile a
           navegação estrutural passa a ser a Bottom Navigation (ver
           MobileBottomNav abaixo) — não existe mais drawer duplicando a
-          mesma navegação em duas formas (Opção B do briefing). */}
+          mesma navegação em duas formas . */}
       <div className="hidden md:block">
         <Sidebar />
       </div>

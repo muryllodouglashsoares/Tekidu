@@ -19,7 +19,7 @@ interface CalendarMiniWidgetProps {
 }
 
 /**
- * Reproduz o bloco "CALENDÁRIO" do protótipo do Figma dentro da própria
+ * Bloco "CALENDÁRIO" dentro da própria
  * Sidebar: cabeçalho colapsável + mini-mês com navegação e indicador de
  * "hoje"/dias com evento. Clicar em um dia (ou no cabeçalho) navega
  * para a experiência completa em "/calendario", com aquele dia

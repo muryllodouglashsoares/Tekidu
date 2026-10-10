@@ -13,8 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ID = "tekidu-rules-test";
 
 /**
- * Teste automatizado do fechamento de gap em `classes`/`disciplines`
- * (prompt "Fechar gap de segurança em classes/disciplines").
+ * Teste automatizado do fechamento da brecha em `classes`/`disciplines`.
  *
  * Antes desta mudança, a restrição de "professor não acessa/edita a
  * visão de escola inteira" existia SÓ na rota/UX (`ProtectedRoute

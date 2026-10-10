@@ -95,7 +95,7 @@ export function AnnouncementsPage() {
   }
 
   // -------------------------------------------------------------
-  // Escopo por aba (seções 43/44): dentro do que a Rule já libera
+  // Escopo por aba: dentro do que a Rule já libera
   // (`getAnnouncementsForRole`), as abas apenas RECORTAM a mesma
   // lista já carregada — nenhuma consulta adicional ao Firestore.
   // -------------------------------------------------------------
@@ -155,7 +155,7 @@ export function AnnouncementsPage() {
 
   const sorted = useMemo(() => sortAnnouncements(filtered), [filtered]);
 
-  // Destaque (seção 26): só entre os avisos publicados e ativos, nunca
+  // Destaque: só entre os avisos publicados e ativos, nunca
   // rascunhos/expirados — mesmo em uma aba de gestão do admin, o
   // destaque continua representando "o que está no ar agora".
   const highlighted = useMemo(() => {

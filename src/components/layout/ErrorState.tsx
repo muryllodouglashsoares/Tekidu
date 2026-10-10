@@ -9,7 +9,7 @@ interface ErrorStateProps {
 }
 
 /**
- * Estado de erro padrão (Fase 6): substitui os blocos de erro
+ * Estado de erro padrão: substitui os blocos de erro
  * duplicados que cada página tinha ("texto vermelho + botão Tentar
  * novamente" montado inline). Nunca recebe mensagens técnicas cruas —
  * quem chama já deve ter passado o erro por `describeFirebaseError`.

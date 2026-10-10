@@ -35,7 +35,7 @@ export function LandingFooter() {
 
         <div className="text-sm text-ink-400 sm:text-right">
           <p>© 2026 Tekidu</p>
-          <p>Gestão Escolar</p>
+          <p>Gestão Acadêmica</p>
         </div>
       </div>
     </footer>

@@ -7,7 +7,7 @@ import type { Student } from "@/types/student";
 /**
  * Resolve os alunos vinculados ao responsável logado — mesmo papel de
  * `useOwnStudent` (Portal do Aluno), mas para uma relação 1:N em vez
- * de 1:1 (Fase 2/3 do plano de evolução — Portal do Responsável).
+ * de 1:1 (Portal do Responsável).
  *
  * `children === undefined` enquanto carrega; `[]` quando o responsável
  * está com conta ativa mas ainda sem nenhum aluno vinculado (o admin

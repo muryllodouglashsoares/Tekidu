@@ -42,13 +42,13 @@ const ICON_BY_TYPE: Record<NotificationType, typeof Bell> = {
   assessment_created: FilePlus2,
   assessment_updated: FileEdit,
   attendance_warning: AlertTriangle,
-  // PARTE 1 do plano de evolução (Mensageria) — ver `types/notification.ts`.
+  // Mensageria — ver `types/notification.ts`.
   message_received: MessageCircle,
   // Justificativas de Faltas (Portal do Aluno) — ver `types/notification.ts`.
   absence_justification_submitted: Send,
   absence_justification_approved: FileCheck,
   absence_justification_rejected: FileX,
-  // IMPLEMENTAÇÃO — WEB PUSH (ETAPA 10) — ver `types/notification.ts`.
+  // IMPLEMENTAÇÃO — WEB PUSH — ver `types/notification.ts`.
   announcement: Megaphone,
 };
 
@@ -75,13 +75,13 @@ function toDate(value: unknown): Date | null {
 }
 
 /**
- * Centro de notificações (Fase 5, tempo real desde a Etapa 6).
+ * Centro de notificações (tempo real).
  * Acessível pelo Header — ícone de sino com contador de não lidas,
  * painel com lista/estado vazio/carregamento, marcar como lida
  * (individual e em lote) e navegação para o contexto relacionado via
  * `notification.link`.
  *
- * TEMPO REAL (Etapa 6): o contador do sino assina
+ * TEMPO REAL: o contador do sino assina
  * `subscribeToUnreadCount` assim que há um `profile` — não só quando o
  * painel abre — para o sino "acender" sozinho quando uma notificação
  * nova chega em outra aba/dispositivo, sem polling. A LISTA completa
@@ -274,7 +274,7 @@ export function NotificationCenter() {
 
       {/* Em desktop/tablet: painel ancorado ao sino (comportamento
           original). Em smartphones, um pequeno popover fica
-          desconfortável (ver "NOTIFICAÇÕES MOBILE" no briefing) — vira
+          desconfortável — vira
           uma Bottom Sheet, mesmo padrão usado por "Mais" e filtros. */}
       {!isMobile && open && (
         <div

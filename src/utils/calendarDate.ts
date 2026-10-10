@@ -78,7 +78,7 @@ export function formatMonthYear(reference: Date): { month: string; year: string 
 
 /**
  * Matriz de semanas do mês (linhas de 7 colunas, Domingo→Sábado).
- * Segue o modelo do Figma: dias fora do mês corrente ficam como `null`
+ * Dias fora do mês corrente ficam como `null`
  * (célula em branco), em vez de mostrar os dias do mês adjacente —
  * mantém o grid limpo e sem ambiguidade sobre "de qual mês é esse 30".
  */

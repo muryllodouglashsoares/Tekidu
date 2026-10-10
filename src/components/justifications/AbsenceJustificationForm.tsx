@@ -30,7 +30,7 @@ function formatDate(isoDate: string): string {
 }
 
 /**
- * Formulário de solicitação de justificativa (seção 10 do prompt).
+ * Formulário de solicitação de justificativa.
  * Informações da falta somente leitura + motivo + documento — mesmo
  * padrão visual de `AnnouncementFormModal` (Modal + Textarea + Button,
  * um único `error` de topo, botão de envio desabilitado enquanto

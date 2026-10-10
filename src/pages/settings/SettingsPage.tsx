@@ -13,11 +13,11 @@ import { validateAcademicSettingsInput, type AcademicSettingsInput } from "@/typ
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 /**
- * Configurações do usuário (itens 21–26 do briefing). Segue o mesmo
+ * Configurações do usuário. Segue o mesmo
  * padrão visual das demais telas (Card/Input/Button, mesmos
  * espaçamentos e estados de feedback), organizada por seções.
  *
- * Só implementa o que o backend atual realmente suporta (item 24):
+ * Só implementa o que o backend atual realmente suporta:
  * - Perfil (nome): editável — grava em users/{uid}.name, permitido
  *   pela extensão de firestore.rules feita para esta funcionalidade
  *   (ver comentário em firestore.rules).
@@ -38,8 +38,8 @@ export function SettingsPage() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState(false);
 
-  // Regras acadêmicas configuráveis por ano letivo (item 6/7 do plano
-  // V8) — só admins veem/editam esta seção (mesma política das
+  // Regras acadêmicas configuráveis por ano letivo —
+  // só admins veem/editam esta seção (mesma política das
   // firestore.rules: escrita em `academicSettings` é restrita a
   // admin).
   const schoolYear = new Date().getFullYear();
@@ -211,7 +211,7 @@ export function SettingsPage() {
           )}
         </Card>
 
-        {/* Regras acadêmicas (item 6/7 do plano V8) — só admins */}
+        {/* Regras acadêmicas — só admins */}
         {profile.role === "admin" && (
           <Card className="p-5">
             <h3 className="mb-1 flex items-center gap-2 font-display text-base font-semibold text-ink900">
@@ -298,8 +298,7 @@ export function SettingsPage() {
         )}
 
         {/* Aplicativo (instalação da PWA) — contextual, dentro de
-            Configurações, nunca um popup automático ao abrir o app
-            (ver ETAPA 9 do prompt PWA). O próprio componente decide o
+            Configurações, nunca um popup automático ao abrir o app. O próprio componente decide o
             que mostrar (instalar/já instalado/instrução iOS) ou não
             renderiza nada se a instalação não for suportada. */}
         <PWAInstallPrompt />

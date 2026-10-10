@@ -1,7 +1,7 @@
 // functions/api/_lib/googleAuth.ts
 //
-// IMPLEMENTAÇÃO — WEB PUSH (ETAPA 8 do prompt: "camada server-side
-// para envio das notificações", sem custo externo).
+// IMPLEMENTAÇÃO — WEB PUSH (camada server-side para envio das
+// notificações, sem custo externo).
 //
 // Por que isto existe em vez de usar o Firebase Admin SDK: o Admin
 // SDK (`firebase-admin`) depende de APIs Node que não existem no
@@ -156,7 +156,7 @@ async function getFirebaseJwks(): Promise<JsonWebKey[]> {
  * contrário (nunca lança para erro de token — quem chama decide
  * responder 401).
  *
- * NOTA DE SEGURANÇA (ETAPA 23 do prompt): esta verificação é uma
+ * NOTA DE SEGURANÇA: esta verificação é uma
  * camada de defesa em profundidade — a autorização REAL de "quem pode
  * ser notificado" já foi decidida no momento em que a notificação foi
  * GRAVADA em Firestore (pela Rule de `notifications`, ver

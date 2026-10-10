@@ -34,14 +34,14 @@ function toGrade(id: string, data: Record<string, unknown>): Grade {
  * Lista TODAS as notas de um contexto (disciplina + turma + bimestre)
  * em uma única consulta — a tabela inteira de notas é montada a partir
  * deste resultado, cruzado em memória com alunos x avaliações. Isso é
- * o que evita o risco de N+1 queries descrito no plano: sem os campos
+ * o que evita o risco de N+1 queries: sem os campos
  * denormalizados em `Grade`, seria necessário buscar por
  * `assessmentId` avaliação por avaliação.
  *
  * Exige o mesmo índice composto de `getAssessmentsByContext` (campos
  * diferentes, mesma ideia): `classId + disciplineId + term`.
  *
- * `studentId` (opcional, Tarefa 3 — Fase 1 pós-auditoria V8): estreita
+ * `studentId` (opcional): estreita
  * a consulta a um único aluno via `where('studentId', '==', ...)`.
  * Além de reduzir leituras quando o chamador só precisa de um aluno
  * (ex.: `boletimService.getStudentBoletim`, sempre por aluno), é o que
@@ -72,13 +72,12 @@ export async function getGradesByContext(
 
 /**
  * Lista TODAS as notas lançadas em um ano letivo, independente de
- * turma/disciplina/bimestre — usada pelos Relatórios de Desenvolvimento
- * (item 7 do briefing), que precisam agregar médias em vários recortes
+ * turma/disciplina/bimestre — usada pelos Relatórios de Desenvolvimento,
+ * que precisam agregar médias em vários recortes
  * (todas as turmas, uma turma, uma disciplina, um bimestre) sem repetir
  * uma consulta por combinação. Consulta de campo único
  * (`schoolYear`) — não exige índice composto, e evita buscar TODO o
- * histórico de anos anteriores de uma vez (ver item 29 do briefing,
- * performance).
+ * histórico de anos anteriores de uma vez (performance).
  */
 export async function getGradesBySchoolYear(schoolYear: number): Promise<Grade[]> {
   const q = query(gradesCollection, where("schoolYear", "==", schoolYear));
@@ -113,8 +112,8 @@ export async function getGradesByDisciplineIds(disciplineIds: string[], schoolYe
  * Constrói o ID determinístico do documento de nota de um aluno em
  * uma avaliação. Formato: `{studentId}_{assessmentId}`.
  *
- * CORREÇÃO (auditoria V8 — item 3 "Corrigir especialmente: IDs
- * temporários; duplicação de notas; criação versus atualização"):
+ * CORREÇÃO (IDs temporários; duplicação de notas; criação versus
+ * atualização):
  * antes, `saveGrade` recebia um `existingGradeId` resolvido pelo
  * CHAMADOR a partir do estado local em memória (`grades.find(...)`).
  * Isso é uma fonte real de duplicação: se o estado local ainda não
@@ -142,7 +141,7 @@ export function buildGradeId(studentId: string, assessmentId: string): string {
  *
  * Ainda assim distinguimos create/update (via `getDoc` prévio) para
  * preservar `createdAt` como a data do PRIMEIRO lançamento, não a de
- * cada edição — importante para a trilha de auditoria (item 14).
+ * cada edição — importante para a trilha de auditoria.
  */
 export async function saveGrade(data: GradeInput): Promise<void> {
   const ref = doc(db, "grades", buildGradeId(data.studentId, data.assessmentId));

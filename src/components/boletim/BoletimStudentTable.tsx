@@ -10,10 +10,10 @@ interface BoletimStudentTableProps {
 }
 
 /**
- * Tabela de alunos de uma turma (item 8 do briefing). Nome, matrícula e
+ * Tabela de alunos de uma turma. Nome, matrícula e
  * situação vêm direto de `Student` — sem dados inventados. Clicar na
  * linha ou no botão "Ver boletim" abre o boletim daquele aluno. Em
- * mobile vira cards (ver "MOBILE DATA CARDS" no briefing).
+ * mobile vira cards.
  */
 export function BoletimStudentTable({ students, onSelectStudent }: BoletimStudentTableProps) {
   const isMobile = useIsMobile();

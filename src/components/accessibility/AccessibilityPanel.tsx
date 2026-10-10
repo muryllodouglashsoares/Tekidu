@@ -86,12 +86,12 @@ interface AccessibilityPanelProps {
 }
 
 /**
- * Central de Acessibilidade (item 3 do briefing) — painel global que
+ * Central de Acessibilidade — painel global que
  * concentra as preferências controladas por `AccessibilityContext`.
  * Construído sobre o `Modal` compartilhado (em vez de um componente
  * novo isolado) para herdar automaticamente o mesmo comportamento de
  * diálogo acessível (foco preso, `Esc` fecha, restaura foco ao
- * fechar) usado pelo restante do app — ver item 28 do briefing.
+ * fechar) usado pelo restante do app.
  */
 export function AccessibilityPanel({ onClose }: AccessibilityPanelProps) {
   const {

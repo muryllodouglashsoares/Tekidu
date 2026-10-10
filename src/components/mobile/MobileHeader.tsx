@@ -12,20 +12,19 @@ interface RouteMeta {
   backLabel?: string;
 }
 
-// Mesmas rotas da Sidebar/AppRoutes — ver "HEADER INTELIGENTE" no
-// briefing: cada tela tem um título+contexto próprio, não um cabeçalho
+// Mesmas rotas da Sidebar/AppRoutes — cada tela tem um título+contexto próprio, não um cabeçalho
 // genérico repetido. Ordenado por especificidade (rotas mais longas
 // primeiro) para o `find` de prefixo abaixo resolver corretamente.
 const ROUTE_META: [string, RouteMeta][] = [
   ["/alunos/", { title: "Detalhes do Aluno", backTo: "/alunos", backLabel: "Alunos" }],
   ["/meus-alunos/", { title: "Detalhes do Aluno", backTo: "/meus-alunos", backLabel: "Meus Alunos" }],
-  // Mensagens (Parte 1 do plano de evolução): "/mensagens/:id" é a
+  // Mensagens: "/mensagens/:id" é a
   // conversa aberta (mostra botão de voltar); "/mensagens" sozinha é
   // a lista. Mesmo padrão de precedência de "/alunos/" acima — a
   // entrada com "/" precisa vir ANTES da entrada sem "/", já que
   // `pathname.startsWith` também bate com o prefixo mais curto.
   ["/mensagens/", { title: "Conversa", backTo: "/mensagens", backLabel: "Mensagens" }],
-  // Portal do Responsável (Fase 2/3 do plano de evolução): mesma
+  // Portal do Responsável: mesma
   // precedência acima — as duas sub-rotas ("/boletim", "/frequencia")
   // precisam vir ANTES de "/portal-responsavel" sozinha, senão
   // `pathname.startsWith("/portal-responsavel")` bateria primeiro
@@ -66,8 +65,7 @@ interface MobileHeaderProps {
 }
 
 /**
- * Header compacto e contextual para smartphones (ver "HEADER MOBILE"
- * no briefing) — troca o par "botão de menu + título fixo" do topo
+ * Header compacto e contextual para smartphones — troca o par "botão de menu + título fixo" do topo
  * antigo por: botão de voltar quando a rota é uma página de detalhe,
  * ou título + subtítulo contextual quando é uma página de primeiro
  * nível (a navegação principal já é a Bottom Navigation, então este

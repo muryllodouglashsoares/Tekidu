@@ -50,14 +50,14 @@ const SEVERITY_DOT: Record<AcademicPendency["severity"], string> = {
 };
 
 /**
- * Dashboard orientado a ações (Fase 7). Cada perfil vê um conteúdo
+ * Dashboard orientado a ações. Cada perfil vê um conteúdo
  * genuinely diferente — não a mesma tela com cards escondidos — porque
  * a pergunta que cada perfil precisa responder ao abrir o sistema é
  * diferente: admin pergunta "o que precisa da minha atenção na
  * escola?", professor pergunta "o que eu preciso lançar hoje?", aluno
  * pergunta "como estou indo?".
  *
- * NOTA IMPORTANTE (bug pré-existente corrigido nesta etapa): a versão
+ * NOTA IMPORTANTE (bug corrigido): a versão
  * anterior desta página chamava `getStudents()`/`getClasses()`
  * incondicionalmente para qualquer perfil — mas a Security Rule de
  * `students`/`classes` só permite LISTAR a coleção inteira para
@@ -72,7 +72,7 @@ export function DashboardPage() {
 
   if (profile.role === "student") return <StudentDashboard />;
   if (profile.role === "teacher") return <TeacherDashboard />;
-  // Fase 2/3 do plano de evolução (Portal do Responsável): "/dashboard"
+  // Portal do Responsável: "/dashboard"
   // é a rota universal pós-login (ver `LoginPage.redirectTo`) — sem
   // este desvio, um responsável cairia direto no `AdminDashboard`
   // abaixo, que chama `getStudents()`/`getClasses()`/
@@ -707,8 +707,7 @@ function StudentDashboard() {
         </Card>
 
         {/* Média + Frequência lado a lado mesmo em mobile — dois
-            indicadores numéricos compactos cabem bem numa linha (ver
-            "RESPONSIVIDADE DE GRIDS" no briefing); Situação, por ser um
+            indicadores numéricos compactos cabem bem numa linha; Situação, por ser um
             badge textual, ocupa a linha inteira abaixo. */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <Card className="p-5">
@@ -765,8 +764,7 @@ function StudentDashboard() {
             este card sempre mostrou `notifications` (nota lançada,
             avaliação criada...) — eventos individuais endereçados a
             este aluno, não os avisos institucionais/acadêmicos do
-            Portal de Avisos (ver distinção na seção 6 do briefing do
-            Portal). Manter o rótulo antigo aqui, agora que o Portal
+            Portal de Avisos. Manter o rótulo antigo aqui, agora que o Portal
             de Avisos existe de fato em "/avisos", confundiria os dois
             conceitos. */}
         <Card className="p-6 border-line shadow-sm bg-surface">

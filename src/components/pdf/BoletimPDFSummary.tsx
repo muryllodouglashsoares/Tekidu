@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
 });
 
 /**
- * Mensagem automática de observações (item 14 do briefing) — derivada
+ * Mensagem automática de observações — derivada
  * da situação geral já calculada pelo boletim, nunca um comentário
  * inventado. Não existe campo de texto livre no `StudentBoletim`, então
  * o PDF não pode exibir nenhuma observação que a interface web não
@@ -103,7 +103,7 @@ function remarkFor(status: BoletimStatus): string {
   }
 }
 
-/** "REMARKS" + "GRADING SYSTEM" da imagem de referência, adaptados às regras reais do Tekidu (itens 13–14). */
+/** "REMARKS" + "GRADING SYSTEM" adaptados às regras reais do Tekidu. */
 export function BoletimPDFRemarksAndGrading({
   overallStatus,
   settings,
@@ -149,7 +149,7 @@ export function BoletimPDFRemarksAndGrading({
   );
 }
 
-/** Resumo geral (item 10 do briefing): média, frequência, disciplinas e situação — mesmos indicadores de `BoletimSummary`. */
+/** Resumo geral: média, frequência, disciplinas e situação — mesmos indicadores de `BoletimSummary`. */
 export function BoletimPDFOverallStats({
   overallAverage,
   overallAttendanceRate,

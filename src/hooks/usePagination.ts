@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 
 /**
- * Paginação (Fase 4). Opera sobre um array já filtrado/ordenado em
+ * Paginação. Opera sobre um array já filtrado/ordenado em
  * memória — coerente com a arquitetura atual do Tekidu, em que cada
  * service (`getStudents`, `getClasses`, etc.) já carrega a coleção
  * inteira uma vez por visita à página, e todas as buscas/filtros são
  * aplicados no cliente sobre esse array (ver `StudentsPage`,
  * `ClassesPage`...). Paginar de fato no Firestore (cursors por
  * combinação de filtro) exigiria reescrever essa camada de dados
- * página a página, o que não faz parte desta etapa — aqui a paginação
+ * página a página, o que está fora do escopo desta paginação — aqui a paginação
  * evita renderizar centenas de linhas de uma vez e dá a UX profissional
  * pedida (página atual/total, anterior/próxima/primeira/última), sem
  * fingir uma paginação que não existe.

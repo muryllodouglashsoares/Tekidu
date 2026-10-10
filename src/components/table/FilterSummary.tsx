@@ -7,7 +7,7 @@ interface FilterSummaryProps {
 
 /**
  * "A interface deve mostrar claramente: filtro ativo; quantidade de
- * filtros; possibilidade de limpar filtros" (Fase 3). Renderiza nada
+ * filtros; possibilidade de limpar filtros". Renderiza nada
  * quando não há filtro ativo, para não ocupar espaço à toa.
  */
 export function FilterSummary({ activeCount, onClear }: FilterSummaryProps) {

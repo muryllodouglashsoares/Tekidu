@@ -65,7 +65,7 @@ export async function updateClass(id: string, data: ClassInput): Promise<void> {
 /**
  * Exclui uma turma. Restrita a admin (ver firestore.rules).
  *
- * Registra um evento de auditoria (Tarefa 4, Fase 1 pós-auditoria V8):
+ * Registra um evento de auditoria:
  * antes desta mudança, excluir uma turma não deixava nenhum rastro.
  * Busca o documento ANTES de excluir para poder registrar o nome da
  * turma removida (`before`) — depois do `deleteDoc` o documento não
@@ -89,7 +89,7 @@ export async function deleteClass(id: string, actor: { id: string; name: string 
  * (referência a `classes/{classId}`) — sem precisar de um campo de
  * contagem duplicado em `classes`. A chave do mapa é o ID da turma.
  *
- * Nota: para o volume esperado nesta fase (uma instituição), buscar todos
+ * Nota: para o volume esperado hoje (uma instituição), buscar todos
  * os alunos e agrupar em memória é mais simples e barato do que uma
  * consulta por turma para cada linha da tabela.
  */

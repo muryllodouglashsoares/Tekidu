@@ -43,7 +43,7 @@ export async function getAcademicSettings(schoolYear: number): Promise<AcademicS
 
 /**
  * Serializa os três limiares configuráveis em uma única string legível
- * para o log de auditoria (Tarefa 4) — a estrutura de `AuditLog` só
+ * para o log de auditoria — a estrutura de `AuditLog` só
  * tem um par `before`/`after` (não um por campo), então os três
  * valores viajam juntos, no mesmo formato dos dois lados da mudança.
  */
@@ -61,7 +61,7 @@ function describeThresholds(settings: {
  * acadêmicas (média mínima, frequência mínima) são uma decisão
  * institucional, não uma preferência de professor.
  *
- * Registra um evento de auditoria (Tarefa 4, Fase 1 pós-auditoria V8):
+ * Registra um evento de auditoria:
  * antes desta mudança, alterar a régua de aprovação de todo um ano
  * letivo não deixava nenhum rastro. Busca a configuração ANTERIOR
  * (`getAcademicSettings`, que já cai para os padrões do sistema

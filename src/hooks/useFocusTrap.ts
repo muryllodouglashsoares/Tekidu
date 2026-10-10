@@ -5,7 +5,7 @@ const FOCUSABLE_SELECTOR =
 
 /**
  * Gerenciamento de foco para diálogos/sheets (Modal, MobileSheet,
- * AccessibilityPanel — item 13 do briefing de acessibilidade):
+ * AccessibilityPanel):
  *
  *  1. Ao abrir, guarda o elemento que tinha foco e move o foco para
  *     dentro do container (primeiro elemento com `data-autofocus`, ou
@@ -16,8 +16,8 @@ const FOCUSABLE_SELECTOR =
  *  3. Ao fechar, devolve o foco para o elemento que abriu o diálogo.
  *
  * Reutilizado por todo componente do tipo diálogo/sheet do app, em vez
- * de cada um reimplementar sua própria versão (ver item 28 do
- * briefing: "corrigir uma vez → melhorar a aplicação inteira").
+ * de cada um reimplementar sua própria versão (corrigir uma vez →
+ * melhorar a aplicação inteira).
  */
 export function useFocusTrap<T extends HTMLElement>(active: boolean) {
   const containerRef = useRef<T | null>(null);

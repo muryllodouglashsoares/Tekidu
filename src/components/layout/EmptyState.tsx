@@ -7,8 +7,7 @@ interface EmptyStateProps {
   title: string;
   description: string;
   /**
-   * Ação relevante opcional (Fase 6 — "ícone; título; explicação; ação
-   * relevante quando existir"). Ex.: { label: "Adicionar disciplina",
+   * Ação relevante opcional. Ex.: { label: "Adicionar disciplina",
    * onClick: () => setShowForm(true) }. Omitido quando o estado vazio
    * não tem uma ação direta a oferecer (ex.: "selecione uma turma").
    */

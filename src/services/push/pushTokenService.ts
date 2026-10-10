@@ -22,10 +22,10 @@ function detectPlatform(): string {
  * Registra/atualiza o token FCM deste dispositivo/navegador.
  *
  * Usar o TOKEN como ID do documento (em vez de `addDoc`) é o que torna
- * a operação idempotente (ETAPA 17 do prompt): chamar de novo com o
+ * a operação idempotente: chamar de novo com o
  * mesmo token (reload, reabrir aba) apenas atualiza `updatedAt`/
  * `lastUsedAt`, nunca cria um segundo registro para o mesmo
- * dispositivo. Multi-dispositivo (ETAPA 19) continua funcionando
+ * dispositivo. Multi-dispositivo continua funcionando
  * porque cada navegador/aparelho recebe um token DIFERENTE do FCM.
  */
 export async function savePushToken(uid: string, token: string): Promise<void> {
@@ -47,7 +47,7 @@ export async function savePushToken(uid: string, token: string): Promise<void> {
   );
 }
 
-/** Remove o token deste dispositivo (ETAPA 5: "desativar quando necessário"). Não afeta os tokens de OUTROS dispositivos do mesmo usuário (ETAPA 19). */
+/** Remove o token deste dispositivo. Não afeta os tokens de OUTROS dispositivos do mesmo usuário. */
 export async function deletePushToken(uid: string, token: string): Promise<void> {
   await deleteDoc(doc(pushTokensCollection(uid), token));
 }

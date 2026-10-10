@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 
 /**
  * Renderiza um documento `@react-pdf/renderer` para Blob e dispara o
- * download — sem servidor, sem Cloud Function (item 4 do briefing).
+ * download — sem servidor, sem Cloud Function.
  * `@react-pdf/renderer` já é dependência do projeto (usado pelo
  * boletim); importado aqui via dynamic import para não acoplar seu
  * carregamento ao bundle inicial de Relatórios/Frequência quando essas

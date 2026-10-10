@@ -14,7 +14,7 @@ import { BOLETIM_PERIOD_LABEL, type BoletimPeriod } from "@/types/boletim";
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 /**
- * Portal do Aluno — "Meu Boletim" (Tarefa 3, Fase 1 pós-auditoria V8).
+ * Portal do Aluno — "Meu Boletim".
  *
  * Diferente de `BoletimPage` (Turma → Aluno, uso de staff), esta tela
  * NUNCA pede para o aluno escolher "qual aluno": o `studentId` é

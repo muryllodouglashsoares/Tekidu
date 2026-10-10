@@ -27,8 +27,8 @@ export interface MessageInput {
 }
 
 /**
- * Limite de caracteres por mensagem (item "UX" do plano — "limite
- * razoável de caracteres"). Espelhado em `firestore.rules`
+ * Limite de caracteres por mensagem (limite
+ * razoável de caracteres). Espelhado em `firestore.rules`
  * (`isValidMessageContent`) como as demais constantes de validação de
  * payload do projeto (ex.: GRADE_MIN/GRADE_MAX em `types/grade.ts`) —
  * se este valor mudar, a Rule precisa ser atualizada manualmente em

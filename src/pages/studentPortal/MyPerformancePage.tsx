@@ -16,7 +16,7 @@ import { ASSESSMENT_TERM_LABEL } from "@/types/assessment";
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 /**
- * "Meu Desempenho" (seção 11 do plano multi-role): evolução acadêmica
+ * "Meu Desempenho": evolução acadêmica
  * ao longo dos bimestres, melhor disciplina e disciplina que precisa
  * de atenção. Reaproveita `boletimService.getStudentDevelopmentSeries`
  * (mesma série já usada pelo gráfico no Perfil 360° do aluno, visto
@@ -26,8 +26,8 @@ import { describeFirebaseError } from "@/utils/firebaseError";
  * "como estou indo".
  *
  * "Evolução" só é exibida quando existem DOIS bimestres consecutivos
- * com nota lançada — sem isso, o dado seria inventado (seção 27 do
- * plano: nada de métrica artificial).
+ * com nota lançada — sem isso, o dado seria inventado (nada de métrica
+ * artificial).
  */
 export function MyPerformancePage() {
   const { student, loading: loadingStudent, error: studentError, reload: loadStudent } =

@@ -18,8 +18,7 @@ interface MobileMoreSheetProps {
 
 /**
  * Conteúdo do item "Mais" da Bottom Navigation — organizado por
- * categoria (Acadêmico/Organização/Conta), nunca uma lista crua (ver
- * "ITEM MAIS" no briefing). "Conta" reúne Configurações, alternância
+ * categoria (Acadêmico/Organização/Conta), nunca uma lista crua. "Conta" reúne Configurações, alternância
  * de tema e Sair, resolvidos aqui porque envolvem ações, não só
  * navegação.
  */

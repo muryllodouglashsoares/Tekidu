@@ -261,7 +261,7 @@ body {
 }
 /* Full-screen Modal em mobile (ver Modal.tsx) — entrada suave de baixo
    para cima, mesmo princípio de "animação explica uma mudança de
-   estado" do briefing. Zerada por `prefers-reduced-motion` como as
+   estado". Zerada por `prefers-reduced-motion` como as
    demais, via a regra global abaixo. */
 @keyframes tk-sheet-up {
   from {
@@ -295,7 +295,7 @@ body {
    `AccessibilityContext` (src/contexts/AccessibilityContext.tsx).
    Mantidas centralizadas aqui — sobrescrevendo tokens/comportamento
    globais, nunca duplicando regras por componente — para que "corrigir
-   uma vez" beneficie a aplicação inteira (item 28 do briefing).
+   uma vez" beneficie a aplicação inteira.
    ========================================================================== */
 
 /* ── Skip link ────────────────────────────────────────────────────────── */
@@ -322,8 +322,7 @@ body {
 
 /* ── Tamanho do texto ─────────────────────────────────────────────────
    Aplicado no `<html>` para escalar toda a aplicação (rem/em) de uma
-   vez, sem tocar em cada componente individualmente (item 5 do
-   briefing). 100% é o padrão (sem regra extra). */
+   vez, sem tocar em cada componente individualmente. 100% é o padrão (sem regra extra). */
 html[data-font-scale="110"] {
   font-size: 110%;
 }
@@ -384,7 +383,7 @@ html[data-high-contrast="true"] .border-line {
    Sublinhado explícito em links de conteúdo, sem afetar botões,
    navegação em pílula (Sidebar/Bottom Nav) ou cartões clicáveis, que
    dependem de outros indicadores (fundo, ícone, borda) para não virar
-   um sublinhado indiscriminado (item 7 do briefing). */
+   um sublinhado indiscriminado. */
 html[data-highlight-links="true"] main a[href]:not(.tk-no-underline) {
   text-decoration: underline;
   text-underline-offset: 3px;

@@ -1,7 +1,7 @@
 /**
  * Formato do documento em: conversations/{conversationId}
  *
- * PARTE 1 do plano de evolução — Mensageria/chat interno (professor ↔
+ * Mensageria/chat interno (professor ↔
  * aluno). Segue o mesmo espírito de modelagem já usado no restante do
  * projeto: nenhuma coleção nova guarda uma cópia paralela de dados que
  * já existem em `students`/`disciplines` — ela apenas REFERENCIA esses

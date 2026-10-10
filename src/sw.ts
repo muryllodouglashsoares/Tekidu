@@ -86,7 +86,7 @@ isSupported()
       const title = payload.notification?.title ?? "Tekidu";
       const body = payload.notification?.body ?? "";
 
-      // ETAPA 17 do prompt (controle de duplicidade): agrupa pelo
+      // Controle de duplicidade: agrupa pelo
       // `notificationId` quando existe — uma nova entrega do MESMO
       // evento (ex.: reconexão do navegador reenviando) substitui a
       // notificação do SO em vez de empilhar duas iguais.
@@ -109,7 +109,7 @@ isSupported()
   });
 
 // ---------------------------------------------------------------------
-// Clique na notificação (ETAPA 13 do prompt)
+// Clique na notificação
 // ---------------------------------------------------------------------
 self.addEventListener("notificationclick", (event: NotificationEvent) => {
   event.notification.close();
@@ -156,4 +156,4 @@ self.addEventListener("notificationclick", (event: NotificationEvent) => {
 // Firebase encapsula em try/catch internamente; o `.catch` acima cobre
 // falha de inicialização. Nenhum outro estado global é mantido aqui,
 // então uma mensagem malformada nunca deixa o SW em estado inconsistente
-// para a próxima (ETAPA 4 do prompt).
+// para a próxima.

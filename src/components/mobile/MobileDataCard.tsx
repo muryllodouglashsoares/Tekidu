@@ -18,7 +18,7 @@ interface MobileDataCardProps {
 
 /**
  * Equivalente em card de UMA linha de tabela desktop, para uso em
- * smartphones (ver "MOBILE DATA CARDS" no briefing). Não é uma
+ * smartphones. Não é uma
  * abstração de dados — só de apresentação: a página continua dona do
  * filtro/ordenação/paginação, só troca `<table>` por uma lista destes
  * cards abaixo do breakpoint `md`.

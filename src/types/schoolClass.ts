@@ -1,6 +1,5 @@
 /**
  * Turno em que a turma acontece.
- * Espelha os rótulos do protótipo do Figma (Turmas → coluna "Turno").
  */
 export type ClassShift = "manha" | "tarde" | "noite";
 
@@ -12,8 +11,7 @@ export const CLASS_SHIFT_LABEL: Record<ClassShift, string> = {
 
 /**
  * Situação da turma.
- * Espelha os rótulos do protótipo do Figma (Turmas → coluna "Status"):
- * "ATIVA" / "INATIVA".
+ * Rotulada como "ATIVA" / "INATIVA".
  */
 export type ClassStatus = "active" | "inactive";
 
@@ -24,8 +22,7 @@ export const CLASS_STATUS_LABEL: Record<ClassStatus, string> = {
 
 /**
  * Opções de série exibidas no formulário e no filtro "Série".
- * O protótipo do Figma não define a lista completa (os dados de exemplo
- * usam apenas "1º ano" a "3º ano") — esta lista cobre o Ensino
+ * Esta lista cobre o Ensino
  * Fundamental/Médio/Técnico de forma genérica. Caso a instituição use
  * uma nomenclatura diferente, este é o único lugar a ajustar.
  */

@@ -17,10 +17,9 @@ export const ATTENDANCE_RECORD_LABEL: Record<AttendanceRecordStatus, string> = {
  * Situação de frequência do aluno, derivada do percentual de presença.
  * Os limiares abaixo são o padrão do sistema (a LDB nº 9.394/96 usa
  * 75% como frequência mínima oficial; 90% aqui marca a faixa
- * "Regular" mais estrita usada no protótipo do Figma), usado somente
+ * "Regular" mais estrita da interface), usado somente
  * quando a instituição ainda não configurou uma frequência mínima
- * própria para o ano letivo — ver `types/academicSettings.ts` (item 6
- * do plano de consolidação V8). `calculateAttendanceStatus` aceita um
+ * própria para o ano letivo — ver `types/academicSettings.ts`. `calculateAttendanceStatus` aceita um
  * limiar explícito; não hardcode estes valores em páginas/componentes.
  */
 export type AttendanceStatus = "regular" | "attention" | "critical";
@@ -135,8 +134,7 @@ export function calculateAttendanceRate(present: number, total: number): number 
 
 /**
  * Situação derivada do percentual — ver nota sobre os limiares acima.
- * `minRate` é a frequência mínima configurada para o ano letivo (item
- * 6 do plano V8); quando omitido, cai para `ATTENDANCE_ATTENTION_THRESHOLD`.
+ * `minRate` é a frequência mínima configurada para o ano letivo; quando omitido, cai para `ATTENDANCE_ATTENTION_THRESHOLD`.
  * O limiar "Regular" (faixa mais estrita, sem risco algum) continua
  * fixo em `ATTENDANCE_REGULAR_THRESHOLD` — só o piso de reprovação por
  * falta é configurável, pois é o único valor com significado

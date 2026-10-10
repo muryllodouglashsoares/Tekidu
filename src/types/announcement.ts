@@ -50,7 +50,7 @@ export const ANNOUNCEMENT_AUDIENCE_LABELS: Record<AnnouncementAudience, string> 
 
 /**
  * Peso numérico da prioridade, usado apenas para ORDENAÇÃO (fixados >
- * urgentes > importantes > recentes — ver seção 16 do briefing). Não é
+ * urgentes > importantes > recentes). Não é
  * persistido: é derivado de `priority` em tempo de leitura pelo
  * service, então nunca pode ficar dessincronizado do valor real.
  */
@@ -62,7 +62,7 @@ export const ANNOUNCEMENT_PRIORITY_WEIGHT: Record<AnnouncementPriority, number> 
 
 /**
  * Categorias que um professor pode utilizar ao publicar um aviso
- * (seção 14 do briefing: "Teacher = comunicação acadêmica"). Um
+ * (Teacher = comunicação acadêmica). Um
  * professor nunca vê "administrative"/"urgent" no formulário — essas
  * permanecem exclusivas do admin, responsável pela comunicação
  * institucional. A mesma restrição é reforçada em `firestore.rules`.

@@ -83,8 +83,7 @@ export const ACADEMIC_SITUATION_LABEL: Record<AcademicSituation, string> = {
  * Limiar padrão de aprovação (escala 0–10). Este é apenas o valor
  * usado quando a instituição ainda não configurou uma regra própria
  * para o ano letivo (ver `types/academicSettings.ts` e
- * `services/academicSettings/academicSettingsService.ts`, item 6 do
- * plano de consolidação V8). TODAS as funções de cálculo abaixo
+ * `services/academicSettings/academicSettingsService.ts`). TODAS as funções de cálculo abaixo
  * aceitam thresholds explícitos como parâmetro opcional — nunca
  * hardcode `PASSING_THRESHOLD`/`RECOVERY_THRESHOLD` diretamente em uma
  * página/componente; sempre passe o valor vindo de `AcademicSettings`
@@ -111,7 +110,7 @@ export const DEFAULT_ACADEMIC_THRESHOLDS: AcademicThresholds = {
  *
  * Usada quando todas as avaliações do contexto têm o mesmo peso (o
  * caso mais comum). Para contextos com pesos diferentes por avaliação
- * (item 4 do plano V8 — "Avaliações mais completas"), use
+ * (avaliações ponderadas), use
  * `calculateWeightedAverage` abaixo.
  */
 export function calculateAverage(scores: (number | null)[]): number | null {
@@ -136,7 +135,7 @@ export interface WeightedScore {
  * `calculateAverage` quando todos os pesos são iguais a 1 (mesmo
  * resultado, mesma escala) — não é uma fórmula paralela, apenas a
  * generalização da média simples para o caso em que a arquitetura já
- * suporta peso por avaliação (item 4 do plano V8). Avaliações sem nota
+ * suporta peso por avaliação. Avaliações sem nota
  * lançada não entram nem no somatório nem no divisor (mesmo
  * comportamento de `calculateAverage`, que ignora `null`).
  */
@@ -194,14 +193,14 @@ export function deriveSituationFromAverage(
 }
 
 // ---------------------------------------------------------------------
-// RECUPERAÇÕES E SEGUNDA CHAMADA — camada de cálculo (item 19-21 do
-// briefing: "não crie fórmulas espalhadas pelos componentes"). Estas
+// RECUPERAÇÕES E SEGUNDA CHAMADA — camada de cálculo (sem fórmulas
+// espalhadas pelos componentes). Estas
 // são as ÚNICAS funções que sabem resolver uma nota efetiva a partir
 // de nota original + segunda chamada + recuperação; toda tela (Notas,
 // Boletim, Portal do Aluno/Responsável, Relatórios) deve passar por
 // `resolveStudentAcademicResult` em vez de reimplementar a regra.
 //
-// Princípio central (item 57 do briefing): uma recuperação ou segunda
+// Princípio central: uma recuperação ou segunda
 // chamada NUNCA apaga a evidência da avaliação original — o resultado
 // efetivo é sempre uma camada de cálculo por cima do histórico bruto.
 // ---------------------------------------------------------------------
@@ -210,7 +209,7 @@ export function deriveSituationFromAverage(
  * Resolve a nota CONSIDERADA de uma avaliação regular específica,
  * levando em conta uma eventual segunda chamada vinculada a ela.
  *
- * Regra (item 8 do briefing): se o aluno tem uma nota de segunda
+ * Regra: se o aluno tem uma nota de segunda
  * chamada lançada, ela É a nota considerada daquela avaliação — o
  * aluno realizou a prova na segunda chamada, não na data original.
  * A nota original permanece intacta no documento de `grades` (nunca é
@@ -228,9 +227,9 @@ export function calculateEffectiveAssessmentScore(
  * Resolve o resultado acadêmico final de um contexto (média do
  * bimestre/disciplina) considerando uma eventual recuperação.
  *
- * Regra inicial (item 9 do briefing — DECISÃO INSTITUCIONAL A
- * CONFIRMAR: a política abaixo, "maior valor prevalece", é a única
- * regra de recuperação descrita no briefing; substituir aqui, num
+ * Regra inicial (DECISÃO INSTITUCIONAL A
+ * CONFIRMAR: a política abaixo, "maior valor prevalece", é a regra de
+ * recuperação adotada; substituir aqui, num
  * único lugar, caso a instituição defina uma fórmula diferente, ex.:
  * média entre resultado original e recuperação):
  * resultado efetivo = maior valor entre o resultado original (média
@@ -248,7 +247,7 @@ export function calculateEffectiveAcademicResult(
   return Math.max(baseResult, recoveryScore);
 }
 
-/** Detalhamento de UMA avaliação regular para um aluno — nota original, segunda chamada (se houver) e nota efetiva resultante. Base da transparência exigida pelo item 18/20 do briefing ("o aluno não deve olhar para o boletim e descobrir que a nota mudou magicamente"). */
+/** Detalhamento de UMA avaliação regular para um aluno — nota original, segunda chamada (se houver) e nota efetiva resultante. Base da transparência exigida para que o aluno não olhe o boletim e descubra que a nota mudou sem explicação. */
 export interface StudentAssessmentBreakdown {
   assessment: Assessment;
   originalScore: number | null;
@@ -263,7 +262,7 @@ export interface StudentAcademicResolution {
   assessments: StudentAssessmentBreakdown[];
   /** Média ponderada das notas efetivas das avaliações regulares (antes de aplicar recuperação). */
   baseAverage: number | null;
-  /** Avaliações de recuperação encontradas no contexto (geralmente 0 ou 1 — item 16 do briefing). */
+  /** Avaliações de recuperação encontradas no contexto (geralmente 0 ou 1). */
   recoveryAssessments: Assessment[];
   /** Maior nota de recuperação lançada, ou `null` se nenhuma recuperação tem nota lançada ainda. */
   recoveryScore: number | null;
@@ -277,11 +276,11 @@ export interface StudentAcademicResolution {
  * a partir de TODAS as avaliações do contexto (regulares + especiais)
  * e do mapa de notas lançadas (`assessmentId -> nota`).
  *
- * Fonte única de verdade (item 49 do briefing): Notas, Boletim e
+ * Fonte única de verdade: Notas, Boletim e
  * Relatórios devem todos chamar esta função em vez de recalcular a
  * média/situação cada um a seu modo.
  *
- * "incomplete" (item 35): só considera avaliações REGULARES —
+ * "incomplete": só considera avaliações REGULARES —
  * avaliações especiais nunca são exigidas para o bimestre ser
  * considerado completo.
  */

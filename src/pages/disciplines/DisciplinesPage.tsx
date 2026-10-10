@@ -207,7 +207,7 @@ export function DisciplinesPage() {
       toast.success(`${data.name} foi cadastrada com sucesso.`);
     }
 
-    // Fase 5 — notifica o professor quando ele é vinculado (ou trocado)
+    // Notifica o professor quando ele é vinculado (ou trocado)
     // como responsável pela disciplina. Só dispara se o vínculo
     // realmente mudou, para não notificar em toda edição (ex.: só
     // mudar a carga horária) — mesmo cuidado de "só loga quando o

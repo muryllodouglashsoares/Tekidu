@@ -1,5 +1,5 @@
 /**
- * Link "Pular para o conteúdo principal" (item 11 do briefing) — só
+ * Link "Pular para o conteúdo principal" — só
  * fica visível quando recebe foco por teclado, permitindo pular
  * Header/Sidebar diretamente para `<main id="main-content">` (ver
  * AppShell).

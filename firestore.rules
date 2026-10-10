@@ -29,13 +29,13 @@ service cloud.firestore {
       return isSignedIn() && profile.active == true && profile.role == 'admin';
     }
 
-    // Tarefa 3 (Fase 1 pós-auditoria V8 — Portal do Aluno).
+    // Portal do Aluno: conta de aluno ativa.
     function isActiveStudent() {
       let profile = callerProfile();
       return isSignedIn() && profile.active == true && profile.role == 'student';
     }
 
-    // PARTE 1 do plano de evolução (Mensageria) — diferente de
+    // Mensageria — diferente de
     // `isActiveStaff()` (admin OU teacher), o chat é uma relação
     // exclusivamente professor↔aluno; admin não é participante. Esta
     // função isola "teacher" puro, sem incluir admin, para as regras
@@ -45,7 +45,7 @@ service cloud.firestore {
       return isSignedIn() && profile.active == true && profile.role == 'teacher';
     }
 
-    // FASE 2 do plano de evolução (Portal do Responsável) — responsável
+    // Portal do Responsável — responsável
     // NUNCA é staff nem dono de dado acadêmico próprio; ele só enxerga
     // o que `isOwnGuardianStudent`/as extensões abaixo liberarem
     // explicitamente para os alunos vinculados a ele.
@@ -86,7 +86,7 @@ service cloud.firestore {
     // N:N responsável↔aluno (`students.guardianUids`, ver
     // `types/student.ts`). `.get('guardianUids', [])` (em vez de
     // `.guardianUids` direto) é o que evita um erro de avaliação da
-    // regra para alunos cadastrados ANTES desta fase, que não têm o
+    // regra para alunos cadastrados ANTES do campo `guardianUids` existir, que não têm o
     // campo — mesmo cuidado aplicado em `isValidGuardianUidsChange`
     // abaixo. Mesma nota de "COMPATIBILIDADE COM QUERIES" de
     // `isOwnStudentRecord` se aplica aqui: só é seguro usar em cima de
@@ -105,8 +105,7 @@ service cloud.firestore {
         request.auth.uid in get(/databases/$(database)/documents/students/$(studentId)).data.get('guardianUids', []);
     }
 
-    // Item 13 do plano V8 ("Refinar permissões" — menor privilégio
-    // necessário): um professor só pode ESCREVER (criar/editar/excluir)
+    // Menor privilégio necessário: um professor só pode ESCREVER (criar/editar/excluir)
     // avaliações/notas/aulas/presença de uma disciplina da qual ele é o
     // `teacherId`. Um `get()` extra por escrita é aceitável aqui (não
     // afeta leitura, que é o caminho de maior volume) e evita confiar em
@@ -127,7 +126,7 @@ service cloud.firestore {
     }
 
     // -----------------------------------------------------------------
-    // Validação de payload (Fase 1 pós-auditoria V8, item "Tarefa 1").
+    // Validação de payload.
     //
     // As funções `canWriteAcademicRecord`/`isActiveStaff` acima decidem
     // QUEM pode escrever, mas nunca validaram O QUE está sendo escrito.
@@ -152,8 +151,8 @@ service cloud.firestore {
       return score == null || (score is number && score >= 0 && score <= 10);
     }
 
-    // `weight` só existe em avaliações criadas após o item 4 do plano
-    // V8 (retrocompatível — ver `types/assessment.ts`), por isso o
+    // `weight` só existe em avaliações criadas após a introdução de
+    // avaliações ponderadas (retrocompatível — ver `types/assessment.ts`), por isso o
     // campo é opcional no schema. Quando presente, precisa ser um
     // número maior que 0 (peso zero/negativo não faz sentido em uma
     // média ponderada — ver `effectiveWeight` em `types/assessment.ts`,
@@ -166,9 +165,8 @@ service cloud.firestore {
     }
 
     // -----------------------------------------------------------------
-    // RECUPERAÇÕES E SEGUNDA CHAMADA (item 30/31 do briefing:
-    // "não confiar apenas no frontend" / "segurança contra
-    // manipulação"). `assessmentService.validateSpecialAssessmentParent`
+    // RECUPERAÇÕES E SEGUNDA CHAMADA (não confiar apenas
+    // no frontend; segurança contra manipulação). `assessmentService.validateSpecialAssessmentParent`
     // já faz esta mesma checagem no cliente antes de gravar — aqui é a
     // barreira real, contra quem chama a API diretamente contornando o
     // app. `canWriteAcademicRecord` (acima) já garante que o
@@ -196,7 +194,7 @@ service cloud.firestore {
     // Uma avaliação regular (ou documento antigo sem `assessmentKind`)
     // não pode ter `parentAssessmentId`; uma avaliação especial
     // precisa apontar para uma avaliação REGULAR existente do mesmo
-    // contexto (edge cases 1-6 do item 55: pai inexistente, outra
+    // contexto (casos de borda: pai inexistente, outra
     // disciplina/turma/ano/bimestre, ou pai que também é especial).
     function isValidAssessmentParent() {
       let data = request.resource.data;
@@ -234,9 +232,9 @@ service cloud.firestore {
     // na justificativa (disciplina/turma/ano/bimestre) bate com o do
     // registro original — impede um aluno de montar uma justificativa
     // "avulsa" apontando para uma falta de outro aluno ou para uma
-    // presença (seção 4 do prompt: "não permitir que o aluno escolha
-    // uma presença como se fosse falta" / "não permitir justificar uma
-    // falta pertencente a outro aluno").
+    // presença (o aluno não pode escolher uma
+    // presença como se fosse falta, nem justificar uma falta
+    // pertencente a outro aluno).
     function isValidJustificationTarget(data) {
       let record = get(/databases/$(database)/documents/attendanceRecords/$(data.attendanceRecordId)).data;
       return record.studentId == data.studentId &&
@@ -249,7 +247,7 @@ service cloud.firestore {
 
     // Validação de payload (mesmo racional de `isValidScore`/
     // `isValidAttendanceStatus` acima): tamanho do motivo (10–1000
-    // caracteres, seção 10), documento com metadados não vazios,
+    // caracteres), documento com metadados não vazios,
     // `documentType` dentro do enum, e `expiresAt` dentro de uma janela
     // razoável ao redor de `JUSTIFICATION_WINDOW_DAYS` (2 dias) —
     // impede um aluno de gravar um prazo manipulado (nem "nunca expira"
@@ -286,7 +284,7 @@ service cloud.firestore {
     }
 
     // -----------------------------------------------------------------
-    // PARTE 1 do plano de evolução — Mensageria/chat interno
+    // Mensageria/chat interno
     // (professor ↔ aluno). Ver `types/conversation.ts`/`types/message.ts`
     // para o formato completo dos documentos.
     // -----------------------------------------------------------------
@@ -301,9 +299,8 @@ service cloud.firestore {
     // informado como participante — o mesmo `uid` que precisa constar
     // em `participantUids` (ver Rule de `create` abaixo).
     //
-    // POR QUE `disciplineId` É OBRIGATÓRIO NA CRIAÇÃO (nota de
-    // adaptação do modelo original do plano, que o descrevia como
-    // opcional): as Security Rules do Firestore não conseguem
+    // POR QUE `disciplineId` É OBRIGATÓRIO NA CRIAÇÃO (adaptação
+    // em relação a um modelo em que o campo seria opcional): as Security Rules do Firestore não conseguem
     // percorrer "existe ALGUMA disciplina que liga este professor a
     // este aluno" (não há laço/`some()` sobre uma coleção) — apenas
     // verificar um documento específico via `get()`. Exigir que o
@@ -335,7 +332,7 @@ service cloud.firestore {
         (isActiveStudent() && request.auth.uid == data.studentUid);
     }
 
-    // Limite de caracteres por mensagem (item "UX" do plano) — mesmo
+    // Limite de caracteres por mensagem — mesmo
     // valor de `MESSAGE_MAX_LENGTH` em `types/message.ts`. Rules não
     // importam TypeScript (mesma nota já registrada em
     // `isValidScore`/`isValidAttendanceStatus`): se o limite mudar lá,
@@ -380,7 +377,7 @@ service cloud.firestore {
     //       gravar o perfil correspondente aqui. Isso substitui o
     //       cadastro manual via Firebase Console que existia antes
     //       desta funcionalidade.
-    //   (b) `role == 'student'` (Tarefa 2, Fase 1 pós-auditoria V8):
+    //   (b) `role == 'student'`:
     //       restrito a staff ativo (admin OU professor — o mesmo que
     //       já pode criar `students/{studentId}`, ver mais abaixo).
     //       Sem este documento, o aluno autentica no Firebase mas cai
@@ -396,13 +393,13 @@ service cloud.firestore {
     //   (ver nota em `studentService.createStudent`), então UPDATE
     //   para `role == 'student'` não foi estendido nesta tarefa.
     // - DELETAR: nunca pelo cliente. Remover a CONTA de Authentication
-    //   exige Admin SDK (Cloud Function), fora do escopo desta fase;
+    //   exige Admin SDK (Cloud Function), fora do escopo do cliente;
     //   por isso "excluir" um professor na UI é uma desativação lógica
     //   (`active: false`), tratada como um `update`, não um `delete`.
     // ---------------------------------------------------------------
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isActiveStaff());
-      // FASE 2 do plano de evolução (Portal do Responsável): criar um
+      // Portal do Responsável: criar um
       // responsável segue a MESMA restrição de criar um professor —
       // só admin, nunca professor (`isActiveStaff()` cobriria os
       // dois) — porque um responsável ganha acesso de LEITURA a dados
@@ -413,7 +410,7 @@ service cloud.firestore {
       allow update: if isActiveAdmin() &&
         resource.data.role == 'teacher' &&
         request.resource.data.role == 'teacher';
-      // EXTENSÃO (Configurações — item 23 do briefing "Perfil"): permite
+      // EXTENSÃO (Configurações — "Perfil"): permite
       // que QUALQUER usuário autenticado atualize o PRÓPRIO nome de
       // exibição. Propositalmente estreita — `hasOnly(['name'])` garante
       // que role/active/email/uid/createdAt não podem ser alterados por
@@ -424,7 +421,7 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']) &&
         request.resource.data.name is string &&
         request.resource.data.name.size() > 0;
-      // EXTENSÃO (Etapa 9 — ciclo de vida de conta estilo SUAP): permite
+      // EXTENSÃO (ciclo de vida de conta estilo SUAP): permite
       // que o PRÓPRIO usuário conclua o primeiro acesso
       // (`userService.completeFirstAccess`, chamado por
       // `FirstAccessPage` DEPOIS que a senha definitiva já foi
@@ -453,7 +450,7 @@ service cloud.firestore {
     // `services/push/pushTokenService.ts`). O ID do documento é o
     // próprio caminho `users/{userId}/...`, então a regra abaixo já
     // restringe TUDO ao dono — nenhum usuário consegue ler, criar,
-    // atualizar ou apagar o token de outro (ETAPA 7 do prompt).
+    // atualizar ou apagar o token de outro.
     //
     // Nunca há uma regra de "list" irrestrita aqui: mesmo o próprio
     // dono só lista os PRÓPRIOS tokens (`pushTokensCollection(uid)`
@@ -481,7 +478,7 @@ service cloud.firestore {
     // ---------------------------------------------------------------
     // loginKeys/{loginKey}
     //
-    // Coleção auxiliar do ciclo de vida de conta estilo SUAP (Etapa 9).
+    // Coleção auxiliar do ciclo de vida de conta estilo SUAP.
     // Existe SÓ para resolver "matrícula/chave → e-mail" ANTES do
     // login — nesse momento o usuário ainda não está autenticado, então
     // nenhuma leitura normal de `users/{uid}` (que exige
@@ -523,13 +520,13 @@ service cloud.firestore {
     // ---------------------------------------------------------------
     // students/{studentId}
     //
-    // Cadastro (roster) de alunos, gerenciado nesta fase por admins e
-    // professores. Desde a Tarefa 2 (Fase 1 pós-auditoria V8), o
+    // Cadastro (roster) de alunos, gerenciado por admins e
+    // professores. O
     // documento pode carregar um campo `uid` que o liga à conta de
     // Authentication do próprio aluno (`uid: null` = aluno ainda sem
-    // conta vinculada, cadastrado antes desta mudança ou aguardando
+    // conta vinculada, cadastrado antes do vínculo existir ou aguardando
     // migração). Isso é o que permite a extensão de leitura abaixo,
-    // pré-requisito do Portal do Aluno (Tarefa 3).
+    // pré-requisito do Portal do Aluno.
     //
     // - LEITURA: admin/teacher com conta ativa continuam podendo ler
     //   qualquer aluno, como antes. Além disso, o PRÓPRIO aluno
@@ -537,15 +534,15 @@ service cloud.firestore {
     //   request.auth.uid`) — nunca o de outro aluno, e nunca uma
     //   listagem (uma query `where uid == ...` funciona porque o
     //   Firestore aplica esta regra por documento, mas o cliente
-    //   nunca deve fazer `list` sem esse filtro). FASE 2 do plano de
-    //   evolução: um responsável ATIVO com o próprio uid presente em
+    //   nunca deve fazer `list` sem esse filtro). Portal do Responsável:
+    //   um responsável ATIVO com o próprio uid presente em
     //   `guardianUids` também pode ler (`isOwnGuardianStudent`) —
     //   nunca o de um aluno ao qual não está vinculado.
     // - ESCRITA (criar/editar): admin/teacher com conta ativa podem
     //   escrever normalmente, EXCETO o campo `guardianUids`: só admin
     //   pode alterá-lo (ver `allow create`/`allow update` abaixo) — o
     //   vínculo responsável↔aluno é uma decisão exclusivamente
-    //   administrativa (Fase 2/3 do plano de evolução), nunca algo que
+    //   administrativa, nunca algo que
     //   um professor deveria conseguir mexer pela mesma tela que edita
     //   nome/turma/status do aluno. O aluno nunca escreve no próprio
     //   registro por aqui.
@@ -573,7 +570,7 @@ service cloud.firestore {
         resource.data.uid == request.auth.uid ||
         (isActiveGuardian() && request.auth.uid in resource.data.get('guardianUids', []))
       );
-      // FASE 2 do plano de evolução — `guardianUids` só pode ser
+      // `guardianUids` só pode ser
       // alterado por admin (nunca professor, mesmo que professor
       // continue podendo criar/editar o resto do cadastro do aluno —
       // ver `isChangingGuardianUids`). Dividido em `create`/`update`
@@ -590,7 +587,7 @@ service cloud.firestore {
     // ---------------------------------------------------------------
     // classes/{classId}
     //
-    // Cadastro de turmas (Fase 7). A quantidade de alunos exibida na
+    // Cadastro de turmas. A quantidade de alunos exibida na
     // listagem é calculada no cliente a partir de `students.turma`
     // (texto livre) — não há um campo de contagem armazenado aqui, e
     // por isso nenhuma regra adicional é necessária além da leitura
@@ -599,8 +596,7 @@ service cloud.firestore {
     // Mesma política de acesso de `students`: admin/teacher ativos
     // podem ler/criar/editar; apenas admin pode excluir.
     // FECHAMENTO DO GAP (item pendente registrado em
-    // `src/routes/AppRoutes.tsx`, "NOTA DE SEGURANÇA (a aprofundar na
-    // Etapa 7)"): até aqui, CREATE/UPDATE eram liberados para qualquer
+    // `src/routes/AppRoutes.tsx`, "NOTA DE SEGURANÇA"): CREATE/UPDATE eram liberados para qualquer
     // `isActiveStaff()` (admin OU teacher) — só a rota/UX
     // (`ProtectedRoute allowedRoles={["admin"]}` em "/turmas") impedia
     // um professor de editar turmas pela tela; nada impedia a mesma
@@ -631,7 +627,7 @@ service cloud.firestore {
     // Mesma política de acesso de `classes`: admin/teacher ativos podem
     // ler/criar/editar; apenas admin pode excluir.
     //
-    // LEITURA (Tarefa 3, Fase 1 pós-auditoria V8): também liberada para
+    // LEITURA: também liberada para
     // qualquer aluno com conta ativa. `disciplines` não é um dado
     // pessoal de nenhum aluno específico (é o catálogo de
     // disciplinas/turmas/professores da instituição, igual a um
@@ -644,7 +640,7 @@ service cloud.firestore {
     // Aluno) falharia ao chamar `getDisciplines()` para montar a lista
     // de disciplinas da turma do aluno.
     //
-    // RESTRIÇÃO (item 13 do plano V8): um professor NÃO pode alterar o
+    // RESTRIÇÃO: um professor NÃO pode alterar o
     // campo `teacherId` de uma disciplina. Sem isso, o escopo por
     // disciplina introduzido em assessments/grades/attendanceSessions/
     // attendanceRecords (`canWriteAcademicRecord`/`isOwnDiscipline`,
@@ -654,8 +650,7 @@ service cloud.firestore {
     // reatribuir o professor responsável normalmente.
     //
     // FECHAMENTO DO GAP (item pendente registrado em
-    // `src/routes/AppRoutes.tsx`, "NOTA DE SEGURANÇA (a aprofundar na
-    // Etapa 7)"): a trava de `teacherId` acima impedia só UM campo —
+    // `src/routes/AppRoutes.tsx`, "NOTA DE SEGURANÇA"): a trava de `teacherId` acima impedia só UM campo —
     // um professor ainda podia editar `classIds`/nome/qualquer outro
     // campo de uma disciplina da qual ele nem é o dono, via chamada
     // direta ao Firestore (a UI nunca expunha isso, mas a Rule
@@ -665,7 +660,7 @@ service cloud.firestore {
     // já restrita a `allowedRoles={["admin"]}`) — por isso CREATE e
     // UPDATE foram simplificados para `isActiveAdmin()`-only, e a
     // trava específica de `teacherId` acima deixou de ser necessária
-    // (mantida comentada só como histórico do item 13). Professor
+    // (mantida comentada só como histórico). Professor
     // mantém apenas LEITURA (necessária para os seletores de
     // disciplina em Notas/Frequência e para o Portal do Professor).
     // ---------------------------------------------------------------
@@ -686,20 +681,19 @@ service cloud.firestore {
     // turmas/disciplinas disponíveis nos filtros antes de saber qual
     // professor está "dono" de qual; restringir a leitura exigiria
     // primeiro adaptar a UI para filtrar os seletores por professor
-    // logado, o que não foi feito nesta etapa (ver relatório final,
-    // seção "Pendências").
+    // logado, o que ainda não foi feito.
     //
     // ESCRITA (criar/editar/excluir avaliação — inclui a permissão de
     // exclusão por professor, mantida do comportamento anterior):
     // restrita a admin OU ao professor responsável pela disciplina
-    // (`canWriteAcademicRecord`, item 13 do plano V8 — menor privilégio
+    // (`canWriteAcademicRecord` — menor privilégio
     // necessário). Antes, qualquer professor ativo podia escrever em
     // avaliações de QUALQUER disciplina, mesmo sem estar vinculado a
     // ela.
     // ---------------------------------------------------------------
-    // ESCOPO DE LEITURA (Etapa 7 do plano multi-role — fecha o item
-    // registrado como pendente: "assessments ainda libera leitura
-    // ampla para qualquer isActiveStaff()"). Até aqui, leitura era
+    // ESCOPO DE LEITURA (fecha a pendência de que
+    // "assessments" liberava leitura ampla para qualquer
+    // isActiveStaff()). Antes, a leitura era
     // `isActiveStaff()` sozinho: qualquer professor ativo podia LER
     // avaliações de disciplinas de OUTROS professores (a barreira real
     // era só na ESCRITA, via `canWriteAcademicRecord`). Agora: admin
@@ -714,7 +708,7 @@ service cloud.firestore {
     match /assessments/{assessmentId} {
       allow read: if isActiveAdmin() ||
         (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId));
-      // Validação de payload (Tarefa 1, pós-auditoria V8): `weight`,
+      // Validação de payload: `weight`,
       // quando presente, precisa ser > 0 — ver `isValidAssessmentWeight()`.
       // RECUPERAÇÕES E SEGUNDA CHAMADA: `assessmentKind`/
       // `parentAssessmentId`, quando presentes, precisam ser válidos e
@@ -738,12 +732,12 @@ service cloud.firestore {
     //
     // Notas individuais (aluno + avaliação). O ID do documento passou a
     // ser determinístico (`{studentId}_{assessmentId}` — ver
-    // `gradeService.buildGradeId`, item 3 do plano V8), o que não muda
+    // `gradeService.buildGradeId`), o que não muda
     // nada aqui: a política de segurança já era, e continua sendo,
     // resolvida a partir do perfil do requisitante e da disciplina
     // vinculada, nunca do ID do documento.
     //
-    // LEITURA: desde a Etapa 7, staff só lê a nota quando é ADMIN ou
+    // LEITURA: staff só lê a nota quando é ADMIN ou
     // quando é o professor DONO da disciplina daquela nota
     // (`isOwnDiscipline` — mesmo fechamento aplicado a `assessments`
     // acima). O PRÓPRIO aluno também pode ler as SUAS notas — nunca as
@@ -755,14 +749,14 @@ service cloud.firestore {
     // contexto inteiro (disciplina+turma+bimestre, que inclui outros
     // alunos) — ver `gradeService.getGradesByContext`.
     // ESCRITA: restrita a admin OU ao professor responsável pela
-    // disciplina da nota (item 13). O aluno nunca escreve em `grades`.
+    // disciplina da nota. O aluno nunca escreve em `grades`.
     // ---------------------------------------------------------------
     match /grades/{gradeId} {
       allow read: if isActiveAdmin() ||
         (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId)) ||
         isOwnStudentRecord(resource.data.studentId) ||
         isOwnGuardianStudent(resource.data.studentId);
-      // Validação de payload (Tarefa 1, pós-auditoria V8): `score`
+      // Validação de payload: `score`
       // precisa ser `null` (nota não lançada) ou um número em 0–10 —
       // ver `isValidScore()`. Antes desta validação, era possível
       // gravar `score: 15` ou `score: -3` diretamente via API,
@@ -780,14 +774,14 @@ service cloud.firestore {
     //
     // Uma aula (data letiva) de um contexto disciplina + turma +
     // bimestre — parte da funcionalidade de Frequência. Mesmo papel de
-    // `assessments` em Notas, e mesma política de acesso (item 13):
+    // `assessments` em Notas, e mesma política de acesso:
     // leitura por qualquer staff ativo; escrita restrita a admin OU ao
     // professor responsável pela disciplina.
     // ---------------------------------------------------------------
     // Uma aula (data letiva) de um contexto disciplina + turma +
     // bimestre — parte da funcionalidade de Frequência. Mesmo papel de
-    // `assessments` em Notas, e mesma política de acesso (item 13 +
-    // fechamento da Etapa 7): leitura por admin OU pelo professor
+    // `assessments` em Notas, e mesma política de acesso (menor privilégio +
+    // escopo por disciplina): leitura por admin OU pelo professor
     // dono da disciplina (`isOwnDiscipline`); escrita restrita a admin
     // OU ao professor responsável pela disciplina.
     // ---------------------------------------------------------------
@@ -805,12 +799,11 @@ service cloud.firestore {
     //
     // Presença individual (aluno + aula: "present"/"absent"). ID do
     // documento agora determinístico (`{studentId}_{sessionId}` — ver
-    // `attendanceRecordService.buildAttendanceRecordId`, item 3/8 do
-    // plano V8). Mesma política de `attendanceSessions` (item 13):
+    // `attendanceRecordService.buildAttendanceRecordId`). Mesma política de `attendanceSessions`:
     // leitura por qualquer staff ativo; escrita restrita a admin OU ao
     // professor responsável pela disciplina.
     //
-    // LEITURA (Etapa 7): mesmo fechamento de `assessments`/`grades`
+    // LEITURA: mesmo fechamento de `assessments`/`grades`
     // acima — admin lê tudo; professor só lê quando é dono da
     // disciplina do registro (`isOwnDiscipline`). O PRÓPRIO aluno pode
     // ler os SEUS registros de presença via `isOwnStudentRecord`, nunca
@@ -822,7 +815,7 @@ service cloud.firestore {
         (isActiveStaff() && isOwnDiscipline(resource.data.disciplineId)) ||
         isOwnStudentRecord(resource.data.studentId) ||
         isOwnGuardianStudent(resource.data.studentId);
-      // Validação de payload (Tarefa 1, pós-auditoria V8): `status`
+      // Validação de payload: `status`
       // precisa ser um dos valores do enum `AttendanceRecordStatus`
       // (`src/types/attendance.ts`) — ver `isValidAttendanceStatus()`.
       allow create: if canWriteAcademicRecord(request.resource.data.disciplineId) &&
@@ -853,9 +846,8 @@ service cloud.firestore {
     // disciplinas (`isOwnDiscipline`, mesmo fechamento de
     // `attendanceRecords`/`grades`); o PRÓPRIO aluno lê as SUAS
     // justificativas via `isOwnStudentRecord` — nunca as de outro
-    // aluno. Responsável NÃO tem acesso nesta primeira versão (fora do
-    // escopo do prompt — ver README/entrega para a limitação
-    // documentada).
+    // aluno. Responsável NÃO tem acesso a este módulo (limitação
+    // atual do projeto).
     //
     // CRIAÇÃO: exclusiva do PRÓPRIO aluno (`isOwnStudentRecord` sobre
     // `request.resource.data.studentId`) — nunca staff cria em nome de
@@ -878,10 +870,9 @@ service cloud.firestore {
     // `affectedKeys().hasOnly(...)` impede que a análise altere
     // qualquer campo além dos de revisão — `studentId`,
     // `attendanceRecordId`, `reason`, `documentData` etc. permanecem
-    // imutáveis após a criação (seção 17 do prompt: "não permitir que
-    // o aluno... substitua o documento de outra justificativa" — e,
-    // simetricamente, nem o staff altera o conteúdo original da
-    // solicitação).
+    // imutáveis após a criação (o aluno não pode substituir o documento
+    // de outra justificativa e, simetricamente, nem o staff altera o
+    // conteúdo original da solicitação).
     //
     // EXCLUSÃO: nunca por um CLIENTE (nem aluno, nem staff) — mesmo
     // espírito de `auditLogs`/`conversations/messages`. Isso NÃO
@@ -926,15 +917,13 @@ service cloud.firestore {
     // ---------------------------------------------------------------
     // academicSettings/{schoolYear}
     //
-    // Regras acadêmicas configuráveis por ano letivo (item 6/7 do
-    // plano V8 — média mínima, recuperação, frequência mínima,
+    // Regras acadêmicas configuráveis por ano letivo (média mínima, recuperação, frequência mínima,
     // quantidade de bimestres). O ID do documento é o próprio ano
     // letivo.
     //
     // LEITURA: qualquer staff ativo (admin/teacher) — Notas, Boletim e
     // Dashboard precisam ler a configuração para calcular situação
-    // acadêmica corretamente. Desde a Tarefa 3 (Fase 1 pós-auditoria
-    // V8), também liberada para aluno com conta ativa: assim como
+    // acadêmica corretamente. Também liberada para aluno com conta ativa: assim como
     // `disciplines`, este documento não é um dado pessoal de nenhum
     // aluno (é a régua institucional do ano letivo) — o Portal do
     // Aluno precisa dele para calcular a MESMA situação acadêmica que
@@ -952,7 +941,7 @@ service cloud.firestore {
     // ---------------------------------------------------------------
     // auditLogs/{logId}
     //
-    // Trilha de auditoria (item 14 do plano V8) para alteração de
+    // Trilha de auditoria para alteração de
     // nota, exclusão de avaliação e alteração de frequência — ver
     // `services/audit/auditService.ts`.
     //
@@ -974,7 +963,7 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------
-    // Notificações (Fase 5 do plano de evolução — ver
+    // Notificações (ver
     // `services/notifications/notificationService.ts` e
     // `types/notification.ts`).
     //
@@ -1003,13 +992,13 @@ service cloud.firestore {
     // ser notificado em tempo real de uma nova solicitação sem abrir
     // uma exceção mais ampla nesta Rule; a fila de pendentes na tela
     // de análise (`/frequencia/justificativas`) cumpre esse papel por
-    // enquanto — ver limitação documentada na entrega.
+    // enquanto — ver limitação documentada acima.
     //
     // ATUALIZAÇÃO: só o destinatário pode alterar sua notificação, e
     // apenas o campo `read` — impede que o destinatário reescreva
     // título/mensagem/link de uma notificação que já recebeu.
     //
-    // EXCLUSÃO: não exposta na UI desta etapa; mantida bloqueada, no
+    // EXCLUSÃO: não exposta na UI; mantida bloqueada, no
     // mesmo espírito de `auditLogs`, até haver necessidade real.
     // ---------------------------------------------------------------
     match /notifications/{notificationId} {
@@ -1039,13 +1028,13 @@ service cloud.firestore {
     // estudante também precisa poder criar seus próprios lembretes.
     //
     // Um usuário nunca consegue ler, editar ou excluir o evento de
-    // outro (item 10 do briefing) — tanto a query quanto o `get`
+    // outro — tanto a query quanto o `get`
     // direto são negados pela regra `resource.data.ownerId ==
     // request.auth.uid` quando o documento pertence a outra pessoa.
     //
     // `disciplineId`/`classId` (reservados para evolução futura — ver
     // `types/academicEvent.ts`) não são validados aqui ainda: nenhuma
-    // tela os preenche nesta fase, então não há payload real para
+    // tela os preenche hoje, então não há payload real para
     // restringir. Quando a associação Turma→Disciplina→Evento for
     // implementada de fato, esta regra deve ganhar a mesma checagem de
     // propriedade já usada em `isOwnDiscipline`.
@@ -1125,8 +1114,7 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------
-    // conversations/{conversationId} — Mensageria (Parte 1 do plano
-    // de evolução).
+    // conversations/{conversationId} — Mensageria.
     //
     // LEITURA: só os DOIS participantes (`request.auth.uid in
     // participantUids`) — nunca uma listagem ampla; toda query do

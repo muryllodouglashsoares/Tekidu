@@ -6,7 +6,7 @@ import type { StudentBoletim } from "@/services/boletim/boletimService";
 import { ACADEMIC_SITUATION_LABEL } from "@/types/grade";
 import { ASSESSMENT_TERM_LABEL, type AssessmentTerm } from "@/types/assessment";
 
-/** Contexto/filtros atuais da tela de Relatórios (item 10 do briefing), já resolvidos pela página. */
+/** Contexto/filtros atuais da tela de Relatórios, já resolvidos pela página. */
 export interface ReportsExportContext {
   yearFilter: string;
   className?: string;

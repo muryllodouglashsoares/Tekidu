@@ -40,8 +40,7 @@ interface UsePWAInstallResult {
 }
 
 /**
- * Centraliza o ciclo de vida de instalação da PWA (ETAPA 10/11 do
- * prompt): lê o evento `beforeinstallprompt` já capturado pelo script
+ * Centraliza o ciclo de vida de instalação da PWA: lê o evento `beforeinstallprompt` já capturado pelo script
  * inline em `index.html` (que roda antes do bundle React, evitando
  * perder o evento numa corrida contra o carregamento do app), expõe
  * uma função para disparar o prompt quando o usuário decidir instalar,
@@ -96,7 +95,7 @@ export function usePWAInstall(): UsePWAInstallResult {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     // O evento só pode ser usado uma vez — descarta após o uso para
-    // evitar tentativas de reaproveitá-lo (ETAPA 10: evitar múltiplas
+    // evitar tentativas de reaproveitá-lo (evita múltiplas
     // instalações/prompts duplicados).
     window.__tkInstallPrompt = null;
     setDeferredPrompt(null);

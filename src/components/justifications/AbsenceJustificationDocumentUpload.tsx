@@ -15,9 +15,8 @@ interface AbsenceJustificationDocumentUploadProps {
 }
 
 /**
- * Área de upload do documento comprobatório (seção 9/10 do prompt).
- * Aceita apenas UM arquivo por vez (primeira versão — seção 9: "não
- * permitir múltiplos arquivos, salvo se a arquitetura justificar").
+ * Área de upload do documento comprobatório.
+ * Aceita apenas UM arquivo por vez.
  * Valida formato/tamanho no momento da seleção (`validateJustificationDocument`,
  * reaproveitada também pelo upload real — nunca confiar só nesta
  * checagem de UI, a Storage Rule repete a mesma validação no servidor).

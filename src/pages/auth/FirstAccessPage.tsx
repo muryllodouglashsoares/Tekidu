@@ -29,7 +29,7 @@ function mapUpdatePasswordError(error: unknown): string {
 }
 
 /**
- * Fase 2 do ciclo de vida de conta estilo SUAP (Etapa 9): tela
+ * Primeiro acesso no ciclo de vida de conta estilo SUAP: tela
  * obrigatória — via `ProtectedRoute`, que redireciona para cá sempre
  * que `profile.mustSetPassword === true`, independente da URL que o
  * usuário tentar acessar — onde professor/aluno troca a senha

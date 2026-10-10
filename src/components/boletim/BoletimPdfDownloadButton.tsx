@@ -12,7 +12,7 @@ import { describeFirebaseError } from "@/utils/firebaseError";
 
 interface BoletimPdfDownloadButtonProps {
   student: Student;
-  /** ID da turma — usado para reconsultar os bimestres no relatório anual (item 6 do briefing). */
+  /** ID da turma — usado para reconsultar os bimestres no relatório anual. */
   classId: string;
   /** `null` no Portal do Aluno (`MyBoletimPage`) — ver nota em `BoletimPDFStudentInfo`. */
   schoolClass: SchoolClass | null;
@@ -32,7 +32,7 @@ function slugify(value: string): string {
 }
 
 /**
- * Botão "Baixar boletim em PDF" (itens 16–17 do briefing). Ao ficar
+ * Botão "Baixar boletim em PDF". Ao ficar
  * visível, prepara os dados do PDF (`getStudentBoletimPdfData`) — para
  * o período "annual" isso busca os quatro bimestres em paralelo; para
  * um bimestre específico é praticamente instantâneo, pois reaproveita
@@ -42,8 +42,8 @@ function slugify(value: string): string {
  *
  * Usado tanto em `BoletimPage` (staff) quanto em `MyBoletimPage`
  * (aluno) — em ambos os casos o `student`/`boletim` já chegam
- * filtrados pelas mesmas regras de permissão da tela (item 18 do
- * briefing: o PDF nunca faz nenhuma consulta administrativa extra).
+ * filtrados pelas mesmas regras de permissão da tela (o PDF nunca faz nenhuma
+ * consulta administrativa extra).
  */
 export function BoletimPdfDownloadButton({
   student,

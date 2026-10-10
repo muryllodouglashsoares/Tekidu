@@ -75,22 +75,21 @@ componentes) automaticamente.
 ## Landing Page (`/`)
 
 A Landing Page (`src/pages/LandingPage.tsx` + `src/pages/landing/*`)
-implementa o design aprovado no Figma ("Update landing page design")
-usando os mesmos tokens acima — por isso ela já respeita Light/Dark
+segue o design definido para a página de marketing, usando os mesmos tokens acima — por isso ela já respeita Light/Dark
 Mode automaticamente, sem nenhum sistema de tema próprio.
 
 Duas particularidades, só dela:
 
 - **Verde como CTA principal**: diferente do resto do app (onde azul é
   a cor de ação), na Landing o botão principal ("Entrar na
-  plataforma") e os destaques de headline são verdes — assim está no
-  Figma, reforçando a narrativa de "evolução" da página de marketing.
+  plataforma") e os destaques de headline são verdes — decisão de
+  design, reforçando a narrativa de "evolução" da página de marketing.
 - **`violet` (roxo)**: token novo, usado *apenas* na seção de perfis
   (`PersonasSection.tsx`) para diferenciar o card "Professor" dos
   outros dois (Administrador = azul, Aluno = verde). Não deve
   vazar para o resto da aplicação.
 
 Fonte serif (`font-serif`, Playfair Display) também é exclusiva da
-Landing Page, para reproduzir a tipografia editorial do Figma — o
+Landing Page, para dar um tom editorial à página — o
 resto da plataforma continua 100% Inter.
 

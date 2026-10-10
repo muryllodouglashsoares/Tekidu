@@ -13,15 +13,14 @@ import type { SchoolClass } from "@/types/schoolClass";
 import type { Discipline } from "@/types/discipline";
 
 /**
- * Item 1 + 11 + 12 do plano de consolidação V8 ("fonte única de
- * verdade acadêmica" + "Dashboard como central de ação" + "sistema de
- * alertas acadêmicos").
+ * Fonte única de verdade acadêmica + Dashboard como central de ação +
+ * sistema de alertas acadêmicos.
  *
  * ANTES desta função, o Dashboard lia `student.average`/`student.status`
  * — campos digitados manualmente no cadastro do aluno
  * (`StudentFormModal`), sem nenhuma relação com as notas realmente
  * lançadas em `grades`. Isso violava diretamente o princípio central
- * do plano ("o Dashboard não deve possuir uma média independente").
+ * do módulo (o Dashboard não deve possuir uma média independente).
  *
  * `getAcademicOverview` é a ÚNICA função que calcula a média/situação
  * consolidada de um aluno para fins de visão geral — reaproveitando as
@@ -166,7 +165,7 @@ function buildPendencies(args: {
   } = args;
   const pendencies: AcademicPendency[] = [];
 
-  // 🔴 Alunos abaixo da média (item 12 — "Nota: aluno abaixo da média")
+  // 🔴 Alunos abaixo da média ("Nota: aluno abaixo da média")
   const belowAverage = studentOverviews.filter((o) => o.situation === "failed" || o.situation === "recovery");
   if (belowAverage.length > 0) {
     pendencies.push({
@@ -178,7 +177,7 @@ function buildPendencies(args: {
     });
   }
 
-  // 🟠 Alunos com frequência abaixo do mínimo (item 12 — "Frequência")
+  // 🟠 Alunos com frequência abaixo do mínimo ("Frequência")
   const lowAttendance = studentOverviews.filter(
     (o) => o.attendanceRate !== null && o.attendanceRate < args.minAttendanceRate
   );
@@ -192,7 +191,7 @@ function buildPendencies(args: {
     });
   }
 
-  // 🟡 Avaliações incompletas / notas não lançadas (item 12 — "Lançamento")
+  // 🟡 Avaliações incompletas / notas não lançadas ("Lançamento")
   const gradedByAssessment = new Map<string, number>();
   for (const g of grades) {
     if (g.score === null) continue;
@@ -236,7 +235,7 @@ function buildPendencies(args: {
 
   // 🟡 Aulas com frequência incompleta (mesma ideia de "avaliações
   // incompletas" acima, mas para `attendanceSessions`/`attendanceRecords`
-  // — item 12 do plano V8 também cobre "lançamento" de frequência, não
+  // — o alerta também cobre o lançamento de frequência, não
   // só de notas. Uma aula (`AttendanceSession`) está incompleta quando
   // nem todos os alunos matriculados na turma naquele momento têm um
   // `AttendanceRecord` (presente/ausente) lançado para ela.
@@ -268,7 +267,7 @@ function buildPendencies(args: {
     });
   }
 
-  // 🟡 Dados incompletos: aluno sem turma, disciplina sem professor (item 12)
+  // 🟡 Dados incompletos: aluno sem turma, disciplina sem professor
   if (studentsWithoutClass.length > 0) {
     pendencies.push({
       id: "students-without-class",

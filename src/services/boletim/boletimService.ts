@@ -26,9 +26,9 @@ export interface DisciplineBoletimRow {
   situation: AcademicSituation;
   attendanceRate: number | null;
   attendanceStatus: AttendanceStatus | null;
-  /** Média antes de aplicar a recuperação — só difere de `average` quando `recoveryApplied` é `true` (item 18/24 do briefing: transparência). */
+  /** Média antes de aplicar a recuperação — só difere de `average` quando `recoveryApplied` é `true` (transparência). */
   baseAverage: number | null;
-  /** `true` quando existe uma recuperação com nota lançada neste contexto — usada para exibir o indicativo discreto "Recuperação realizada" (item 24). */
+  /** `true` quando existe uma recuperação com nota lançada neste contexto — usada para exibir o indicativo discreto "Recuperação realizada". */
   recoveryApplied: boolean;
 }
 
@@ -71,8 +71,7 @@ function deriveOverallStatus(
  * Reaproveita integralmente os serviços já existentes de Notas
  * (`gradeService`) e Frequência (`attendanceRecordService`) — o
  * boletim não tem sua própria coleção de notas/presença, apenas
- * consolida o que já é lançado nessas duas telas (item 15 do
- * briefing). Sem backend próprio: os dados vêm de `grades` e
+ * consolida o que já é lançado nessas duas telas. Sem backend próprio: os dados vêm de `grades` e
  * `attendanceRecords`, filtrados no cliente pelo aluno.
  */
 export async function getStudentBoletim(
@@ -84,7 +83,7 @@ export async function getStudentBoletim(
   const terms = period === "annual" ? ALL_ASSESSMENT_TERMS : [period];
 
   // Regras acadêmicas (média mínima, recuperação, frequência mínima) —
-  // busca a configuração do ano letivo (item 6/7 do plano V8) em vez
+  // busca a configuração do ano letivo em vez
   // de usar os limiares fixos diretamente; cai para o padrão do
   // sistema quando o ano ainda não foi configurado (ver
   // `academicSettingsService.getAcademicSettings`).
@@ -106,11 +105,11 @@ export async function getStudentBoletim(
       // `studentId` é passado adiante para estreitar a query já no
       // servidor (em vez de buscar o contexto inteiro e filtrar aqui em
       // memória) — mesmo resultado final de antes, mas agora também é
-      // o que torna esta função utilizável por um aluno autenticado
-      // (Tarefa 3, Fase 1 pós-auditoria V8): ver a nota de parâmetro em
+      // o que torna esta função utilizável por um aluno autenticado:
+      // ver a nota de parâmetro em
       // `gradeService.getGradesByContext`/`attendanceRecordService.getRecordsByContext`.
       //
-      // TRY/CATCH (Etapa 7): desde o escopo de leitura por disciplina em
+      // TRY/CATCH: desde o escopo de leitura por disciplina em
       // `firestore.rules` (`isOwnDiscipline`), um PROFESSOR consultando o
       // boletim de um aluno de uma turma onde ele só leciona ALGUMAS
       // disciplinas recebe "permissão negada" para as disciplinas dos
@@ -120,7 +119,7 @@ export async function getStudentBoletim(
       // disciplinas que o professor TEM permissão de ver. Em vez disso,
       // a disciplina sem permissão aparece como "sem dados" — o mesmo
       // estado vazio já usado para uma disciplina sem lançamentos ainda
-      // (regra 3 do plano: nada de erro onde um estado vazio já existe).
+      // (nada de erro onde um estado vazio já existe).
       // Para admin/aluno (dono do próprio registro), isso nunca ocorre.
       let studentGrades: import("@/types/grade").Grade[] = [];
       let studentRecords: import("@/types/attendance").AttendanceRecord[] = [];
@@ -133,7 +132,7 @@ export async function getStudentBoletim(
           Promise.all(
             terms.map((term) => getRecordsByContext(discipline.id, classId, schoolYear, term, studentId))
           ),
-          // Item 22 do briefing ("atenção ao boletim atual"): antes, o
+          // Antes, o
           // Boletim só buscava `grades` e tirava a média aritmética
           // simples (`calculateAverage`), ignorando peso por avaliação
           // — diferente da tela de Notas, que já usa
@@ -168,7 +167,7 @@ export async function getStudentBoletim(
 
       // A variante "incomplete" só faz sentido dentro de UM bimestre
       // específico (depende de quantas avaliações existem NAQUELE
-      // bimestre — item 35). No período "Anual" (`terms.length > 1`),
+      // bimestre). No período "Anual" (`terms.length > 1`),
       // preserva o comportamento já existente antes desta
       // funcionalidade: classifica direto pela média consolidada,
       // sem a variante "incomplete" (ver nota histórica original desta
@@ -210,7 +209,7 @@ export async function getStudentBoletim(
   };
 }
 
-/** Um ponto da série de evolução de um aluno (item 18 do briefing). */
+/** Um ponto da série de evolução de um aluno. */
 export interface StudentDevelopmentPoint {
   term: AssessmentTerm;
   average: number | null;
@@ -220,7 +219,7 @@ export interface StudentDevelopmentPoint {
 /**
  * Monta a série de evolução do aluno ao longo dos 4 bimestres do ano
  * letivo — usada pelo gráfico individual do Relatório de Desenvolvimento
- * (item 18) e pelo gráfico na página do aluno (item 19). Reaproveita
+ * e pelo gráfico na página do aluno. Reaproveita
  * `getStudentBoletim` uma vez por bimestre (mesma fonte de verdade do
  * Boletim, sem duplicar o cálculo de média/frequência em outro lugar) —
  * as 4 chamadas rodam em paralelo, então o custo é o mesmo de buscar um

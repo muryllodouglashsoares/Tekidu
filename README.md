@@ -13,11 +13,11 @@ Plataforma de gestão e acompanhamento acadêmico com experiências dedicadas pa
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript)
 ![Firebase](https://img.shields.io/badge/Firebase-11-FFCA28?style=for-the-badge&logo=firebase)
 ![Tests](https://img.shields.io/badge/Tests-Vitest-6E9F18?style=for-the-badge&logo=vitest)
-[![Demo](https://img.shields.io/badge/demo-ifconnect.pages.dev-2ea44f?style=for-the-badge&logo=cloudflare)](https://ifconnect.pages.dev)
+[![Demo](https://img.shields.io/badge/demo-tekidu.pages.dev-2ea44f?style=for-the-badge&logo=cloudflare)](https://tekidu.pages.dev)
 
 <br />
 
-<a href="#sobre">Sobre</a> • <a href="#principais-funcionalidades">Funcionalidades</a> • <a href="#capturas-de-tela">Capturas de tela</a> • <a href="#diferenciais-técnicos">Diferenciais</a> • <a href="#tecnologias">Tecnologias</a> • <a href="#instalação">Instalação</a> • <a href="https://ifconnect.pages.dev">Demo</a>
+<a href="#sobre">Sobre</a> • <a href="#principais-funcionalidades">Funcionalidades</a> • <a href="#capturas-de-tela">Capturas de tela</a> • <a href="#diferenciais-técnicos">Diferenciais</a> • <a href="#tecnologias">Tecnologias</a> • <a href="#instalação">Instalação</a> • <a href="https://tekidu.pages.dev">Demo</a>
 
 </div>
 
@@ -186,13 +186,13 @@ npm run dev
 - [ ] Monitoramento de erros em produção
 - [ ] CI/CD
 - [ ] Testes de componentes de interface
-- [ ] Melhorias de acessibilidade
+- [ ] Auditoria de acessibilidade (axe/Lighthouse, leitor de tela e `eslint-plugin-jsx-a11y`)
 
 ---
 
 ## Demonstração
 
-🚀 **[Acesse a demonstração da Tekidu](https://ifconnect.pages.dev)**
+🚀 **[Acesse a demonstração da Tekidu](https://tekidu.pages.dev)**
 
 ---
 

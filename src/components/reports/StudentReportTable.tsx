@@ -10,14 +10,13 @@ interface StudentReportTableProps {
 }
 
 /**
- * Tabela "Turma → Alunos" dos Relatórios (item 15 do briefing): nome,
+ * Tabela "Turma → Alunos" dos Relatórios: nome,
  * matrícula, média, frequência e um indicativo simples de
  * desenvolvimento (a partir da situação de frequência já calculada em
  * `types/attendance`, mesmo padrão usado em Frequência/Boletim). Clicar
  * na linha ou em "Ver relatório" abre o relatório individual do aluno.
  *
- * Em mobile, a mesma fonte de dados vira cards (ver "MOBILE DATA
- * CARDS" no briefing) em vez de uma tabela de 5 colunas espremida.
+ * Em mobile, a mesma fonte de dados vira cards em vez de uma tabela de 5 colunas espremida.
  */
 export function StudentReportTable({ summaries, onSelectStudent }: StudentReportTableProps) {
   const isMobile = useIsMobile();

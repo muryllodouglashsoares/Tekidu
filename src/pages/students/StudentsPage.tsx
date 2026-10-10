@@ -251,7 +251,7 @@ export function StudentsPage() {
 
         {/* Filtros — em telas ≥ lg, dois Selects lado a lado (comportamento
             original). Em mobile, uma barra horizontal comprimida com dois
-            selects fica apertada (ver "FILTROS MOBILE" no briefing): um
+            selects fica apertada: um
             único botão "Filtros" abre uma Bottom Sheet com os mesmos
             controles em coluna. */}
         <div className="hidden flex-wrap items-center gap-3 lg:flex lg:shrink-0">
@@ -401,8 +401,7 @@ export function StudentsPage() {
           )}
         </Card>
       ) : isMobile ? (
-        // Cards no lugar de tabela em mobile (ver "MOBILE DATA CARDS" no
-        // briefing) — mesma fonte de dados/ordenação/paginação da tabela
+        // Cards no lugar de tabela em mobile — mesma fonte de dados/ordenação/paginação da tabela
         // desktop, só muda a apresentação. Sem colunas de Matrícula/Turma
         // visíveis simultaneamente: elas viram chips secundários dentro
         // de cada card (progressive disclosure).

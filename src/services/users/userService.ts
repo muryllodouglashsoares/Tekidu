@@ -59,7 +59,7 @@ export async function getAllTeachers(): Promise<UserProfile[]> {
 /**
  * Lista os admins com conta ativa, exceto (opcionalmente) um deles —
  * usado para notificar "os outros admins" quando um evento
- * administrativo acontece (Fase 5 — "novo usuário"), sem notificar o
+ * administrativo acontece, sem notificar o
  * próprio autor da ação.
  */
 export async function getActiveAdmins(excludeUid?: string): Promise<UserProfile[]> {
@@ -82,13 +82,13 @@ export interface TeacherCreateInput {
  * em `lib/firebase.ts`) e o documento correspondente em `users/{uid}`
  * com `role: "teacher"`.
  *
- * CICLO DE VIDA DE CONTA ESTILO SUAP (Etapa 9, Decisão 2 = Opção B(i)):
+ * CICLO DE VIDA DE CONTA ESTILO SUAP:
  * o admin NÃO digita mais senha nenhuma. O sistema gera uma senha
  * temporária (`generateTempPassword`) e, como o professor não tem
  * matrícula, uma chave de primeiro acesso de 8 caracteres
- * (`generateLoginKey`, Decisão 1 = opção "a"). Grava:
+ * (`generateLoginKey`). Grava:
  * - `users/{uid}` com `mustSetPassword: true`, `loginKey` e o prazo de
- *   validade (`tempCredentialsExpireAt`, Decisão 3 = 48h);
+ *   validade (`tempCredentialsExpireAt`, 48h);
  * - `loginKeys/{loginKey}` — coleção auxiliar que existe SÓ para
  *   permitir resolver "chave → e-mail" ANTES do login (usuário ainda
  *   não está autenticado nesse momento). Usar o valor da própria chave
@@ -105,18 +105,17 @@ export interface TeacherCreateInput {
  * `setDoc` abaixo é rejeitada pelo servidor mesmo com a conta de
  * Authentication já criada.
  *
- * Registra um evento de auditoria (Tarefa 4, Fase 1 pós-auditoria V8):
+ * Registra um evento de auditoria:
  * antes desta mudança, criar um professor (e, com isso, uma conta de
  * acesso ao sistema) não deixava nenhum rastro. Não há "antes" (o
  * documento não existia) — `before: null`. Segue o comportamento
  * "fire-and-forget" já documentado em `auditService.ts`.
  *
  * SE O E-MAIL FALHAR: como o envio acontece ANTES de criar qualquer
- * coisa no Firebase (ver comentário no corpo da função, correção pós-
- * primeira versão da Etapa 9), uma falha aqui não deixa NENHUM rastro
+ * coisa no Firebase (ver comentário no corpo da função), uma falha aqui não deixa NENHUM rastro
  * — nem conta de Authentication, nem `users/{uid}`, nem
  * `loginKeys/{loginKey}`. O erro é relançado para a UI avisar o admin
- * explicitamente (regra "sem dado fake" da Etapa 9), e uma nova
+ * explicitamente (regra "sem dado fake"), e uma nova
  * tentativa de cadastro com o mesmo e-mail funciona normalmente assim
  * que a causa do erro (EmailJS não configurada, limite mensal, rede) for
  * corrigida — sem precisar limpar nada manualmente antes.
@@ -144,8 +143,7 @@ export async function createTeacher(
   const loginKey = generateLoginKey();
   const expiresAt = Timestamp.fromMillis(Date.now() + TEMP_CREDENTIALS_TTL_MS);
 
-  // ORDEM PROPOSITAL — corrige inconsistência encontrada após a
-  // primeira versão da Etapa 9: o e-mail é enviado ANTES de criar
+  // ORDEM PROPOSITAL: o e-mail é enviado ANTES de criar
   // qualquer coisa no Firebase (Authentication, `users/{uid}`,
   // `loginKeys/{loginKey}`). Antes, a conta e os documentos eram
   // criados primeiro e o e-mail por último — se o envio falhasse (ex.:
@@ -206,7 +204,7 @@ export async function createTeacher(
     after: `${data.name} <${email}>`,
   });
 
-  // Fase 5 — notifica os DEMAIS admins ativos ("novo usuário"). Fire-
+  // Notifica os DEMAIS admins ativos ("novo usuário"). Fire-
   // and-forget (ver notificationService): o cadastro do professor já
   // está concluído nesse ponto, independente do resultado disto.
   getActiveAdmins(actor.id)
@@ -235,7 +233,7 @@ export async function createTeacher(
  * sobre a própria conta de Authentication do professor (reautenticação),
  * o que o SDK do cliente não permite fazer em nome de outro usuário.
  *
- * Registra um evento de auditoria (Tarefa 4, Fase 1 pós-auditoria V8)
+ * Registra um evento de auditoria
  * SOMENTE quando `active` de fato muda — uma edição que só altera o
  * nome não gera log de ativação/desativação. Busca o estado ANTERIOR
  * (`getDoc`) antes de aplicar a atualização, para comparar contra o
@@ -270,7 +268,7 @@ export async function updateTeacherProfile(
 
 /**
  * Auto-atualização do nome de exibição, usada pela aba "Perfil" de
- * Configurações (item 23 do briefing). Diferente de
+ * Configurações. Diferente de
  * `updateTeacherProfile` (que só um admin pode chamar, e só para
  * professores), esta função é para o PRÓPRIO usuário editar o
  * PRÓPRIO nome — por isso grava apenas `name`, nunca `role`/`active`.
@@ -282,8 +280,8 @@ export async function updateOwnName(uid: string, name: string): Promise<void> {
 }
 
 /**
- * Resultado da resolução de matrícula/chave → e-mail (Fase 2 do ciclo
- * de vida de conta, Etapa 9). `loginKeys/{loginKey}` é lido de forma
+ * Resultado da resolução de matrícula/chave → e-mail (primeiro acesso no ciclo
+ * de vida de conta). `loginKeys/{loginKey}` é lido de forma
  * ANÔNIMA (usuário ainda não autenticado) — a Security Rule permite um
  * `get` estreito por ID de documento, nunca um `list` (ver
  * `firestore.rules`).
@@ -292,7 +290,7 @@ export interface ResolvedLoginKey {
   uid: string;
   email: string;
   role: "teacher" | "student";
-  /** true quando a credencial passou do prazo de validade (Decisão 3). */
+  /** true quando a credencial passou do prazo de validade. */
   expired: boolean;
 }
 
@@ -322,7 +320,7 @@ export async function resolveLoginKey(loginKey: string): Promise<ResolvedLoginKe
 }
 
 /**
- * Conclui o primeiro acesso (Fase 2 → Fase 3): apaga a chave de uso
+ * Conclui o primeiro acesso (primeiro acesso → login normal): apaga a chave de uso
  * único (`loginKeys/{loginKey}`) e marca `users/{uid}` como
  * `mustSetPassword: false`. Chamado por `FirstAccessPage` DEPOIS que
  * `updatePassword` (Firebase Authentication) já foi aplicado com

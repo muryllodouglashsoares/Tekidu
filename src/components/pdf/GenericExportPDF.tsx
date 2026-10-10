@@ -166,8 +166,7 @@ export interface GenericExportPdfProps {
 }
 
 /**
- * Documento PDF genérico reutilizado por Relatórios e Frequência (item
- * 7 do briefing: uma camada de exportação reutilizável em vez de um
+ * Documento PDF genérico reutilizado por Relatórios e Frequência (uma camada de exportação reutilizável em vez de um
  * documento por tela). Reaproveita o cabeçalho institucional e a
  * paleta já usados no PDF do Boletim (`BoletimPDFHeader`/`boletimPdfTheme`)
  * para a exportação parecer uma extensão natural da Tekidu — nenhum

@@ -14,8 +14,7 @@ import {
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 /**
- * Portal do Responsável — "Frequência do filho" (Fase 3 do plano de
- * evolução). Mesma estrutura de `MyAttendancePage` (Portal do Aluno):
+ * Portal do Responsável — "Frequência do filho". Mesma estrutura de `MyAttendancePage` (Portal do Aluno):
  * reaproveita `studentAttendanceOverviewService.getStudentAttendanceOverview`
  * e o painel de apresentação `AttendanceOverviewPanel` — a única
  * diferença é a resolução de QUAL aluno (`useGuardianChildren` +

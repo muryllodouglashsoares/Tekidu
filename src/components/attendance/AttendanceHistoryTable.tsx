@@ -15,11 +15,11 @@ interface AttendanceHistoryTableProps {
 }
 
 /**
- * Reproduz a tabela da aba "Histórico" do protótipo do Figma: uma linha
+ * Tabela da aba "Histórico": uma linha
  * por aula registrada (não por aluno), com Data, Aula, Turma,
  * Disciplina, Presentes, Ausentes e Frequência da aula — filtrável por
  * turma/disciplina em `AttendancePage`. Em mobile, 7 colunas viram um
- * card por aula (ver "MOBILE DATA CARDS" no briefing).
+ * card por aula.
  */
 export function AttendanceHistoryTable({ rows }: AttendanceHistoryTableProps) {
   const isMobile = useIsMobile();

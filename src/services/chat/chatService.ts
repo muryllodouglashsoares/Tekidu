@@ -20,7 +20,7 @@ import type { Message, MessageInput } from "@/types/message";
 import { MESSAGE_MAX_LENGTH } from "@/types/message";
 
 /**
- * PARTE 1 do plano de evolução — Mensageria/chat interno.
+ * Mensageria/chat interno.
  *
  * Reaproveita a MESMA convenção de ID determinístico já usada em
  * `gradeService.buildGradeId`/`attendanceRecordService.
@@ -112,11 +112,11 @@ export async function getOrCreateConversation(input: ConversationCreateInput): P
 }
 
 /**
- * Tempo real (item "Tempo real" do plano — `onSnapshot`, nunca
+ * Tempo real (`onSnapshot`, nunca
  * polling): lista de conversas do usuário logado, ordenada pela
  * atividade mais recente. A query já filtra por `participantUids
- * array-contains uid` — nunca busca "todas as conversas da escola"
- * (item de performance do plano). Requer o índice composto declarado
+ * array-contains uid` — nunca busca "todas as conversas da escola".
+ * Requer o índice composto declarado
  * em `firestore.indexes.json` (array-contains + orderBy).
  *
  * Retorna a função de `unsubscribe` — o CHAMADOR cancela no cleanup
@@ -144,14 +144,13 @@ export function subscribeToConversations(
 }
 
 /**
- * Quantidade de mensagens recentes carregadas por conversa (item de
- * performance do plano — "não buscar todas as mensagens da escola"; a
+ * Quantidade de mensagens recentes carregadas por conversa (por
+ * performance, não se buscam todas as mensagens da escola; a
  * mesma cautela se aplica dentro de UMA conversa: um histórico de anos
  * de troca de mensagens não precisa ser carregado inteiro só para abrir
  * a tela). Mesmo racional de `notificationService.RECENT_LIMIT`.
- * Mensagens mais antigas que isso não são exibidas nesta primeira
- * versão (ver "Pendências" no relatório final — paginação/"carregar
- * mais antigas" fica para uma evolução futura).
+ * Mensagens mais antigas que isso não são exibidas
+ * (paginação/"carregar mais antigas" fica para uma evolução futura).
  */
 const MESSAGE_PAGE_SIZE = 200;
 
@@ -195,12 +194,10 @@ export function subscribeToMessages(
  * mas lista de conversas não reflete o último envio".
  *
  * Ao final, cria a notificação interna existente (`notificationService`
- * — nunca um sistema de notificação paralelo, ver Parte 1 do plano) e
- * prepara o "envio de Web Push" (Parte 5 do plano, ainda não
- * implementada nesta etapa): a notificação interna é a garantia de
- * entrega — o Push é uma camada adicional que será acoplada aqui
- * quando `pushNotificationService` existir, sem precisar alterar este
- * fluxo.
+ * — nunca um sistema de notificação paralelo). O envio de Web Push é
+ * acoplado a essa mesma criação (ver `notificationService`): a
+ * notificação interna é a garantia de entrega e o Push é uma camada
+ * adicional, sem precisar alterar este fluxo.
  */
 export async function sendMessage(conversationId: string, input: MessageInput): Promise<void> {
   const trimmed = input.content.trim();

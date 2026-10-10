@@ -76,13 +76,12 @@ function getColumnWidths(termCount: number) {
 }
 
 /**
- * Tabela "ACADEMICS" da imagem de referência, adaptada (item 6 do
- * briefing): no relatório anual mostra as 4 colunas de bimestre
- * ("1º BIM".."4º BIM", nunca "Q1".."Q4" — item 5), e no relatório de um
+ * Tabela de notas do boletim: no relatório anual mostra as 4 colunas de bimestre
+ * ("1º BIM".."4º BIM", nunca "Q1".."Q4"), e no relatório de um
  * bimestre específico mostra apenas a coluna daquele período. Os
  * valores exibidos são exatamente os já calculados por
  * `getStudentBoletim`/`getStudentBoletimPdfData` — este componente só
- * apresenta, nunca recalcula (item 23 do briefing).
+ * apresenta, nunca recalcula.
  */
 export function BoletimPDFTable({ rows }: { rows: BoletimPdfDisciplineRow[] }) {
   if (rows.length === 0) {

@@ -77,7 +77,7 @@ export function ReportsPage() {
       const yearToLoad = Number(searchParams.get("year")) || classesData[0]?.schoolYear || new Date().getFullYear();
       const disciplinesData = await getDisciplines();
 
-      // Etapa 7 — escopo de disciplina para o professor: `/relatorios`
+      // Escopo de disciplina para o professor: `/relatorios`
       // é acessível a admin E professor. Antes, um professor buscava
       // as notas/frequência do ANO LETIVO INTEIRO (`getXBySchoolYear`,
       // sem filtro de disciplina) para montar os indicadores — a leitura
@@ -131,8 +131,8 @@ export function ReportsPage() {
   // Boletim, para o botão "voltar" do navegador funcionar.
   // -------------------------------------------------------------
   // -------------------------------------------------------------
-  // `classId`/`disciplineId`/`term` = filtros do gráfico (item 10).
-  // `view` = turma "aberta" para navegação Turma → Alunos (item 15) —
+  // `classId`/`disciplineId`/`term` = filtros do gráfico.
+  // `view` = turma "aberta" para navegação Turma → Alunos —
   // é um estado DIFERENTE do filtro: selecionar uma turma no filtro só
   // deve atualizar o gráfico, nunca navegar sozinho para a lista de
   // alunos (só o botão "Ver alunos" faz isso).
@@ -154,7 +154,7 @@ export function ReportsPage() {
     });
   }
 
-  // Etapa 7 — mesmo escopo de disciplina do professor já aplicado em
+  // Mesmo escopo de disciplina do professor já aplicado em
   // Notas/Frequência/Boletim (ver nota lá para o racional completo).
   const myDisciplines = useMemo(() => {
     if (profile?.role !== "teacher") return disciplines;
@@ -171,7 +171,7 @@ export function ReportsPage() {
     () => myDisciplines.find((d) => d.id === disciplineId) ?? null,
     [myDisciplines, disciplineId]
   );
-  // Etapa 7 — `view` (turma "aberta" via URL) resolvida a partir de
+  // `view` (turma "aberta" via URL) resolvida a partir de
   // `classes` (já escopada ao professor), não de `allClasses` (todos
   // os anos/turmas da escola): sem isso, um professor digitando
   // `?view=<id de turma alheia>` na URL conseguiria abrir a lista de
@@ -246,10 +246,10 @@ export function ReportsPage() {
   const studentListExportFileName = buildExportFileName("relatorio", [viewClass?.name, yearFilter]);
 
   // -------------------------------------------------------------
-  // Busca individual (item 16) — atalho direto para o relatório do
+  // Busca individual — atalho direto para o relatório do
   // aluno, sem passar pelo fluxo Turma → Alunos.
   //
-  // Etapa 7 — escopo para o professor: a busca livre por nome/matrícula
+  // Escopo para o professor: a busca livre por nome/matrícula
   // pesquisava em `students` (toda a escola), o que deixava um
   // professor descobrir/selecionar QUALQUER aluno da escola pelo nome,
   // inclusive de turmas onde ele não leciona — contornando o mesmo

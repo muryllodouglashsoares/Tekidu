@@ -1,6 +1,6 @@
 // functions/api/send-push.ts
 //
-// IMPLEMENTAÇÃO — WEB PUSH (ETAPAS 7/8/17/18 do prompt).
+// IMPLEMENTAÇÃO — WEB PUSH.
 //
 // MODELO DE SEGURANÇA (por que isto é seguro mesmo podendo ser
 // chamado por qualquer cliente autenticado):
@@ -16,12 +16,12 @@
 // momento em que a notificação foi criada — este endpoint só entrega
 // o que já foi aprovado, nunca decide isso sozinho.
 //
-// Idempotência (ETAPA 17): cada notificação tem um campo `pushSent`.
+// Idempotência: cada notificação tem um campo `pushSent`.
 // Uma vez entregue (ou tentado), o campo é marcado — chamadas
 // repetidas para o mesmo ID (reload, corrida entre abas) não reenviam
 // nem geram push duplicado.
 //
-// Token inválido (ETAPA 18): um erro de token não pode nunca impedir
+// Token inválido: um erro de token não pode nunca impedir
 // o envio para os demais — cada token é enviado independentemente
 // (`Promise.allSettled`), e tokens que o FCM reporta como
 // inválidos/não registrados são marcados `status: "invalid"` (nunca
@@ -96,7 +96,7 @@ async function sendToToken(
   const errorBody = await response.json().catch(() => null);
   const errorStatus =
     (errorBody as { error?: { status?: string } } | null)?.error?.status ?? "";
-  // ETAPA 18: códigos que indicam que o token não serve mais.
+  // Códigos que indicam que o token não serve mais.
   const invalidToken =
     response.status === 404 ||
     errorStatus === "NOT_FOUND" ||
@@ -192,7 +192,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       if (tokens.length === 0) {
         // Usuário não tem Push ativo em nenhum dispositivo — não é
-        // erro, a notificação INTERNA já cobre este caso (ETAPA 11).
+        // erro, a notificação INTERNA já cobre este caso.
         await firestore.patchDocument(`notifications/${notificationId}`, {
           pushSent: true,
         });
@@ -223,7 +223,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         const { tokenDoc, result } = outcome.value;
         if (result.ok) anySent = true;
         if (result.invalidToken) {
-          // ETAPA 18: marca o token inválido, nunca interrompe os
+          // Marca o token inválido, nunca interrompe os
           // demais envios por causa disso.
           await firestore
             .patchDocument(`users/${recipientUid}/pushTokens/${tokenDoc.id}`, {

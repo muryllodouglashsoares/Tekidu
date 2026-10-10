@@ -9,11 +9,11 @@ interface ClassReportCardProps {
 }
 
 /**
- * Card de turma exibido abaixo do gráfico geral (item 14 do briefing):
+ * Card de turma exibido abaixo do gráfico geral:
  * quantidade de alunos, média e frequência da turma, calculadas em
  * `reportsService.computeClassSummaries` a partir de notas/frequência
  * reais. Ponto de entrada do fluxo Turma → Alunos → Relatório
- * individual (item 15).
+ * individual.
  */
 export function ClassReportCard({ summary, onSelect }: ClassReportCardProps) {
   const { schoolClass, studentCount, average, attendanceRate } = summary;

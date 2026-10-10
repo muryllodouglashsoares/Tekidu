@@ -17,7 +17,7 @@ interface AbsenceJustificationReviewDialogProps {
 }
 
 /**
- * Confirmação da decisão de análise (seção 16 do prompt). Comentário
+ * Confirmação da decisão de análise. Comentário
  * opcional em ambos os casos, mas praticamente indispensável ao
  * recusar (é o que o aluno vê como "Motivo da recusa" — ver
  * `AbsenceJustificationCard`).

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 /**
- * Seleção múltipla de linhas (Fase 4 — "ações em lote"). Guarda um
+ * Seleção múltipla de linhas. Guarda um
  * Set de ids selecionados que sobrevive à paginação/filtros (um item
  * selecionado na página 1 continua selecionado se o usuário for para
  * a página 2), o que é o comportamento esperado de tabelas

@@ -13,7 +13,7 @@ interface AttendanceRegisterListProps {
 }
 
 /**
- * Lista de lançamento de presença (seção 9 do briefing): para cada
+ * Lista de lançamento de presença: para cada
  * aluno, dois botões grandes "Presente"/"Ausente" — pensada para
  * registrar vários alunos consecutivamente com o mínimo de cliques.
  * Não reaproveita a edição em célula de tabela de `GradesTable` de

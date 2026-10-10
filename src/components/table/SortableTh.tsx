@@ -10,8 +10,8 @@ interface SortableThProps {
 }
 
 /**
- * Cabeçalho de coluna clicável com indicador visual de ordenação
- * (Fase 4 — "cabeçalho; ordenação"). Reaproveitado por todas as
+ * Cabeçalho de coluna clicável com indicador visual de ordenação.
+ * Reaproveitado por todas as
  * tabelas de listagem em vez de cada página desenhar seu próprio `th`
  * com lógica de seta duplicada.
  */

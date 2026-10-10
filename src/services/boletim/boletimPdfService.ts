@@ -16,8 +16,8 @@ export interface BoletimPdfTermValue {
 /**
  * Linha de UMA disciplina no PDF. Estende `DisciplineBoletimRow` (ver
  * `boletimService.ts`) com a quebra por bimestre — necessária apenas no
- * relatório ANUAL, já que a imagem de referência mostra Q1..Q4 lado a
- * lado (item 6 do briefing). `finalAverage`/`attendanceRate`/`situation`
+ * relatório ANUAL, já que o layout mostra os quatro bimestres lado a
+ * lado. `finalAverage`/`attendanceRate`/`situation`
  * são exatamente os mesmos valores já calculados por `getStudentBoletim`
  * para o período consultado — nenhuma fórmula nova é criada aqui.
  */
@@ -51,7 +51,7 @@ export interface BoletimPdfData {
  * próprio período).
  *
  * Quando `period === "annual"`, o relatório precisa mostrar os QUATRO
- * bimestres lado a lado (item 6 do briefing) — algo que
+ * bimestres lado a lado — algo que
  * `getStudentBoletim("annual")` não calcula (ele consolida as notas de
  * todos os bimestres em uma única média anual, não expõe a média de
  * cada um). Para isso, busca os quatro boletins por bimestre em
@@ -89,7 +89,7 @@ export async function getStudentBoletimPdfData(
     };
   }
 
-  // Quatro consultas em paralelo (item 19 do briefing) — nunca em série.
+  // Quatro consultas em paralelo — nunca em série.
   const termBoletins = await Promise.all(
     ALL_ASSESSMENT_TERMS.map((term) => getStudentBoletim(studentId, classId, schoolYear, term))
   );

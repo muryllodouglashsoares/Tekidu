@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Configuração do Vitest (Tarefa 5, Fase 1 pós-auditoria V8).
+ * Configuração do Vitest.
  *
  * Não reaproveita `vite.config.ts` diretamente (`mergeConfig`) para
  * evitar carregar o plugin React (`@vitejs/plugin-react`) nos testes —

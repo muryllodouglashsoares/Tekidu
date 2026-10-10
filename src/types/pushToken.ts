@@ -1,7 +1,7 @@
 /**
  * Formato do documento em: users/{uid}/pushTokens/{tokenId}
  *
- * IMPLEMENTAÇÃO — WEB PUSH (ver ETAPA 5/6 do prompt de Push).
+ * IMPLEMENTAÇÃO — WEB PUSH.
  *
  * Por que subcoleção de `users/{uid}` e não uma coleção plana
  * `pushTokens/{tokenId}` com `uid` como campo: o mesmo padrão de
@@ -15,7 +15,7 @@
  * enviar; quem envia precisa do server-side com a Service Account).
  * Usar o token como ID do documento é o que garante idempotência:
  * registrar o mesmo token duas vezes (ex.: reload da página)
- * atualiza o mesmo documento em vez de criar duplicata (ETAPA 17).
+ * atualiza o mesmo documento em vez de criar duplicata.
  */
 export type PushTokenStatus = "active" | "invalid";
 
@@ -31,7 +31,7 @@ export interface PushToken {
   lastUsedAt: unknown; // Firestore Timestamp
 }
 
-/** Estado exposto pela UI (ETAPA 15 do prompt). */
+/** Estado exposto pela UI. */
 export type PushPermissionState =
   | "unsupported"
   | "default"

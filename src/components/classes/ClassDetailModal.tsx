@@ -18,7 +18,7 @@ interface ClassDetailModalProps {
  * Detalhe de uma turma: dados gerais + lista de alunos vinculados
  * (via `students.classId`). Serve também de base para as próximas
  * funcionalidades relacionadas a alunos dentro da turma (notas,
- * frequência), que ainda não fazem parte desta fase.
+ * frequência), que ainda não fazem parte deste modal.
  */
 export function ClassDetailModal({ schoolClass, onClose }: ClassDetailModalProps) {
   const [students, setStudents] = useState<Student[]>([]);

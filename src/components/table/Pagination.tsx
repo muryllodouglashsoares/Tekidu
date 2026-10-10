@@ -12,8 +12,7 @@ interface PaginationProps {
 }
 
 /**
- * Rodapé de paginação (Fase 4 — "página atual; total; quantidade por
- * página; próxima; anterior; primeira; última"). Componente único
+ * Rodapé de paginação. Componente único
  * reaproveitado por todas as tabelas de listagem.
  */
 export function Pagination({

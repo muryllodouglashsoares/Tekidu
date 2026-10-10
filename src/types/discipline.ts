@@ -1,7 +1,7 @@
 /**
  * Situação da disciplina.
  * Espelha o mesmo padrão de `ClassStatus` (ver `schoolClass.ts`):
- * "active" / "inactive", rotulados como "Ativa" / "Inativa" no Figma.
+ * "active" / "inactive", rotulados como "Ativa" / "Inativa".
  */
 export type DisciplineStatus = "active" | "inactive";
 
@@ -32,7 +32,7 @@ export const DISCIPLINE_STATUS_LABEL: Record<DisciplineStatus, string> = {
  * precisar buscar cada usuário individualmente — o mesmo motivo pelo
  * qual `classes` guarda `name` em vez de só um ID em outros contextos.
  * Se o nome do professor mudar depois, o snapshot fica desatualizado
- * até a próxima edição da disciplina; isso é aceitável nesta fase.
+ * até a próxima edição da disciplina; isso é aceitável hoje.
  */
 export interface Discipline {
   id: string;

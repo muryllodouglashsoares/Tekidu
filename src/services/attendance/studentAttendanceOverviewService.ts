@@ -10,7 +10,7 @@ import { ALL_ASSESSMENT_TERMS } from "@/types/boletim";
 import type { Discipline } from "@/types/discipline";
 
 /**
- * "Minha Frequência" (seção 10 do plano multi-role) precisa dos
+ * "Minha Frequência" precisa dos
  * números BRUTOS de presença (presenças/faltas/aulas), não só do
  * percentual já calculado por `boletimService.getStudentBoletim`
  * (que expõe `attendanceRate`, mas não `present`/`total`). Em vez de

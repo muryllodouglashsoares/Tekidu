@@ -10,7 +10,7 @@ interface AttendanceByDateTableProps {
 }
 
 /**
- * Tabela "Por data" (seção 10 do briefing): Aluno nas linhas, uma coluna
+ * Tabela "Por data": Aluno nas linhas, uma coluna
  * por aula já registrada no contexto. Cada célula usa ícone + cor (não
  * só cor, ver seção de acessibilidade) para indicar Presente/Ausente.
  */

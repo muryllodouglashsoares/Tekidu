@@ -20,7 +20,7 @@ interface ToastContextValue {
   /**
    * Publica um toast e o remove automaticamente após `durationMs`
    * (padrão 4s). Usado como o padrão consistente de feedback de
-   * sucesso/erro pedido na Fase 6 (criar/editar/excluir/atualizar/
+   * sucesso/erro (criar/editar/excluir/atualizar/
    * registrar/publicar), em vez de cada página inventar seu próprio
    * mecanismo de feedback.
    */

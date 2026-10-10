@@ -6,8 +6,7 @@ import { useIsMobile } from "@/hooks/useMediaQuery";
 const RECONNECTED_VISIBLE_MS = 3000;
 
 /**
- * Indicador discreto e global de conectividade (ETAPA 7/8 do prompt
- * PWA). Fica montado uma única vez em `AppShell` — nunca dentro de
+ * Indicador discreto e global de conectividade. Fica montado uma única vez em `AppShell` — nunca dentro de
  * páginas específicas — e:
  *  - aparece enquanto `navigator.onLine` é `false`, avisando que os
  *    dados podem estar desatualizados (nunca finge sincronização);

@@ -7,9 +7,8 @@ import tsPlugin from "@typescript-eslint/eslint-plugin";
 
 // Config plana (ESLint 9+) equivalente ao setup padrão do template
 // Vite + React + TypeScript. O projeto já tinha todas as dependências
-// necessárias instaladas (@typescript-eslint/*, eslint-plugin-react-hooks,
-// eslint-plugin-react-refresh) — só faltava este arquivo de config, por
-// isso "npm run lint" falhava antes de qualquer mudança desta etapa.
+// necessárias (@typescript-eslint/*, eslint-plugin-react-hooks,
+// eslint-plugin-react-refresh).
 export default [
   { ignores: ["dist"] },
   js.configs.recommended,

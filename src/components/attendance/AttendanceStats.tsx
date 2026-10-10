@@ -11,9 +11,9 @@ interface AttendanceStatsProps {
 }
 
 /**
- * Indicadores dinâmicos da seção 11 do briefing (Total de alunos,
- * Presentes, Ausentes, Frequência média) + o alerta de baixa frequência
- * da seção 12. Nenhum valor é fixo: tudo é derivado de `summaries`
+ * Indicadores dinâmicos (Total de alunos,
+ * Presentes, Ausentes, Frequência média) + o alerta de baixa frequência.
+ * Nenhum valor é fixo: tudo é derivado de `summaries`
  * (calculado a partir dos registros reais em `AttendancePage`).
  */
 export function AttendanceStats({ summaries, currentSession }: AttendanceStatsProps) {

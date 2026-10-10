@@ -18,7 +18,7 @@ import type { AcademicSettings } from "@/types/academicSettings";
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 /**
- * "Minhas Turmas" (seção 4 do plano multi-role) — o professor vê
+ * "Minhas Turmas" — o professor vê
  * SOMENTE as turmas/disciplinas em que `discipline.teacherId ===
  * profile.uid` (via `teacherOverviewService.getTeacherClassesOverview`,
  * que também é a fonte de "Meus Alunos" e do Dashboard do professor —
@@ -27,7 +27,7 @@ import { describeFirebaseError } from "@/utils/firebaseError";
  * Diferente de "/turmas" (visão de staff — TODAS as turmas da escola,
  * com edição), esta tela é somente leitura e já mostra média/frequência
  * calculadas a partir de `grades`/`attendanceRecords` reais, nunca
- * valores inventados (seção 27/24: estado vazio em vez de "0" fake).
+ * valores inventados (estado vazio em vez de "0" fake).
  */
 export function MyClassesPage() {
   const { profile } = useAuth();

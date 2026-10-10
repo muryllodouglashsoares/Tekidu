@@ -8,8 +8,7 @@ interface BulkActionsBarProps {
 }
 
 /**
- * Toolbar contextual exibida após selecionar registros (Fase 4 —
- * "ações em lote"). As ações em si (mudar status, excluir, exportar
+ * Toolbar contextual exibida após selecionar registros. As ações em si (mudar status, excluir, exportar
  * ...) são passadas como children pela página, porque cada entidade
  * tem ações diferentes; este componente só cuida do "X selecionados +
  * cancelar seleção", que é idêntico em toda tela.

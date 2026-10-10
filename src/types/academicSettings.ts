@@ -4,8 +4,8 @@ import { ATTENDANCE_ATTENTION_THRESHOLD } from "@/types/attendance";
 /**
  * Formato do documento em: academicSettings/{schoolYear}
  *
- * Item 6/7 do plano de consolidação V8 ("Tornar as regras acadêmicas
- * configuráveis" + "Criar o conceito de Ano Letivo"): antes desta
+ * Torna as regras acadêmicas configuráveis e cria o conceito de Ano
+ * Letivo: antes desta
  * entidade, `PASSING_THRESHOLD`/`RECOVERY_THRESHOLD`
  * (types/grade.ts) e `ATTENDANCE_ATTENTION_THRESHOLD`
  * (types/attendance.ts) eram os ÚNICOS valores possíveis — fixos no

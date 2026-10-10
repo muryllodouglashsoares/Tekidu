@@ -14,8 +14,7 @@ import type { Announcement } from "@/types/announcement";
 const PREVIEW_COUNT = 3;
 
 /**
- * Prévia leve de "Avisos recentes" para o Dashboard (seção 56 do
- * briefing): reaproveita `getAnnouncementsForRole` (mesma fonte de
+ * Prévia leve de "Avisos recentes" para o Dashboard: reaproveita `getAnnouncementsForRole` (mesma fonte de
  * dados/permissões do Portal completo) em vez de duplicar o Portal
  * inteiro aqui — mostra só os avisos mais relevantes (fixados >
  * urgentes > importantes > recentes) com um link para "/avisos".

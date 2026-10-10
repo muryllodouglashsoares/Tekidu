@@ -35,7 +35,7 @@ function formatDate(isoDate: string): string {
 }
 
 /**
- * Análise de Justificativas de Faltas (seção 16 do prompt) — staff.
+ * Análise de Justificativas de Faltas — staff.
  *
  * Admin enxerga TODAS as solicitações; professor só as das disciplinas
  * das quais é `teacherId` — mesmo padrão de "uma consulta por
@@ -45,8 +45,8 @@ function formatDate(isoDate: string): string {
  *
  * Sem paginação/filtros avançados (turma/período) nesta primeira
  * versão — a lista de pendentes já é o "inbox" que evita acúmulo
- * indefinido (seção 16: "a funcionalidade não deve ficar
- * permanentemente sem uma forma de análise").
+ * indefinido (a funcionalidade não deve ficar
+ * permanentemente sem uma forma de análise).
  */
 export function AbsenceJustificationsReviewPage() {
   const { profile } = useAuth();

@@ -3,8 +3,8 @@ import { useIsMobile } from "@/hooks/useMediaQuery";
 /**
  * Bloco base de skeleton (placeholder animado). Usado para compor
  * layouts de carregamento que antecipam a estrutura real da página
- * (Fase 6 — "utilizar skeleton quando a estrutura da página puder ser
- * antecipada", em vez de um spinner genérico centralizado).
+ * (em vez de um spinner genérico centralizado, quando a
+ * estrutura da página puder ser antecipada).
  */
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
@@ -75,9 +75,8 @@ export function CardGridSkeleton({ count = 4 }: { count?: number }) {
 }
 
 /**
- * Skeleton para a lista de `MobileDataCard` (ver "SKELETON LOADING"
- * no briefing mobile: "os skeletons devem representar a estrutura
- * real" — uma tabela larga de N colunas não é a estrutura real em
+ * Skeleton para a lista de `MobileDataCard` (os skeletons devem representar a estrutura
+ * real — uma tabela larga de N colunas não é a estrutura real em
  * mobile, já que essas telas viram cards; usar `TableSkeleton` ali
  * criaria um flash de layout errado no meio de um segundo). Reproduz
  * a silhueta de `MobileDataCard`: avatar circular, título, subtítulo

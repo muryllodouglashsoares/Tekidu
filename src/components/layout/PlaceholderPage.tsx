@@ -5,9 +5,8 @@ interface PlaceholderPageProps {
 }
 
 /**
- * Reproduz a tela "Esta área fará parte de uma próxima versão do
- * Tekidu" vista no protótipo do Figma — usada hoje por Boletim e
- * Relatórios, ainda fora do escopo desta fase.
+ * Tela "Esta área fará parte de uma próxima versão do
+ * Tekidu", para áreas ainda não implementadas.
  */
 export function PlaceholderPage({ title }: PlaceholderPageProps) {
   return (

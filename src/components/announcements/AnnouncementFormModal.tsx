@@ -19,7 +19,7 @@ import {
 const TITLE_MIN = 4;
 const TITLE_MAX = 120;
 
-// Público disponível por role (seção 19 do briefing): admin define
+// Público disponível por role: admin define
 // livremente; professor, por enquanto, só publica para alunos ou
 // todos — nunca "somente professores", que fica reservado ao admin
 // para comunicação institucional entre staff.
@@ -28,7 +28,7 @@ const AUDIENCE_OPTIONS_BY_ROLE: Record<"admin" | "teacher", AnnouncementAudience
   teacher: ["students", "all"],
 };
 
-// Prioridade "urgente" fica reservada ao admin (seção 15/37): é o selo
+// Prioridade "urgente" fica reservada ao admin: é o selo
 // de maior destaque visual do Portal e deve permanecer um sinal
 // institucional confiável, não algo que qualquer aviso acadêmico
 // individual dispare.

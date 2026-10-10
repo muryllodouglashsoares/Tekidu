@@ -6,7 +6,7 @@ import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { useToast } from "@/contexts/ToastContext";
 
 /**
- * Convite de instalação da PWA (ETAPA 9/12/13 do prompt). Vive dentro
+ * Convite de instalação da PWA. Vive dentro
  * de Configurações — nunca como popup automático ao abrir o app — e
  * se adapta a três cenários:
  *  - já instalada: mostra uma confirmação, sem botão de ação;

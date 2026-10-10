@@ -20,7 +20,7 @@ import { describeFirebaseError } from "@/utils/firebaseError";
 const ALL = "all";
 
 /**
- * "Meus Alunos" (seção 5 do plano multi-role) — mostra somente alunos
+ * "Meus Alunos" — mostra somente alunos
  * matriculados em turmas de disciplinas do professor logado
  * (`teacherOverviewService.getTeacherStudentsOverview`). Média e
  * frequência exibidas aqui são calculadas SÓ sobre as disciplinas

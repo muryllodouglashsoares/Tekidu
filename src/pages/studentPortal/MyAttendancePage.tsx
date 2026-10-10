@@ -13,7 +13,7 @@ import {
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 /**
- * "Minha Frequência" (seção 10 do plano multi-role): percentual geral,
+ * "Minha Frequência": percentual geral,
  * presenças/faltas/total e detalhamento por disciplina — tudo a partir
  * de `attendanceRecords` do PRÓPRIO aluno (ver
  * `studentAttendanceOverviewService`, que reaproveita a mesma consulta
@@ -21,8 +21,8 @@ import { describeFirebaseError } from "@/utils/firebaseError";
  * faltavam).
  *
  * A apresentação (cards de resumo + tabela por disciplina) foi
- * extraída para `AttendanceOverviewPanel` na Fase 3 do plano de
- * evolução (Portal do Responsável), que reaproveita a mesma marcação
+ * extraída para `AttendanceOverviewPanel` para o Portal do
+ * Responsável, que reaproveita a mesma marcação
  * para o filho selecionado — esta página cuida só de RESOLVER qual
  * aluno (o próprio, via `useOwnStudent`) e dos estados de
  * loading/erro/vazio em torno do painel.

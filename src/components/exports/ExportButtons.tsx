@@ -17,14 +17,13 @@ interface ExportButtonsProps {
   getPdfDocument?: () => ReactElement;
   /** Constrói as abas do Excel sob demanda — só chamado ao clicar em "Exportar Excel". */
   getExcelSheets: () => ExportSheet[];
-  /** Quando `true`, nenhuma exportação é gerada; mostra o aviso de "sem dados" (item 31 do briefing). */
+  /** Quando `true`, nenhuma exportação é gerada; mostra o aviso de "sem dados". */
   isEmpty: boolean;
   className?: string;
 }
 
 /**
- * Ações de exportação reutilizadas em Relatórios e Frequência (item 7
- * do briefing: camada de exportação única, sem duplicar a lógica de
+ * Ações de exportação reutilizadas em Relatórios e Frequência (camada de exportação única, sem duplicar a lógica de
  * loading/erro/toast em cada tela). O PDF/Excel só é gerado no
  * clique — os dados exibidos na tela (já filtrados/paginados pelas
  * regras de permissão) são a única fonte usada.

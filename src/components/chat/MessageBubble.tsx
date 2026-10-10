@@ -9,8 +9,8 @@ function formatMessageTime(value: unknown): string {
 
 /**
  * Uma mensagem individual, alinhada à direita (própria) ou à esquerda
- * (do outro participante) — diferenciação visual pedida no plano
- * ("UX": "diferenciação visual entre remetente e destinatário").
+ * (do outro participante) — diferenciação visual entre
+ * remetente e destinatário.
  * Usa exclusivamente os tokens de cor já existentes (`bg-ink-700` para
  * a própria mensagem, `bg-ink-50`/`border-line` para a do outro
  * participante), nunca uma cor arbitrária nova.

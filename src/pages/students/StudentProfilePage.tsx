@@ -62,10 +62,9 @@ const SHIFT_LABEL_FALLBACK: Record<string, string> = {
 };
 
 /**
- * Perfil 360° do aluno (Fase 8). Central acadêmica de UM aluno,
- * organizada em abas em vez de uma tela gigante — como pedido no
- * plano ("Evitar transformar tudo em uma única tela; utilizar abas ou
- * seções bem organizadas"). Reaproveita integralmente os services já
+ * Perfil 360° do aluno. Central acadêmica de UM aluno,
+ * organizada em abas em vez de uma tela gigante — evitando uma única
+ * tela gigante. Reaproveita integralmente os services já
  * existentes de Boletim/Desenvolvimento (mesma fonte de verdade da
  * página "Meu Boletim" e do Relatório de Desenvolvimento — nenhum
  * cálculo de média/frequência/situação é duplicado aqui).
@@ -99,7 +98,7 @@ export function StudentProfilePage() {
   const classPath = isTeacherView ? "/minhas-turmas" : "/turmas";
 
   const [unauthorized, setUnauthorized] = useState(false);
-  // Disciplinas do professor vinculadas a este aluno (Etapa 7) — vem
+  // Disciplinas do professor vinculadas a este aluno — vem
   // pronta de `getTeacherStudentsOverview` (já escopada a
   // `discipline.teacherId === profile.uid`), reaproveitada por
   // `AttendanceTab` para nunca buscar frequência fora das disciplinas
@@ -107,10 +106,10 @@ export function StudentProfilePage() {
   // carregou.
   const [teacherDisciplineIds, setTeacherDisciplineIds] = useState<string[] | null>(null);
 
-  // Responsáveis vinculados (Fase 3 do plano de evolução — Portal do
+  // Responsáveis vinculados (Portal do
   // Responsável): só resolvido para admin (única role que vê a aba),
   // nunca para o professor — evita uma leitura de `users` a mais numa
-  // tela que o professor já usa bastante (Etapa 7 — "Meus Alunos").
+  // tela que o professor já usa bastante ("Meus Alunos").
   const [guardians, setGuardians] = useState<UserProfile[]>([]);
   const [guardiansLoading, setGuardiansLoading] = useState(false);
 
@@ -499,7 +498,7 @@ function AttendanceTab({
   boletim: StudentBoletim | null;
   classId: string | null;
   /**
-   * Etapa 7 — quando não-nulo (visão do professor), restringe a busca
+   * Quando não-nulo (visão do professor), restringe a busca
    * de presença às disciplinas informadas em vez do ano letivo inteiro
    * (ver `load` abaixo). `null` = visão do admin, sem restrição.
    */
@@ -515,7 +514,7 @@ function AttendanceTab({
     setError(null);
     try {
       if (teacherDisciplineIds !== null) {
-        // Etapa 7 — visão do professor: em vez de uma única consulta
+        // Visão do professor: em vez de uma única consulta
         // ampla de `attendanceRecords` do ano letivo inteiro (que
         // dependia só da UI para esconder disciplinas de outros
         // professores), busca uma consulta por disciplina PRÓPRIA x

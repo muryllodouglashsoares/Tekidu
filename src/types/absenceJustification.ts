@@ -20,7 +20,7 @@ export const ABSENCE_JUSTIFICATION_STATUS_LABEL: Record<AbsenceJustificationStat
 export type AbsenceJustificationDocumentType = "image" | "pdf";
 
 /**
- * Formatos aceitos para o documento comprobatório (seção 9 do prompt).
+ * Formatos aceitos para o documento comprobatório.
  * Reaproveitado pela validação de frontend
  * (`AbsenceJustificationDocumentUpload`/`absenceJustificationDocumentService`)
  * e pela Security Rule (`firestore.rules`, que precisa repetir esta
@@ -47,8 +47,7 @@ export type AcceptedDocumentMimeType = (typeof ACCEPTED_DOCUMENT_MIME_TYPES)[num
  * (campo `documentData`, uma data URI em base64 — ver
  * `AbsenceJustification` abaixo), em vez de um arquivo no Storage.
  *
- * Isso implica um limite bem mais baixo que os 10 MB do prompt
- * original: cada documento do Firestore tem um teto RÍGIDO de 1 MiB
+ * Isso implica um limite bem mais baixo que os 10 MB que um armazenamento de arquivos permitiria: cada documento do Firestore tem um teto RÍGIDO de 1 MiB
  * (1.048.576 bytes), e a codificação base64 infla o arquivo original
  * em ~33% (4/3). `MAX_DOCUMENT_SIZE_BYTES` abaixo é o tamanho do
  * ARQUIVO ORIGINAL (antes de codificar); o campo `documentData` já
@@ -89,7 +88,7 @@ export function documentTypeFromMimeType(mimeType: string): AbsenceJustification
  * Complementar à falta original (`AttendanceRecord`), nunca a
  * substitui: `attendanceRecordId`/`sessionId` apontam para o registro
  * de presença sendo justificado, e sua aprovação NUNCA altera
- * `AttendanceRecord.status` (ver seção 20 do prompt) — só marca esta
+ * `AttendanceRecord.status` — só marca esta
  * solicitação como `approved`, preservando o histórico de que a falta
  * ocorreu. `studentId`/`disciplineId`/`classId`/`schoolYear`/`term`
  * são desnormalizados do `AttendanceRecord` de origem, mesmo padrão já
@@ -186,7 +185,7 @@ export function isValidJustificationReason(reason: string): boolean {
  *    `expiresAt` = envio + `JUSTIFICATION_WINDOW_DAYS` dias (ver
  *    `absenceJustificationService.submitAbsenceJustification`). Uma
  *    Firestore TTL Policy sobre o campo `expiresAt` (configuração
- *    externa no Console/gcloud — não faz parte do código, ver entrega)
+ *    externa no Console/gcloud — não faz parte do código)
  *    apaga o documento inteiro automaticamente quando esse prazo
  *    passa, liberando o espaço ocupado pelo documento comprobatório
  *    em base64 (a parte pesada do registro). Como a TTL do Firestore é
@@ -267,13 +266,13 @@ export function isJustificationExpired(
  * falta (`status === "absent"`), ainda está dentro do prazo de
  * `JUSTIFICATION_WINDOW_DAYS` dias para solicitar (ver
  * `isWithinJustificationWindow`), e não existe nenhuma justificativa
- * ativa (pendente OU aprovada) já criada para ele — ver seção 4 do
- * prompt ("não permitir múltiplas solicitações ativas para a mesma
- * falta" / "não permitir nova solicitação para uma falta já aprovada").
- * Uma justificativa `rejected` NÃO bloqueia reenvio nesta primeira
- * versão só quando `allowResubmitAfterRejection` for true — mantido
- * `false` por padrão (seção 12: "solicitação recusada não pode ser
- * reenviada pelo aluno sem uma ação administrativa explícita").
+ * ativa (pendente OU aprovada) já criada para ele — não são permitidas múltiplas
+ * solicitações ativas para a mesma falta, nem nova solicitação para uma
+ * falta já aprovada.
+ * Uma justificativa `rejected` só deixa de bloquear o reenvio
+ * quando `allowResubmitAfterRejection` for true — mantido
+ * `false` por padrão (uma solicitação recusada não pode ser
+ * reenviada pelo aluno sem uma ação administrativa explícita).
  */
 export function isEligibleForJustification(
   absenceDate: string,

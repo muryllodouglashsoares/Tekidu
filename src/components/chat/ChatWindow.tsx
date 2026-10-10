@@ -44,10 +44,10 @@ function formatDayLabel(value: unknown): string {
 
 /**
  * Janela de UMA conversa: cabeçalho com o contato, histórico agrupado
- * por dia (item "UX" do plano — "mensagens agrupadas") e o composer.
+ * por dia (mensagens agrupadas) e o composer.
  *
  * TEMPO REAL: assina `subscribeToMessages` (onSnapshot) ao montar,
- * cancela no cleanup — nunca polling (item explícito do plano).
+ * cancela no cleanup — nunca polling.
  *
  * LEITURA: ao abrir a conversa, zera o contador de não lidas
  * (`markConversationRead`) e marca as mensagens carregadas destinadas
@@ -93,9 +93,8 @@ export function ChatWindow({ conversation, currentUid, contactName, contactSubti
     isFirstLoadRef.current = false;
   }, [messages]);
 
-  // Marca como lidas + anuncia a última mensagem recebida (item de
-  // acessibilidade do plano — "sem causar spam para leitor de tela":
-  // só a ÚLTIMA mensagem nova é anunciada, nunca o histórico inteiro).
+  // Marca como lidas + anuncia a última mensagem recebida (sem causar spam
+  // para leitor de tela: só a ÚLTIMA mensagem nova é anunciada, nunca o histórico inteiro).
   useEffect(() => {
     if (!messages || messages.length === 0) return;
     const last = messages[messages.length - 1];

@@ -42,16 +42,16 @@ interface BoletimPDFProps {
 }
 
 /**
- * Documento principal do boletim em PDF (item 8 do briefing). Reúne os
+ * Documento principal do boletim em PDF. Reúne os
  * subcomponentes de apresentação — nenhum deles recalcula nota,
  * frequência ou situação: tudo já vem pronto de `BoletimPdfData`
  * (`services/boletim/boletimPdfService.ts`), que por sua vez reaproveita
- * `getStudentBoletim` (item 23: a regra fica nos services/types, o PDF
+ * `getStudentBoletim` (a regra fica nos services/types, o PDF
  * só apresenta).
  *
  * Página A4, com o cabeçalho institucional repetido em todas as
  * páginas (`fixed`) caso a tabela precise continuar em uma segunda
- * página (item 21 do briefing).
+ * página.
  */
 export function BoletimPDF({ student, schoolClass, schoolYear, data, generatedAt }: BoletimPDFProps) {
   const title = data.period === "annual" ? "Boletim Acadêmico — Relatório Anual" : "Boletim Acadêmico";

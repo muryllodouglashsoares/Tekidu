@@ -87,7 +87,7 @@ export function NotesPage() {
   const [disciplineId, setDisciplineId] = useState<string>("");
   const [term, setTerm] = useState<string>("");
 
-  // Etapa 7 — escopo de turma/disciplina para o professor: disciplinas
+  // Escopo de turma/disciplina para o professor: disciplinas
   // sem `teacherId === profile.uid` nem aparecem nos seletores. Antes,
   // um professor via TODAS as disciplinas da escola em "Notas" (a
   // escrita já era bloqueada por `canWriteAcademicRecord` nas Rules,
@@ -153,8 +153,8 @@ export function NotesPage() {
   const [showAssessmentManager, setShowAssessmentManager] = useState(false);
   const [thresholds, setThresholds] = useState<AcademicThresholds>(DEFAULT_ACADEMIC_THRESHOLDS);
 
-  // Regras acadêmicas configuráveis por ano letivo (item 6 do plano
-  // V8) — carregadas uma vez por ano selecionado, não hardcoded aqui.
+  // Regras acadêmicas configuráveis por ano letivo —
+  // carregadas uma vez por ano selecionado, não hardcoded aqui.
   useEffect(() => {
     if (!yearFilter) return;
     let cancelled = false;
@@ -215,9 +215,9 @@ export function NotesPage() {
     return linkedStudents.filter((student) => {
       const scoresByAssessmentId: Record<string, number | null> = {};
       for (const a of assessments) scoresByAssessmentId[a.id] = scores[student.id]?.[a.id] ?? null;
-      // Fonte única de verdade (item 49 do briefing de Recuperações):
+      // Fonte única de verdade:
       // mesma função usada por Boletim/GradesTable — "incomplete" só
-      // considera avaliações regulares (item 35), então uma
+      // considera avaliações regulares, então uma
       // recuperação/segunda chamada sem nota lançada não faz o aluno
       // entrar nesta contagem de pendências.
       const { situation } = resolveStudentAcademicResult(assessments, scoresByAssessmentId, thresholds);
@@ -263,7 +263,7 @@ export function NotesPage() {
         });
       }
 
-      // Fase 5 — notifica o aluno quando uma nota dele é lançada ou
+      // Notifica o aluno quando uma nota dele é lançada ou
       // alterada ("nova nota" / "alteração de nota"). Mesma condição
       // do log de auditoria acima (só dispara quando o valor realmente
       // muda, não a cada clique que resalva o mesmo valor) e só
@@ -333,7 +333,7 @@ export function NotesPage() {
       parentAssessmentId: special?.parentAssessmentId,
     });
 
-    // RECUPERAÇÕES E SEGUNDA CHAMADA (item 28 do briefing): auditoria
+    // RECUPERAÇÕES E SEGUNDA CHAMADA: auditoria
     // dedicada só para as duas naturezas especiais — a criação de uma
     // avaliação REGULAR continua sem log de auditoria (comportamento
     // já existente, fora do escopo desta funcionalidade).
@@ -350,13 +350,12 @@ export function NotesPage() {
       });
     }
 
-    // Etapa 6 — notifica os alunos da turma que uma nova avaliação foi
+    // Notifica os alunos da turma que uma nova avaliação foi
     // cadastrada, ANTES do lançamento da nota (que já é coberto por
     // `grade_posted` em `handleSaveGrade`). Só os alunos com conta
     // vinculada (`student.uid`) recebem — mesmo filtro já usado em
     // `handleSaveGrade`. Para recuperação/segunda chamada, a mensagem
-    // deixa explícito qual é a avaliação de origem (item 27 do
-    // briefing) — sem criar um novo tipo de notificação: reaproveita
+    // deixa explícito qual é a avaliação de origem — sem criar um novo tipo de notificação: reaproveita
     // `assessment_created`, só com título/mensagem específicos.
     const notificationTitle = special
       ? special.kind === "second_call"
@@ -418,7 +417,7 @@ export function NotesPage() {
       });
     }
 
-    // Etapa 6 — só notifica em atualização quando o NOME muda (ex.:
+    // Só notifica em atualização quando o NOME muda (ex.:
     // "Prova 1" virou "Prova remarcada"). Ajustar peso/nota máxima não
     // muda nada que o aluno precise saber antes da nota ser lançada,
     // então não gera notificação — mesmo critério de "só quando há
@@ -448,8 +447,7 @@ export function NotesPage() {
     try {
       await deleteAssessment(assessmentId);
     } catch (error) {
-      // Bloqueio de integridade do `assessmentService` (item 56 do
-      // briefing: avaliação regular com recuperação/segunda chamada
+      // Bloqueio de integridade do `assessmentService` (avaliação regular com recuperação/segunda chamada
       // vinculada não pode ser excluída) — a UI já desabilita o botão
       // nesse caso, mas mantém esta barreira caso o estado local esteja
       // desatualizado.

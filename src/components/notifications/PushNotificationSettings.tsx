@@ -5,8 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 /**
- * Ativação/desativação de notificações push (ETAPA 14/15/16 do prompt
- * de Push). Vive em Configurações → Preferências, no mesmo espírito de
+ * Ativação/desativação de notificações push. Vive em Configurações → Preferências, no mesmo espírito de
  * `PWAInstallPrompt`: nunca um popup automático, sempre uma ação
  * explícita do usuário — o `Notification.requestPermission()` só
  * acontece dentro de `enable()`, disparado pelo clique no botão abaixo.

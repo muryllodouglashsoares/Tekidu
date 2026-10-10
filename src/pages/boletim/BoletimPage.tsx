@@ -65,8 +65,7 @@ export function BoletimPage() {
   }, []);
 
   // -------------------------------------------------------------
-  // Estado compartilhado pelas DUAS formas de acesso (item 11 do
-  // briefing) — fica na query string, não em state local: clicar num
+  // Estado compartilhado pelas DUAS formas de acesso — fica na query string, não em state local: clicar num
   // ClassCard/linha de aluno e escolher pelos Selects de filtro
   // escrevem exatamente nos mesmos parâmetros, então levam ao mesmo
   // lugar e o botão "voltar" do navegador funciona nos dois casos.
@@ -93,7 +92,7 @@ export function BoletimPage() {
 
   const classOptions = useMemo(() => {
     const inYear = classes.filter((c) => String(c.schoolYear) === yearFilter);
-    // Etapa 7 — escopo de turma para o professor: `/boletim` é
+    // Escopo de turma para o professor: `/boletim` é
     // acessível a admin E professor (ver AppRoutes.tsx); antes, um
     // professor podia consultar o boletim de QUALQUER turma da escola,
     // não só das suas — o boletim consolida notas de TODAS as
@@ -165,7 +164,7 @@ export function BoletimPage() {
   }, [boletimReady, selectedClass?.id, selectedStudent?.id, yearFilter, period]);
 
   // -------------------------------------------------------------
-  // Breadcrumb: Boletins > Turma > Aluno (item 7 e 12 do briefing).
+  // Breadcrumb: Boletins > Turma > Aluno.
   // -------------------------------------------------------------
   const breadcrumbItems = [
     {

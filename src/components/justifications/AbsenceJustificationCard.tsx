@@ -20,8 +20,8 @@ interface EligibleAbsenceCardProps {
 }
 
 /**
- * Uma falta elegível para justificativa, ainda sem solicitação
- * (seção 3.1 do prompt). Disciplina + data + aula vêm do próprio
+ * Uma falta elegível para justificativa, ainda sem solicitação.
+ * Disciplina + data + aula vêm do próprio
  * `AttendanceRecord` (denormalizados na marcação de presença — ver
  * `types/attendance.ts`), nunca de uma leitura extra de
  * `attendanceSessions` (inacessível ao aluno pela Security Rule).
@@ -85,11 +85,11 @@ interface AbsenceJustificationCardProps {
 }
 
 /**
- * Uma solicitação já enviada, em qualquer status (seção 12 do prompt).
+ * Uma solicitação já enviada, em qualquer status.
  * Todos os dados exibidos (disciplina, data, aula, motivo, documento)
  * já estão denormalizados no próprio `AbsenceJustification` — a
  * listagem nunca baixa o arquivo comprobatório automaticamente
- * (seção 24: só um link para abrir sob demanda).
+ * (só um link para abrir sob demanda).
  */
 export function AbsenceJustificationCard({ justification, disciplineName }: AbsenceJustificationCardProps) {
   const DocumentIcon = justification.documentType === "pdf" ? FileText : ImageIcon;

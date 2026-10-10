@@ -20,9 +20,9 @@ interface StudentDevelopmentReportProps {
 }
 
 /**
- * Relatório de Desenvolvimento individual (item 17 do briefing): segue
- * a estrutura do Figma — identificação, indicadores, gráfico de
- * evolução isolado do aluno (item 18), desempenho por disciplina
+ * Relatório de Desenvolvimento individual:
+ * identificação, indicadores, gráfico de
+ * evolução isolado do aluno, desempenho por disciplina
  * (reaproveitado de `BoletimSummary`/`BoletimTable`, já usados pelo
  * Boletim — não duplica o cálculo de média/frequência/situação) e, por
  * fim, destaques/pontos de atenção/síntese, DERIVADOS das disciplinas

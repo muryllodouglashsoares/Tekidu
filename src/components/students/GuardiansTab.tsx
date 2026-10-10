@@ -18,8 +18,8 @@ import type { UserProfile } from "@/types/user";
 import type { Student } from "@/types/student";
 
 /**
- * Aba "Responsáveis" da ficha do aluno (Fase 3 do plano de evolução —
- * Portal do Responsável). Só renderizada para admin (ver
+ * Aba "Responsáveis" da ficha do aluno (Portal do
+ * Responsável). Só renderizada para admin (ver
  * `StudentProfilePage`, mesmo guard já usado pela aba "Histórico") —
  * a Security Rule (`isValidGuardianUidsChange` em `firestore.rules`)
  * é a garantia real de que só admin consegue alterar o vínculo, mas

@@ -8,8 +8,7 @@ export interface SortState<K extends string> {
 }
 
 /**
- * Hook genérico de ordenação (Fase 3/4 — "permitir ordenação por
- * colunas relevantes"). `getValue` extrai o valor comparável de cada
+ * Hook genérico de ordenação. `getValue` extrai o valor comparável de cada
  * coluna a partir do item; `keys` limitam quais colunas podem ser
  * usadas para ordenar (evita ordenar por uma coluna sem sentido).
  * Clicar na mesma coluna alterna asc/desc; trocar de coluna volta

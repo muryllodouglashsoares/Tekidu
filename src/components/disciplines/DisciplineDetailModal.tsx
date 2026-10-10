@@ -24,8 +24,8 @@ interface DisciplineDetailModalProps {
  * Detalhe de uma disciplina: dados gerais + turmas vinculadas (via
  * `classIds`) + quantidade de alunos derivada dessas turmas. Não
  * implementa ainda notas/frequência/boletim — apenas prepara a
- * arquitetura (relação disciplina → turmas → alunos) para essas fases
- * futuras.
+ * arquitetura (relação disciplina → turmas → alunos) para essas
+ * funcionalidades futuras.
  */
 export function DisciplineDetailModal({
   discipline,

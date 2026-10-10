@@ -5,8 +5,8 @@ import type { StudentAttendanceOverview } from "@/services/attendance/studentAtt
 
 /**
  * Resumo de frequência (geral + por disciplina) — extraído de
- * `MyAttendancePage` (Portal do Aluno) na Fase 3 do plano de evolução
- * (Portal do Responsável) para ser reaproveitado, sem duplicar
+ * `MyAttendancePage` (Portal do Aluno) para ser reaproveitado
+ * no Portal do Responsável, sem duplicar
  * marcação, por `GuardianAttendancePage`. Puramente de apresentação:
  * recebe o `overview` já calculado por
  * `studentAttendanceOverviewService.getStudentAttendanceOverview`

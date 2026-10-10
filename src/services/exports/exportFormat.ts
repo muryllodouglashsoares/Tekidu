@@ -20,7 +20,7 @@ export function sanitizeFileNamePart(value: string): string {
 
 /**
  * Monta um nome de arquivo descritivo a partir do contexto/filtros
- * atuais da tela (item 12 do briefing), sempre prefixado com
+ * atuais da tela, sempre prefixado com
  * "tekidu-" — ex.: `tekidu-relatorio-2ano-a-informatica-2bimestre-2026`.
  * Partes vazias/undefined são ignoradas silenciosamente.
  */

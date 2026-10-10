@@ -4,7 +4,7 @@ import { savePushToken, deletePushToken } from "./pushTokenService";
 import type { PushPermissionState } from "@/types/pushToken";
 
 /**
- * Camada isolada de gerenciamento de Web Push (ETAPA 5 do prompt) —
+ * Camada isolada de gerenciamento de Web Push —
  * não depende de nenhum componente React. `usePushNotifications`
  * (hook) é a única coisa que a UI deve importar; este módulo é
  * consumido só por aquele hook.
@@ -25,7 +25,7 @@ export function isPushSupported(): boolean {
   );
 }
 
-/** Estado ATUAL sem pedir nada ao usuário (ETAPA 15). `hasActiveToken` vem de fora — ver `usePushNotifications`, que cruza isso com o Firestore. */
+/** Estado ATUAL sem pedir nada ao usuário. `hasActiveToken` vem de fora — ver `usePushNotifications`, que cruza isso com o Firestore. */
 export function getBrowserPermissionState(): "default" | "denied" | "granted" {
   if (!isPushSupported()) return "default";
   return Notification.permission;
@@ -43,7 +43,7 @@ function getMessagingInstance(): Messaging {
  * página. Propositalmente NÃO mostra uma notificação do sistema
  * operacional aqui (o sino interno, em tempo real via
  * `subscribeToRecentNotifications`, já cobre esse cenário) — só serve
- * de log/observabilidade (ETAPA 27) hoje; pode ganhar um toast no
+ * de log/observabilidade hoje; pode ganhar um toast no
  * futuro sem mexer no Service Worker.
  */
 function attachForegroundListener() {
@@ -56,10 +56,10 @@ function attachForegroundListener() {
 }
 
 /**
- * Fluxo completo de ativação (ETAPA 5/29): registra o Service Worker
+ * Fluxo completo de ativação: registra o Service Worker
  * (reaproveita o já registrado pelo `vite-plugin-pwa` — nunca cria um
  * segundo), pede a permissão nativa do navegador (só deve ser chamado
- * a partir de uma ação explícita do usuário — ver ETAPA 14, nunca
+ * a partir de uma ação explícita do usuário — nunca
  * automaticamente ao carregar a app) e, se concedida, obtém e salva o
  * token FCM.
  *
@@ -107,7 +107,7 @@ export async function enablePushNotifications(uid: string): Promise<void> {
 }
 
 /**
- * Desativa push SÓ NESTE dispositivo (ETAPA 19: multi-dispositivo —
+ * Desativa push SÓ NESTE dispositivo (multi-dispositivo —
  * desativar em um Chrome Desktop não mexe no token do celular).
  * Remove o registro em Firestore; o token do FCM em si permanece
  * válido no navegador (não há uma forma limpa e universalmente
@@ -135,7 +135,7 @@ export async function disablePushNotifications(uid: string): Promise<void> {
   }
 }
 
-/** Resolve o estado a ser exibido na UI (ETAPA 15), cruzando suporte + permissão do navegador com a preferência local do usuário. */
+/** Resolve o estado a ser exibido na UI, cruzando suporte + permissão do navegador com a preferência local do usuário. */
 export function resolvePushStatus(hasStoredPreferenceEnabled: boolean): PushPermissionState {
   if (!isPushSupported()) return "unsupported";
   const permission = getBrowserPermissionState();

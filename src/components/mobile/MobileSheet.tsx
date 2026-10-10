@@ -17,9 +17,7 @@ interface MobileSheetProps {
 
 /**
  * Bottom Sheet genérico — base reutilizável para "Mais", filtros,
- * notificações e qualquer outro painel mobile do Tekidu (ver
- * "MODAIS E BOTTOM SHEETS" / "NÃO UTILIZAR COMPONENTES DIFERENTES
- * ALEATORIAMENTE" no briefing). Suporta arrastar para fechar (o
+ * notificações e qualquer outro painel mobile do Tekidu. Suporta arrastar para fechar (o
  * gesto mais previsível para este tipo de painel) e respeita
  * `prefers-reduced-motion` via `transition` condicional do
  * Framer Motion, que já lê a preferência do sistema automaticamente

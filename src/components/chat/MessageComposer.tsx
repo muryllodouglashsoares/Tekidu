@@ -8,7 +8,7 @@ interface MessageComposerProps {
 }
 
 /**
- * Campo de digitação do chat (item "UX" do plano):
+ * Campo de digitação do chat:
  * - Enter envia; Shift+Enter quebra linha.
  * - Prevenção de envio de mensagem vazia (`trim()` antes de checar).
  * - Limite de caracteres visível, com contador que só aparece perto

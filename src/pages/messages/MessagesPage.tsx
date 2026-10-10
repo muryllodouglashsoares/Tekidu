@@ -23,14 +23,14 @@ import type { Conversation } from "@/types/conversation";
 const SCHOOL_YEAR = new Date().getFullYear();
 
 /**
- * PARTE 1 do plano de evolução — Mensageria/chat interno.
+ * Mensageria/chat interno.
  *
  * Uma única página cobre as duas rotas ("/mensagens" e
  * "/mensagens/:conversationId" — ver AppRoutes.tsx), mesmo padrão já
  * usado por `StudentProfilePage` para dois grupos de rota diferentes.
  * O parâmetro de rota é o que decide, em MOBILE, se a tela mostra a
  * lista ou a conversa (comportamento "estilo aplicativo de
- * mensagens" pedido no plano); em DESKTOP as duas colunas convivem
+ * mensagens"); em DESKTOP as duas colunas convivem
  * sempre, e o parâmetro só decide qual item fica destacado/aberto.
  */
 export function MessagesPage() {

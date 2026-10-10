@@ -19,7 +19,7 @@ function initials(name: string) {
 }
 
 /**
- * "Resumo" (seção 8 do briefing): Aluno, Presenças, Faltas, Frequência,
+ * "Resumo": Aluno, Presenças, Faltas, Frequência,
  * Situação. Em mobile, a mesma leitura vira um card por aluno com a
  * frequência em destaque, em vez de uma tabela de 5 colunas.
  */

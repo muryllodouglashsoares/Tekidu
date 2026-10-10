@@ -8,7 +8,7 @@ import type { Student } from "@/types/student";
 import type { SchoolClass } from "@/types/schoolClass";
 
 /**
- * Recorte progressivo do gráfico de Relatórios (item 10 do briefing):
+ * Recorte progressivo do gráfico de Relatórios:
  * TODOS → TURMA → DISCIPLINA → PERÍODO. Cada campo omitido significa
  * "sem filtro nesse nível".
  */
@@ -39,7 +39,7 @@ export interface ReportSeriesPoint {
 }
 
 /**
- * Série de médias por bimestre (item 9 do briefing), sempre com os 4
+ * Série de médias por bimestre, sempre com os 4
  * pontos do ano letivo — o filtro de `term` do escopo NÃO é aplicado
  * aqui (ele afeta os indicadores, não o eixo do gráfico); só
  * turma/disciplina restringem quais notas entram na média de cada
@@ -57,7 +57,7 @@ function round1(value: number): number {
 }
 
 /**
- * Evolução "vs período anterior" (item 12 do briefing): compara os dois
+ * Evolução "vs período anterior": compara os dois
  * últimos bimestres com dados na série — respeitando o bimestre
  * selecionado no filtro, se houver.
  */
@@ -76,7 +76,7 @@ export function computeEvolution(series: ReportSeriesPoint[], selectedTerm?: Ass
   return round1(last.average - secondLast.average);
 }
 
-/** Indicadores consolidados do topo da tela de Relatórios (itens 12 e 13). */
+/** Indicadores consolidados do topo da tela de Relatórios. */
 export interface ReportOverview {
   series: ReportSeriesPoint[];
   overallAverage: number | null;
@@ -112,7 +112,7 @@ export function computeReportOverview(
   };
 }
 
-/** Resumo de uma turma, exibido nos cards abaixo do gráfico (item 14). */
+/** Resumo de uma turma, exibido nos cards abaixo do gráfico. */
 export interface ClassReportSummary {
   schoolClass: SchoolClass;
   studentCount: number;
@@ -124,8 +124,8 @@ export interface ClassReportSummary {
  * Calcula o resumo de cada turma (média/frequência/qtd. de alunos),
  * já considerando o recorte de disciplina/período selecionado no topo
  * da tela — mas sempre para TODAS as turmas do ano letivo, já que essa
- * seção é o ponto de entrada do fluxo Turma → Alunos → Relatório
- * (item 15), independente da turma escolhida no filtro do gráfico.
+ * seção é o ponto de entrada do fluxo Turma → Alunos → Relatório,
+ * independente da turma escolhida no filtro do gráfico.
  */
 export function computeClassSummaries(
   classes: SchoolClass[],
@@ -149,7 +149,7 @@ export function computeClassSummaries(
   });
 }
 
-/** Resumo por aluno, exibido na listagem "Turma → Alunos" (item 15). */
+/** Resumo por aluno, exibido na listagem "Turma → Alunos". */
 export interface StudentReportSummary {
   student: Student;
   average: number | null;

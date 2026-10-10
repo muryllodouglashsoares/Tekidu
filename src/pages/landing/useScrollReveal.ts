@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 /**
  * Ativa a classe `.reveal-visible` (ver src/index.css) quando o elemento
  * entra na viewport, para o scroll-reveal usado nas seções da Landing
- * Page (item 12/13 do briefing: animação com propósito — direcionar
+ * Page (animação com propósito — direcionar
  * atenção, nunca "preencher espaço"). Dispara uma única vez por
  * elemento; respeita `prefers-reduced-motion` via CSS, não aqui.
  */

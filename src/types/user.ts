@@ -3,7 +3,7 @@
  * Este union type é a "fonte da verdade" no frontend — ele espelha
  * (mas não substitui) a validação feita nas Firestore Security Rules.
  *
- * "guardian" (Fase 2 do plano de evolução — Portal do Responsável):
+ * "guardian" (Portal do Responsável):
  * único papel que NUNCA é dono de dados acadêmicos próprios — ele
  * apenas LÊ o boletim/frequência de aluno(s) vinculados (ver
  * `students.guardianUids` em `types/student.ts` e `firestore.rules`,
@@ -26,7 +26,7 @@ export interface UserProfile {
   createdAt: unknown; // Firestore Timestamp
 
   /**
-   * Ciclo de vida de conta estilo SUAP (Etapa 9).
+   * Ciclo de vida de conta estilo SUAP.
    *
    * `true` desde a criação da conta (por `createTeacher`/`createStudent`)
    * até o usuário concluir o primeiro acesso (`FirstAccessPage`), quando
@@ -55,7 +55,7 @@ export interface UserProfile {
   tempPasswordSetAt?: unknown; // Firestore Timestamp | null
 
   /**
-   * Prazo de validade da credencial temporária (Decisão 3: 48h a
+   * Prazo de validade da credencial temporária (48h a
    * partir da criação). Depois desse prazo, a tela de login recusa a
    * usar a matrícula/chave para resolver o e-mail — ver nota de
    * limitação em `FIREBASE_SETUP.md`: sem Cloud Functions/Admin SDK,

@@ -9,10 +9,8 @@ import { ClosingCtaSection } from "./landing/ClosingCtaSection";
 import { LandingFooter } from "./landing/LandingFooter";
 
 /**
- * Landing Page oficial do Tekidu — implementação do design aprovado no
- * Figma (ver "Update landing page design"). Composição, ordem e
- * elemento de assinatura (trajetória em linha/pontos) preservados
- * conforme o modelo; cores e Dark Mode reutilizam o sistema de tokens
+ * Landing Page oficial do Tekidu. Composição, ordem e
+ * elemento de assinatura (trajetória em linha/pontos); cores e Dark Mode reutilizam o sistema de tokens
  * já existente na plataforma (src/index.css + ThemeContext).
  */
 export function LandingPage() {

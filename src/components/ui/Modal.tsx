@@ -10,8 +10,7 @@ interface ModalProps {
   /** "md" (padrão, inalterado) ou "lg" para conteúdo que precisa de mais largura de leitura (ex.: detalhe de um aviso). */
   size?: "md" | "lg";
   /**
-   * Como este modal se comporta em mobile (ver "MODAIS E BOTTOM
-   * SHEETS" no briefing — nem todo modal deve virar full-screen).
+   * Como este modal se comporta em mobile (nem todo modal deve virar full-screen).
    * "fullscreen" (padrão): formulários e detalhes longos ganham a tela
    * toda. "dialog": confirmações e mensagens curtas continuam como um
    * cartão compacto centralizado, igual ao desktop.
@@ -26,7 +25,7 @@ const SIZE_CLASS: Record<NonNullable<ModalProps["size"]>, string> = {
 
 /**
  * Um modal desktop pequeno centralizado na tela não funciona bem em
- * smartphone (ver "MODAIS" no briefing mobile): em vez de criar um
+ * smartphone: em vez de criar um
  * componente novo por formulário, este único componente compartilhado
  * — usado por todos os formulários/detalhes do app — passa a se
  * comportar como Full-screen Modal abaixo do breakpoint `md`, com
@@ -36,9 +35,9 @@ const SIZE_CLASS: Record<NonNullable<ModalProps["size"]>, string> = {
 export function Modal({ title, onClose, children, size = "md", mobileBehavior = "fullscreen" }: ModalProps) {
   const isMobile = useIsMobile();
   // Foco preso dentro do modal enquanto aberto e restaurado ao fechar
-  // (item 13 do briefing de acessibilidade) — reutilizado por todos os
+  // — reutilizado por todos os
   // modais do app, já que este é o único componente de diálogo
-  // compartilhado (ver item 28: corrigir na origem).
+  // compartilhado (corrigir na origem).
   const dialogRef = useFocusTrap<HTMLDivElement>(true);
 
   useEffect(() => {

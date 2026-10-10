@@ -5,9 +5,9 @@ import type { Student } from "@/types/student";
 import type { SchoolClass } from "@/types/schoolClass";
 
 /**
- * PARTE 1 do plano de evolução — Mensageria.
+ * Mensageria.
  *
- * REGRA FUNDAMENTAL do plano: "não crie duplicação de lógica". A
+ * REGRA FUNDAMENTAL: não duplicar lógica. A
  * elegibilidade "professor pode falar com este aluno" é EXATAMENTE a
  * mesma relação já usada por "Meus Alunos" do Portal do Professor
  * (`teacherOverviewService.getTeacherStudentsOverview` — um aluno

@@ -7,8 +7,7 @@ export interface BreadcrumbItem {
 }
 
 /**
- * Trilha de navegação usada pelo fluxo Boletins → Turma → Aluno (ver
- * briefing, item 7 e 12). Não existia um padrão de breadcrumb em nenhuma
+ * Trilha de navegação usada pelo fluxo Boletins → Turma → Aluno. Não existia um padrão de breadcrumb em nenhuma
  * outra tela do Tekidu até aqui; este componente fica em `layout/` para
  * ser reaproveitado caso outra funcionalidade também precise de
  * navegação em níveis no futuro, em vez de duplicar o markup.

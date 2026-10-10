@@ -23,7 +23,7 @@ interface ReportFiltersProps {
 }
 
 /**
- * Filtros do gráfico de Relatórios (item 10 do briefing): TODOS →
+ * Filtros do gráfico de Relatórios: TODOS →
  * TURMA → DISCIPLINA → PERÍODO, progressivos — cada nível só fica
  * disponível depois do anterior. Mesmo padrão visual (grid de
  * `Select`s dentro de um `Card`) já usado em Notas/Frequência/Boletim.

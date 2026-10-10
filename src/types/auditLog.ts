@@ -1,10 +1,8 @@
 /**
  * Formato do documento em: auditLogs/{logId}
  *
- * Item 14 do plano de consolidação V8 ("Auditoria de alterações").
- * Nesta etapa a prioridade é PREPARAR A ESTRUTURA (não construir uma
- * tela completa de auditoria) para as três operações citadas
- * explicitamente no plano: alteração de nota, exclusão de avaliação e
+ * Auditoria de alterações. A estrutura cobre inicialmente três
+ * operações: alteração de nota, exclusão de avaliação e
  * alteração de frequência.
  *
  * `before`/`after` guardam apenas o campo que realmente muda em cada
@@ -12,8 +10,7 @@
  * não um snapshot do documento inteiro, para manter os registros
  * pequenos e fáceis de exibir depois ("Antes: 7,0 / Depois: 8,0").
  *
- * TAREFA 4 (Fase 1 pós-auditoria V8 — "Ampliar a cobertura do log de
- * auditoria"): estende a lista de eventos cobertos além das três
+ * Cobertura ampliada: estende a lista de eventos cobertos além das três
  * operações originais. Segue a MESMA convenção de nomenclatura já
  * usada (`<entidade>_<verbo no particípio>`):
  * - `academic_settings_updated`: alteração da régua de aprovação de um
@@ -38,7 +35,7 @@
  *   aviso não gera log, para não sobrecarregar a trilha com eventos de
  *   baixo risco). `before` guarda o título do aviso excluído.
  *
- * FASE 2/3 do plano de evolução (Portal do Responsável):
+ * Portal do Responsável:
  * - `guardian_created`: cadastro de um novo responsável
  *   (`guardianService.createGuardian`) — mesmo papel de
  *   `teacher_created`, `before: null`.
@@ -49,7 +46,7 @@
  *   de qual aluno), por isso auditado nos dois sentidos, não só na
  *   criação. `before`/`after` guardam o nome do responsável.
  *
- * RECUPERAÇÕES E SEGUNDA CHAMADA (item 28 do briefing):
+ * RECUPERAÇÕES E SEGUNDA CHAMADA:
  * - `recovery_created`/`second_call_created`: cadastro de uma
  *   avaliação de recuperação/segunda chamada
  *   (`assessmentService.createAssessment` com `assessmentKind`
@@ -58,7 +55,7 @@
  * - `recovery_updated`/`second_call_updated`: edição de nome/peso/valor
  *   máximo de uma avaliação especial já existente.
  * - `recovery_deleted`/`second_call_deleted`: exclusão de uma avaliação
- *   especial (e das notas lançadas nela) — item 41: a avaliação
+ *   especial (e das notas lançadas nela) — a avaliação
  *   original nunca é afetada por esta exclusão. Reaproveita `before`
  *   para o nome da avaliação excluída (mesmo racional de
  *   `assessment_deleted`, que continua sendo usado só para avaliações
@@ -89,7 +86,7 @@ export type AuditEventType =
 
 /**
  * Rótulo legível para cada tipo de evento — usado pela aba "Histórico"
- * do Perfil 360° (Fase 8, `StudentProfilePage`), a primeira tela a
+ * do Perfil 360° (`StudentProfilePage`), a primeira tela a
  * efetivamente EXIBIR os logs de auditoria para o usuário (até aqui
  * eles só eram gravados, nunca lidos de volta pela UI).
  */

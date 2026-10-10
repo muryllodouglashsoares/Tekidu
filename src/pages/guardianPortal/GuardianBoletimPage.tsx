@@ -15,8 +15,7 @@ import { BOLETIM_PERIOD_LABEL, type BoletimPeriod } from "@/types/boletim";
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 /**
- * Portal do Responsável — "Boletim do filho" (Fase 3 do plano de
- * evolução). Estrutura QUASE idêntica a `MyBoletimPage` (Portal do
+ * Portal do Responsável — "Boletim do filho". Estrutura QUASE idêntica a `MyBoletimPage` (Portal do
  * Aluno) de propósito: reaproveita `getStudentBoletim` e os MESMOS
  * componentes de apresentação (`BoletimSummary`/`BoletimTable`/
  * `BoletimPdfDownloadButton`) — a única diferença real é que o

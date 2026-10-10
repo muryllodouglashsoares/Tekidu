@@ -1,6 +1,6 @@
 /**
  * Geração de credenciais temporárias para o ciclo de vida de conta
- * estilo SUAP (Etapa 9). Usado por `userService.createTeacher` e
+ * estilo SUAP. Usado por `userService.createTeacher` e
  * `studentService.createStudent` no momento do cadastro — o admin
  * NUNCA digita nem vê a senha/chave gerada aqui, ela só existe (a) no
  * Firebase Authentication e (b) no corpo do e-mail enviado (ver
@@ -63,8 +63,7 @@ export function generateTempPassword(): string {
 }
 
 /**
- * Gera a chave de primeiro acesso do professor (Decisão 1: opção "a"
- * — 8 caracteres alfanuméricos, sem caracteres ambíguos). Alunos NÃO
+ * Gera a chave de primeiro acesso do professor (8 caracteres alfanuméricos, sem caracteres ambíguos). Alunos NÃO
  * usam esta função: a matrícula (`Student.registrationNumber`) já
  * cumpre esse papel para eles (ver `studentService.createStudent`).
  */
@@ -72,5 +71,5 @@ export function generateLoginKey(): string {
   return Array.from({ length: 8 }, () => randomChar(LOGIN_KEY_ALPHABET)).join("");
 }
 
-/** Prazo de validade da credencial temporária (Decisão 3): 48 horas. */
+/** Prazo de validade da credencial temporária: 48 horas. */
 export const TEMP_CREDENTIALS_TTL_MS = 48 * 60 * 60 * 1000;

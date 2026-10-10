@@ -25,26 +25,25 @@ import type { UserProfile } from "@/types/user";
 const usersCollection = collection(db, "users");
 
 /**
- * PARTE 2/3 do plano de evolução — Portal do Responsável.
+ * Portal do Responsável.
  *
- * ADAPTAÇÃO DE MODELO (documentada aqui porque diverge do prompt
- * original): o plano descrevia uma coleção própria
+ * DECISÃO DE MODELO: não existe uma coleção própria
  * `guardians/{guardianUid}` com os campos `{uid, name, email, role,
- * active, createdAt}` — um espelho quase idêntico ao que
+ * active, createdAt}`, que seria um espelho quase idêntico ao que
  * `users/{uid}` já guarda para TODA role (ver `types/user.ts`,
  * `UserProfile`). Criar essa segunda coleção duplicaria a identidade
  * do responsável em dois documentos que precisariam ser mantidos
  * sincronizados a cada edição (nome, ativação/desativação), sem
  * nenhum dado genuinamente novo — na prática, uma "segunda
- * arquitetura paralela" para a mesma informação, que a REGRA
- * FUNDAMENTAL do plano pede explicitamente para evitar.
+ * arquitetura paralela" para a mesma informação, que se evita
+ * de propósito.
  *
  * Este serviço usa `users/{uid}` (role: "guardian") como ÚNICA fonte
  * de verdade da identidade do responsável — exatamente como já
  * acontece para professor/aluno — e modela a única coisa que de fato
  * não existia em lugar nenhum: a RELAÇÃO responsável↔aluno, guardada
  * em `students/{studentId}.guardianUids` (ver `types/student.ts`).
- * O "conceito" pedido pelo plano (responsável como entidade própria,
+ * O "conceito" de responsável (como entidade própria,
  * com um vínculo claro e seguro ao aluno) continua todo presente —
  * só sem duplicar o que já existia.
  */

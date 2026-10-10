@@ -1,22 +1,22 @@
 /**
  * Formato do documento em: notifications/{notificationId}
  *
- * Fase 5 do plano de evolução ("Sistema de notificações"). Segue a
+ * Sistema de notificações. Segue a
  * MESMA estrutura de decisão já usada em `types/auditLog.ts`: um tipo
  * enumerado curto, específico de cada evento, em vez de um campo de
  * texto livre — isso é o que permite à Command Palette/centro de
  * notificações decidir o ÍCONE e o LINK de destino sem precisar
  * interpretar texto.
  *
- * ESCOPO DA ETAPA 5: implementar a estrutura completa (tipo, service,
- * regras, índice, UI no Header com todos os estados) e ligá-la a um
- * subconjunto representativo de eventos reais — um por perfil citado
- * no prompt (aluno: nota lançada; professor: disciplina vinculada;
- * admin: novo usuário) — em vez de instrumentar TODAS as ações
+ * ESCOPO INICIAL: estrutura completa (tipo, service, regras, índice, UI
+ * no Header com todos os estados) ligada a um subconjunto
+ * representativo de eventos reais — um por perfil (aluno: nota lançada;
+ * professor: disciplina vinculada; admin: novo usuário) — em vez de
+ * instrumentar TODAS as ações
  * possíveis do sistema de uma vez, o que arriscaria notificações
  * inconsistentes/duplicadas em fluxos ainda não revisados.
  *
- * ETAPA 6 (expansão): três novos tipos, cada um ligado a um evento que
+ * Expansão: três novos tipos, cada um ligado a um evento que
  * passa no teste "tem valor real para quem recebe":
  * - `assessment_created`/`assessment_updated`: o aluno passa a saber
  *   que uma avaliação foi cadastrada/renomeada para sua disciplina
@@ -29,7 +29,7 @@
  *   e DEPOIS do lançamento, então uma segunda falta consecutiva já
  *   abaixo do limiar não gera uma segunda notificação.
  *
- * Deliberadamente NÃO adicionados nesta etapa (evitar notificação sem
+ * Deliberadamente NÃO adicionados (evitar notificação sem
  * valor real, mesmo critério acima):
  * - `attendance_recorded`: notificar toda aula lançada é ruído puro —
  *   o aluno já teria uma notificação por aula, a maioria delas
@@ -49,7 +49,7 @@
  * Novos tipos de evento podem ser adicionados a este union e a
  * `notificationService.createNotification` sem alterar a estrutura.
  *
- * PARTE 1 do plano de evolução (Mensageria — professor ↔ aluno):
+ * Mensageria (professor ↔ aluno):
  * `message_received` é disparado por `chatService.sendMessage` sempre
  * que uma mensagem é enviada, notificando o DESTINATÁRIO (nunca quem
  * enviou) — passa no mesmo critério "tem valor real para quem recebe"
@@ -69,7 +69,7 @@
  * criadas pelo staff (`reviewAbsenceJustification`) ao decidir a
  * solicitação, notificando o aluno.
  *
- * IMPLEMENTAÇÃO — WEB PUSH (ETAPA 10 do prompt): `announcement` é o
+ * IMPLEMENTAÇÃO — WEB PUSH: `announcement` é o
  * tipo novo, disparado por `announcementService` quando um aviso é
  * publicado (`createAnnouncement(..., publish=true)` ou
  * `publishAnnouncement`). Segue o MESMO critério de valor real usado

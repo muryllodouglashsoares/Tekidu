@@ -13,8 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ID = "tekidu-rules-test-chat";
 
 /**
- * Testes de Security Rules da mensageria (Parte 1 do plano de
- * evolução — "PARTE 10: Testes de Segurança / Chat").
+ * Testes de Security Rules da mensageria.
  *
  * Cenário-base: TEACHER_UID leciona DISCIPLINE_ID, vinculada a
  * CLASS_ID. STUDENT_UID é o aluno de STUDENT_ID, matriculado em

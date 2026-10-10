@@ -15,8 +15,7 @@ const dotStyles: Record<AttendanceStatus, string> = {
 /**
  * Badge de situação de frequência (Regular / Atenção / Crítica).
  * Mesmo padrão visual de `SituationBadge` (Notas): cor + ponto colorido
- * + rótulo em texto, para nunca depender só da cor (ver seção de
- * acessibilidade do briefing).
+ * + rótulo em texto, para nunca depender só da cor.
  */
 export function AttendanceStatusBadge({ status }: { status: AttendanceStatus | null }) {
   if (status === null) {

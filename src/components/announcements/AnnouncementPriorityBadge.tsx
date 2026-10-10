@@ -1,7 +1,7 @@
 import { ANNOUNCEMENT_PRIORITY_LABELS, type AnnouncementPriority } from "@/types/announcement";
 
-// Prioridade "normal" não recebe selo (ver seção 15 do briefing: "não
-// transformar a página em um painel cheio de alertas") — apenas
+// Prioridade "normal" não recebe selo (para não
+// transformar a página em um painel cheio de alertas) — apenas
 // important/urgent ganham um indicador visual, com destaque crescente
 // mas discreto.
 const STYLES: Record<Exclude<AnnouncementPriority, "normal">, string> = {

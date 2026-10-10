@@ -12,7 +12,7 @@ import { getStudentBoletim, type StudentBoletim } from "@/services/boletim/bolet
 import { describeFirebaseError } from "@/utils/firebaseError";
 
 /**
- * "Minhas Disciplinas" (seção 9 do plano multi-role) — um cartão por
+ * "Minhas Disciplinas" — um cartão por
  * disciplina da turma do aluno, com média/frequência/situação.
  *
  * Reaproveita `boletimService.getStudentBoletim` (período "annual") —

@@ -13,10 +13,10 @@ interface DevelopmentLineChartProps {
 
 /**
  * Gráfico de linhas em SVG puro, sem biblioteca externa (o projeto não
- * tinha nenhuma lib de gráficos instalada — ver item 9 do briefing:
- * "NÃO adicione uma biblioteca nova se não for necessário"). Usado
+ * tinha nenhuma lib de gráficos instalada, e adicionar uma só para
+ * isto não se justifica). Usado
  * tanto pelo gráfico geral de Relatórios quanto pelo gráfico
- * individual do aluno (item 19: "criar um componente reutilizável"),
+ * individual do aluno (componente reutilizável),
  * evitando duplicar a mesma lógica de desenho em dois lugares.
  */
 export function DevelopmentLineChart({
@@ -65,8 +65,7 @@ export function DevelopmentLineChart({
   const tickCount = 4;
   const tickValues = Array.from({ length: tickCount + 1 }, (_, i) => min + ((max - min) / tickCount) * i);
 
-  // Alternativa textual ao gráfico (item 21 do briefing de
-  // acessibilidade): um leitor de tela não deve receber apenas
+  // Alternativa textual ao gráfico (acessibilidade): um leitor de tela não deve receber apenas
   // "gráfico" — aqui ele recebe a primeira nota, a última nota e a
   // variação, e pode expandir uma tabela com todos os pontos.
   const first = validPoints[0];
@@ -150,8 +149,8 @@ export function DevelopmentLineChart({
           para comunicar a informação essencial do gráfico. */}
       <p className="mt-2 text-sm text-ink-600">{summary}</p>
 
-      {/* Tabela de dados completa, colapsada por padrão (item 21:
-          "quando necessário, fornecer tabela de dados"). `<details>`
+      {/* Tabela de dados completa, colapsada por padrão (fornece a tabela
+          de dados quando necessário). `<details>`
           é nativamente acessível por teclado e leitor de tela, sem
           precisar de JS/estado adicional. */}
       <details className="mt-2 text-sm">

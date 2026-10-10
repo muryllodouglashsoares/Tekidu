@@ -41,7 +41,7 @@ function toRecord(id: string, data: Record<string, unknown>): AttendanceRecord {
  * `AttendanceRecord`. Exige o mesmo índice composto de
  * `getSessionsByContext`.
  *
- * `studentId` (opcional, Tarefa 3 — Fase 1 pós-auditoria V8): mesmo
+ * `studentId` (opcional): mesmo
  * papel do parâmetro equivalente em `gradeService.getGradesByContext`
  * — estreita a consulta a um único aluno via `where('studentId', '==',
  * ...)`, tornando-a executável para um aluno autenticado sob a

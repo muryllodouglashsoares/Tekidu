@@ -1,7 +1,6 @@
 /**
  * Situação acadêmica do aluno.
- * Espelha os rótulos já usados no protótipo do Figma (Dashboard →
- * "Distribuição por situação"): Ativos, Em recuperação, Reprovados,
+ * Rótulos usados no Dashboard ("Distribuição por situação"): Ativos, Em recuperação, Reprovados,
  * Inativos.
  */
 export type StudentStatus = "active" | "recovery" | "failed" | "inactive";
@@ -29,7 +28,7 @@ export const STUDENT_STATUS_LABEL: Record<StudentStatus, string> = {
  *   de `grades/*` em vez de digitado manualmente. Até lá, ele é
  *   opcional e apenas informativo.
  *
- * NOTA SOBRE `uid` (Fase 1 pós-auditoria V8 — Tarefa 2):
+ * NOTA SOBRE `uid`:
  * Liga este registro acadêmico à conta de login do aluno no Firebase
  * Authentication, análogo ao papel de `UserProfile.uid` (ver
  * `types/user.ts`) — mas aqui o campo mora no PRÓPRIO documento de
@@ -47,7 +46,7 @@ export const STUDENT_STATUS_LABEL: Record<StudentStatus, string> = {
  * `studentService.createStudent`), nunca editado manualmente pelo
  * formulário.
  *
- * NOTA SOBRE `guardianUids` (Fase 2 do plano de evolução — Portal do
+ * NOTA SOBRE `guardianUids` (Portal do
  * Responsável): lista de uids de Firebase Authentication (nunca IDs
  * de documento) dos responsáveis vinculados a este aluno — mesmo
  * papel de `uid` acima, mas em relação N:N (um aluno pode ter mais de

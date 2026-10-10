@@ -1,8 +1,8 @@
 # Acessibilidade na Tekidu
 
 Este documento descreve a camada de acessibilidade implementada na Tekidu,
-com o objetivo de manter conformidade com as boas práticas da **WCAG 2.2
-nível AA**, e serve como guia para quem for construir novas telas.
+orientada pelas boas práticas da **WCAG 2.2 nível AA** (não há auditoria
+formal de conformidade), e serve como guia para quem for construir novas telas.
 
 ## Visão geral
 

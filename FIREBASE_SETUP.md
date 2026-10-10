@@ -18,7 +18,9 @@ rejeitada com o erro `failed-precondition`, o que faz a tela mostrar "Notas não
 conseguiram ser carregadas" / "Não foi possível carregar a frequência".
 
 Os índices necessários já estão declarados em `firestore.indexes.json`, na raiz
-do projeto. Para aplicá-los ao projeto real, escolha UMA das opções abaixo:
+do projeto (o arquivo também contém índices de `notifications`, `auditLogs`,
+`academicEvents`, `announcements` e `conversations`; `firebase deploy --only
+firestore:indexes` aplica todos). Para aplicá-los ao projeto real, escolha UMA das opções abaixo:
 
 ### Opção A — via Firebase CLI (recomendado)
 
@@ -77,11 +79,11 @@ firebase deploy --only firestore:rules
 
 ## Variáveis de ambiente
 
-`.env.local` já está preenchido com as credenciais do projeto
-`tekidu-26c0f` — nenhuma ação adicional é necessária aqui para
-Firebase.
+`.env.local` não é versionado (está no `.gitignore`). Copie `.env.example`
+para `.env.local` e preencha com as credenciais do app Web do seu projeto
+Firebase (no projeto original, `tekidu-26c0f`).
 
-## Ciclo de vida de conta estilo SUAP (Etapa 9)
+## Ciclo de vida de conta estilo SUAP
 
 Substitui o fluxo antigo (admin digitava a senha do professor/aluno no
 formulário) por: conta nasce com senha temporária + matrícula/chave
@@ -91,15 +93,16 @@ sua senha definitiva. Ver comentários em `userService.createTeacher`,
 e `firestore.rules` (coleções `users` e `loginKeys`) para o desenho
 completo.
 
-**Decisão 2 (arquitetura de e-mail) escolhida: Opção B(i) — 100%
-client-side, sem Cloud Functions.** A senha temporária e a chave de
-primeiro acesso são geradas no navegador do admin
-(`src/lib/credentials.ts`) e o e-mail é enviado por uma chamada direta
-do navegador à API REST da **EmailJS**
-(`src/services/email/emailService.ts`) — trocado da Resend (usada numa
-versão anterior desta mesma etapa) porque a Resend exige um domínio
-próprio verificado por DNS para enviar a destinatários reais, e o
-projeto não tem um.
+**Arquitetura de e-mail atual:** a senha
+temporária e a chave de primeiro acesso são geradas no navegador do
+admin (`src/lib/credentials.ts`), e o e-mail é enviado pela **EmailJS**
+por meio de uma **Cloudflare Pages Function**
+(`functions/api/send-first-access-email.ts`), chamada pelo frontend em
+`src/services/email/emailService.ts`. A decisão original
+(100% client-side, chamando a EmailJS direto do navegador) foi
+substituída para que a chave privada da EmailJS não fique no bundle do
+cliente. A EmailJS foi adotada no lugar da Resend porque a Resend exige
+um domínio próprio verificado por DNS, e o projeto não tem um.
 
 ### Requisito de infraestrutura: conta EmailJS
 
@@ -139,24 +142,27 @@ projeto não tem um.
    sua Public Key (que fica visível no código do navegador — isso é
    esperado no modelo da EmailJS) consegue disparar e-mails pelo seu
    template.
-6. Preencha em `.env.local`:
+6. Configure as variáveis de ambiente da Cloudflare Pages (Settings →
+   Environment variables, **sem** prefixo `VITE_`, para nunca irem ao
+   bundle do cliente):
    ```
-   VITE_EMAILJS_SERVICE_ID=...
-   VITE_EMAILJS_TEMPLATE_ID=...
-   VITE_EMAILJS_PUBLIC_KEY=...
-   VITE_EMAILJS_PRIVATE_KEY=...
+   EMAILJS_SERVICE_ID=...
+   EMAILJS_TEMPLATE_ID=...
+   EMAILJS_PUBLIC_KEY=...
+   EMAILJS_PRIVATE_KEY=...
    ```
-7. **Pendência registrada nesta etapa**: nenhuma conta EmailJS foi
-   configurada durante o desenvolvimento — sem essas variáveis
-   preenchidas, `createTeacher`/`createStudent` falham de forma
+7. **Configuração obrigatória**: sem essas variáveis preenchidas na
+   Cloudflare Pages, `createTeacher`/`createStudent` falham de forma
    explícita e limpa (nada é criado no Firebase — ver ordem de
    execução em `userService.createTeacher`/
-   `studentService.createStudent`). Configure a conta acima antes do
-   primeiro cadastro real.
+   `studentService.createStudent`). O repositório não permite saber se
+   a conta já foi configurada no ambiente de produção.
 
 ### ⚠️ Limite do plano gratuito da EmailJS
 
-200 requisições de e-mail por mês, 2 templates (confirmado em 2026).
+No plano gratuito, a EmailJS limitava, até a última verificação, a 200
+requisições de e-mail por mês e 2 templates — confira os valores atuais
+no site da EmailJS, pois são externos ao projeto e podem mudar.
 Cada professor/aluno cadastrado consome 1 dessas 200. Se o limite for
 excedido, a API recusa a chamada (normalmente HTTP 429) e
 `sendFirstAccessEmail` propaga o erro — o cadastro falha de forma
@@ -164,36 +170,33 @@ explícita, sem fingir que o e-mail foi enviado. Se isso se tornar um
 problema recorrente, os planos pagos da EmailJS começam em ~US$9/mês
 com limites bem maiores.
 
-### CORS: por que a EmailJS resolve o que a Resend não resolvia
+### CORS
 
-Diferente da Resend (cuja API é pensada para uso em servidor), a API
-da EmailJS foi desenhada desde o início para ser chamada direto do
-navegador — é a proposta central do produto ("sem servidor"). Por
-isso, ao contrário da versão anterior desta etapa (que usava Resend),
-não se espera bloqueio de CORS aqui. Ainda assim, só é possível
-confirmar com 100% de certeza testando com uma conta EmailJS real.
+Como a chamada à EmailJS agora parte da Pages Function (servidor) e o
+navegador só chama a rota do próprio site (`/api/send-first-access-email`),
+CORS não é uma preocupação nesse trecho.
 
-### ⚠️ Limitação conhecida: expiração da credencial temporária (Decisão 3)
+### ⚠️ Limitação conhecida: expiração da credencial temporária
 
 `tempCredentialsExpireAt` (48h) é checado no cliente, em
 `resolveLoginKey`/`LoginPage`, e bloqueia a TELA de login por
 matrícula/chave depois desse prazo. **Isso não é uma invalidação real
-da senha no Firebase Authentication**: sem Cloud Functions/Admin SDK,
+da senha no Firebase Authentication**: sem o Admin SDK,
 não existe forma de expirar uma senha do lado do servidor pelo SDK do
-cliente. Um agente que chamasse a API do Firebase diretamente (fora da
+cliente (a Pages Function só envia o e-mail, não toca no Firebase
+Authentication). Um agente que chamasse a API do Firebase diretamente (fora da
 UI do Tekidu) ainda conseguiria autenticar com a senha temporária
 mesmo depois das 48h, até o primeiro acesso ser concluído (o que troca
 a senha de verdade). Documentado aqui para não passar a falsa
 impressão de que a expiração é uma barreira de segurança — é apenas
-uma barreira de UX/processo, igual reconhecido na Decisão 2 quando a
-Opção B foi descrita como tendo "trade-offs de segurança a aceitar
-explicitamente".
+uma barreira de UX/processo, um trade-off de segurança aceito
+conscientemente ao não usar o Admin SDK.
 
 ## Firestore Security Rules — nova coleção `loginKeys`
 
 Além de `users/{userId}` (que ganhou os campos `mustSetPassword`,
-`loginKey`, `tempPasswordSetAt`, `tempCredentialsExpireAt`), esta etapa
-adiciona a coleção `loginKeys/{loginKey}` — ver bloco de comentários
+`loginKey`, `tempPasswordSetAt`, `tempCredentialsExpireAt`), o projeto
+utiliza também a coleção `loginKeys/{loginKey}` — ver bloco de comentários
 correspondente em `firestore.rules`. Republique as regras:
 
 ```bash

@@ -23,8 +23,7 @@ import type { Student, StudentInput } from "@/types/student";
 const studentsCollection = collection(db, "students");
 
 /**
- * Payload aceito ao CADASTRAR um novo aluno (Tarefa 2, Fase 1 pós-
- * auditoria V8). Idêntico a `StudentInput` desde a Etapa 9: o campo
+ * Payload aceito ao CADASTRAR um novo aluno. Idêntico a `StudentInput`: o campo
  * `password` foi removido — o sistema gera a senha temporária
  * internamente (ciclo de vida de conta estilo SUAP), o admin não digita
  * mais senha nenhuma. Mantido como alias explícito (em vez de apontar
@@ -43,11 +42,11 @@ function toStudent(id: string, data: Record<string, unknown>): Student {
     status: (data.status as Student["status"]) ?? "active",
     average: (data.average as number | null) ?? null,
     // `uid` não existe nos documentos cadastrados antes desta mudança
-    // (Tarefa 2) — `?? null` trata a ausência do campo exatamente
+    // — `?? null` trata a ausência do campo exatamente
     // como o estado "sem conta vinculada ainda", sem exigir migração.
     uid: (data.uid as string | null) ?? null,
-    // Fase 2 do plano de evolução (guardian) — `?? []` trata a
-    // ausência do campo (todo aluno cadastrado antes desta fase)
+    // Portal do Responsável — `?? []` trata a
+    // ausência do campo (todo aluno cadastrado antes do vínculo existir)
     // exatamente como "nenhum responsável vinculado ainda", sem exigir
     // migração de dados.
     guardianUids: (data.guardianUids as string[] | undefined) ?? [],
@@ -75,14 +74,13 @@ export async function getStudentById(id: string): Promise<Student | null> {
 
 /**
  * Resolve o documento `students/{studentId}` do aluno autenticado a
- * partir do `uid` do Firebase Authentication (Tarefa 3, Fase 1
- * pós-auditoria V8) — pré-requisito do Portal do Aluno: a tela do
+ * partir do `uid` do Firebase Authentication — pré-requisito do Portal do Aluno: a tela do
  * aluno precisa descobrir "qual documento de students é o meu" sem
  * exigir que ele escolha manualmente (diferente do fluxo de staff em
  * Boletim, que escolhe turma → aluno).
  *
  * A query `where('uid', '==', uid)` é o padrão exigido pela Security
- * Rule de `students/{studentId}` (Tarefa 2): o filtro de igualdade
+ * Rule de `students/{studentId}`: o filtro de igualdade
  * bate exatamente com a condição da regra (`resource.data.uid ==
  * request.auth.uid`), o que permite ao Firestore validar a consulta
  * sem precisar de um `list` irrestrito. `limit(1)` porque `uid` é
@@ -97,8 +95,8 @@ export async function getStudentByUid(uid: string): Promise<Student | null> {
 }
 
 /**
- * Resolve os alunos vinculados a um responsável (Fase 2/3 do plano de
- * evolução — Portal do Responsável), a partir do `uid` de Firebase
+ * Resolve os alunos vinculados a um responsável (Portal do
+ * Responsável), a partir do `uid` de Firebase
  * Authentication do responsável logado.
  *
  * A query `where('guardianUids', 'array-contains', uid)` é o padrão
@@ -119,8 +117,7 @@ export async function getStudentsByGuardianUid(uid: string): Promise<Student[]> 
  * Authentication, via App secundário — ver `createStaffAuthAccount`
  * em `lib/firebase.ts`, reaproveitada do fluxo de professores), grava
  * o `uid` retornado no documento `students/{studentId}` e cria o
- * documento espelho `users/{uid}` com `role: "student"` (Tarefa 2,
- * Fase 1 pós-auditoria V8).
+ * documento espelho `users/{uid}` com `role: "student"`.
  *
  * POR QUE TAMBÉM `users/{uid}`: todo o sistema de rotas/permissões
  * (`AuthContext`, `ProtectedRoute`) decide o que renderizar a partir
@@ -144,11 +141,11 @@ export async function getStudentsByGuardianUid(uid: string): Promise<Student[]> 
  * cadastrar um aluno em `students`) crie um documento com
  * `role == 'student'` — ver `firestore.rules`.
  *
- * CICLO DE VIDA DE CONTA ESTILO SUAP (Etapa 9, Decisão 2 = Opção B(i)):
+ * CICLO DE VIDA DE CONTA ESTILO SUAP:
  * a senha nunca é digitada por quem cadastra — é gerada aqui
  * (`generateTempPassword`) e enviada só por e-mail. O identificador de
  * primeiro acesso do aluno é a própria matrícula (`registrationNumber`,
- * já um campo natural do cadastro — Decisão 1), então, diferente do
+ * já um campo natural do cadastro), então, diferente do
  * professor, não é preciso gerar uma chave extra: `loginKeys/{matrícula}`
  * é criado usando o valor já digitado no formulário. Isso reaproveita
  * exatamente o mesmo mecanismo de resolução "identificador → e-mail"
@@ -156,17 +153,14 @@ export async function getStudentsByGuardianUid(uid: string): Promise<Student[]> 
  * (`resolveLoginKey`/`completeFirstAccess`, compartilhadas pelas duas
  * roles) e `firestore.rules` (`match /loginKeys/{key}`).
  *
- * MATRÍCULA PRECISA SER ÚNICA (correção pós-primeira versão da Etapa
- * 9): como a matrícula vira o ID do documento `loginKeys/{matrícula}`,
+ * MATRÍCULA PRECISA SER ÚNICA: como a matrícula vira o ID do documento `loginKeys/{matrícula}`,
  * cadastrar dois alunos com a mesma matrícula faria o segundo
  * `setDoc` SOBRESCREVER silenciosamente a chave do primeiro — o
  * primeiro aluno passaria a resolver para a conta do segundo e nunca
  * mais conseguiria fazer o primeiro acesso. `assertRegistrationNumberIsUnique`
- * below bloqueia isso ANTES de gerar qualquer credencial ou enviar
- * e-mail. Nunca existia essa checagem antes desta correção — não é
- * algo que a Etapa 9 introduziu, mas que ela tornou crítico (antes, a
- * matrícula duplicada era só um dado inconsistente; agora ela quebra
- * o login de outra pessoa).
+ * abaixo bloqueia isso ANTES de gerar qualquer credencial ou enviar
+ * e-mail. A checagem é crítica porque a matrícula duplicada deixou de ser
+ * só um dado inconsistente: agora ela quebraria o login de outra pessoa.
  *
  * SE O E-MAIL FALHAR: mesma correção de `userService.createTeacher` —
  * o e-mail é enviado ANTES de criar qualquer coisa no Firebase, então
@@ -248,8 +242,7 @@ export async function createStudent(data: StudentCreateInput): Promise<string> {
  * abranja `students` (coleção com ID autogerado) e `loginKeys` (ID =
  * matrícula) de forma atômica. Aceitável para o volume de uso de um
  * cadastro manual feito por um admin por vez; uma garantia realmente
- * atômica exigiria Cloud Functions (mesma limitação já reconhecida na
- * Decisão 2).
+ * atômica exigiria Cloud Functions (mesma limitação já reconhecida acima).
  */
 async function assertRegistrationNumberIsUnique(registrationNumber: string): Promise<void> {
   const snapshot = await getDocs(
@@ -264,8 +257,8 @@ async function assertRegistrationNumberIsUnique(registrationNumber: string): Pro
  * Atualiza os dados de um aluno já cadastrado. NUNCA toca em `uid`:
  * o vínculo com a conta de Authentication é definido uma única vez,
  * no cadastro (`createStudent`) — uma edição não recria nem
- * transfere a conta. Alunos cadastrados antes da Tarefa 2 permanecem
- * com `uid: null` até serem migrados (fora do escopo desta fase);
+ * transfere a conta. Alunos cadastrados antes do vínculo com a conta permanecem
+ * com `uid: null` até serem migrados (fora do escopo);
  * editar qualquer outro campo deles continua funcionando normalmente.
  */
 export async function updateStudent(id: string, data: StudentInput): Promise<void> {

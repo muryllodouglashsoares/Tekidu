@@ -80,7 +80,7 @@ setPersistence(auth, browserLocalPersistence);
  * LIMITAÇÃO: isso só cria a conta de Authentication. Não é possível,
  * pelo SDK do cliente, definir custom claims ou administrar a conta
  * (ex.: excluir, forçar troca de senha) sem um backend com Admin SDK
- * (Cloud Function). Por isso a "exclusão" de um professor nesta fase é
+ * (Cloud Function). Por isso a "exclusão" de um professor é
  * uma desativação lógica (`active: false` no Firestore), não a remoção
  * da conta de Authentication — ver `userService.ts`.
  */

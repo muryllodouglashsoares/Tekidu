@@ -35,8 +35,7 @@ export interface MobileMoreSection {
 /**
  * Bottom Navigation: NÃO é a Sidebar inteira dentro de um componente
  * fixo — é uma seleção deliberada dos destinos mais usados por cada
- * role (ver regra "A Bottom Navigation NÃO deve conter todos os itens
- * da Sidebar" do briefing mobile). O quinto slot é sempre "Mais"
+ * role. O quinto slot é sempre "Mais"
  * (adicionado pelo componente, não listado aqui), que abre o restante
  * organizado por categoria — ver `MOBILE_MORE_SECTIONS`.
  */
@@ -59,7 +58,7 @@ export const MOBILE_BOTTOM_NAV: Record<UserRole, MobileNavItem[]> = {
     { to: "/meu-desempenho", label: "Desempenho", icon: LineChart },
     { to: "/calendario", label: "Calendário", icon: CalendarDays },
   ],
-  // Portal do Responsável (Fase 2/3 do plano de evolução): só 3
+  // Portal do Responsável: só 3
   // destinos reais existem (Início/Boletim/Frequência) — diferente
   // dos outros grupos, não há um quarto item natural para preencher o
   // slot (Mensagens não se aplica a esta role, ver Sidebar.tsx).
@@ -72,8 +71,7 @@ export const MOBILE_BOTTOM_NAV: Record<UserRole, MobileNavItem[]> = {
 
 /**
  * Conteúdo do item "Mais": tudo o que não coube na Bottom Navigation,
- * organizado por categoria (Acadêmico/Organização/Conta), igual à
- * estrutura sugerida no briefing. "Conta" é fixo e resolvido pelo
+ * organizado por categoria (Acadêmico/Organização/Conta). "Conta" é fixo e resolvido pelo
  * componente (não listado aqui) porque inclui ações (tema, sair) e
  * não apenas navegação.
  */
