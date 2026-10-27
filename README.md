@@ -4,7 +4,7 @@
 
 ### Visualizando a evolução acadêmica.
 
-Plataforma de gestão e acompanhamento acadêmico com experiências dedicadas para **administradores, professores e estudantes**.
+Plataforma de gestão e acompanhamento acadêmico com experiências dedicadas para **administradores, professores, estudantes e responsáveis**.
 
 <br />
 
@@ -13,11 +13,12 @@ Plataforma de gestão e acompanhamento acadêmico com experiências dedicadas pa
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript)
 ![Firebase](https://img.shields.io/badge/Firebase-11-FFCA28?style=for-the-badge&logo=firebase)
 ![Tests](https://img.shields.io/badge/Tests-Vitest-6E9F18?style=for-the-badge&logo=vitest)
-[![Demo](https://img.shields.io/badge/demo-ifconnect.pages.dev-2ea44f?style=for-the-badge&logo=cloudflare)](https://ifconnect.pages.dev)
+![PWA](https://img.shields.io/badge/PWA-instal%C3%A1vel-5A0FC8?style=for-the-badge&logo=pwa)
+[![Demo](https://img.shields.io/badge/demo-tekidu.pages.dev-2ea44f?style=for-the-badge&logo=cloudflare)](https://tekidu.pages.dev)
 
 <br />
 
-<a href="#sobre">Sobre</a> • <a href="#principais-funcionalidades">Funcionalidades</a> • <a href="#capturas-de-tela">Capturas de tela</a> • <a href="#diferenciais-técnicos">Diferenciais</a> • <a href="#tecnologias">Tecnologias</a> • <a href="#instalação">Instalação</a> • <a href="https://ifconnect.pages.dev">Demo</a>
+<a href="#sobre">Sobre</a> • <a href="#principais-funcionalidades">Funcionalidades</a> • <a href="#capturas-de-tela">Capturas de tela</a> • <a href="#diferenciais-técnicos">Diferenciais</a> • <a href="#tecnologias">Tecnologias</a> • <a href="#instalação">Instalação</a> • <a href="https://tekidu.pages.dev">Demo</a>
 
 </div>
 
@@ -27,13 +28,14 @@ Plataforma de gestão e acompanhamento acadêmico com experiências dedicadas pa
 
 A **Tekidu** centraliza informações acadêmicas — notas, frequência, boletim, turmas e comunicados — em um único ambiente, no lugar de planilhas e sistemas dispersos.
 
-A plataforma possui três experiências distintas, cada uma com permissões e telas próprias:
+A plataforma possui quatro experiências distintas, cada uma com permissões e telas próprias:
 
 | Perfil | Foco |
 |---|---|
 | 👨‍💼 **Administrador** | Gestão de estudantes, professores, turmas, disciplinas e avisos |
 | 👨‍🏫 **Professor** | Turmas, avaliações, lançamento de notas e frequência |
-| 👨‍🎓 **Estudante** | Boletim, desempenho, frequência e avisos, com acesso restrito aos próprios dados |
+| 👨‍🎓 **Estudante** | Boletim, desempenho, frequência, justificativas de falta e avisos, com acesso restrito aos próprios dados |
+| 👪 **Responsável** | Acompanhamento do estudante em **somente leitura** |
 
 ---
 
@@ -43,11 +45,16 @@ A plataforma possui três experiências distintas, cada uma com permissões e te
 - **Gestão acadêmica** — estudantes, professores, turmas, disciplinas e avaliações, com CRUDs completos para o perfil admin.
 - **Notas e boletim** — lançamento de avaliações, cálculo de médias e boletim consolidado por estudante.
 - **Frequência** — registro de sessões, presença/ausência e histórico por período.
+- **Justificativas de falta** — envio de justificativa com documento comprobatório.
 - **Relatórios e desempenho** — indicadores acadêmicos por estudante e por turma.
+- **Exportações** — boletim em PDF; frequência e relatórios em Excel e PDF.
+- **Perfil de responsável** — acompanhamento do estudante em modo somente leitura.
 - **Avisos, notificações e calendário acadêmico** — comunicação centralizada, com central de notificações dedicada.
 - **Command Palette** — navegação rápida por atalhos de teclado.
 - **UX mobile dedicada** — bottom navigation, sheets e FAB próprios para telas pequenas (não apenas CSS responsivo).
 - **Dark mode** — tema claro/escuro via tokens de design em CSS variables.
+- **PWA instalável** — pode ser instalado no celular ou no computador.
+- **Painel de acessibilidade** — ajustes de acessibilidade disponíveis na interface.
 
 ---
 
@@ -112,7 +119,7 @@ Firestore Security Rules
 ```text
 src/
 ├── components/   # UI reutilizável (inclui variantes mobile)
-├── pages/        # Telas por perfil (admin, teacher, student)
+├── pages/        # Telas por perfil (admin, teacher, student, responsável)
 ├── services/     # Acesso a dados por domínio
 ├── contexts/     # Auth, tema, toasts
 ├── security/     # Testes das Firestore Rules
@@ -155,10 +162,14 @@ npm run dev
 
 **Concluído**
 - [x] Autenticação, primeiro acesso e recuperação de senha
-- [x] Portais de admin, professor e estudante
+- [x] Portais de admin, professor, estudante e responsável (somente leitura)
 - [x] Notas, frequência, boletim e relatórios
+- [x] Justificativas de falta com documento comprobatório
+- [x] Exportação em PDF e Excel
 - [x] Avisos, notificações e calendário acadêmico
 - [x] Command Palette e UX mobile dedicada
+- [x] PWA instalável
+- [x] Painel de acessibilidade
 - [x] Firestore Security Rules + testes automatizados
 - [x] Code splitting por perfil
 - [x] Log de auditoria (básico)
@@ -168,8 +179,7 @@ npm run dev
 - [ ] Monitoramento de erros em produção
 - [ ] CI/CD
 - [ ] Testes de componentes de interface
-- [ ] Melhorias de acessibilidade
-- [ ] PWA
+- [ ] Auditoria de acessibilidade
 
 ---
 
